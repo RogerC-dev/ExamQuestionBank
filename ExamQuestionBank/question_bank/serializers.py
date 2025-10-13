@@ -1,75 +1,67 @@
 from rest_framework import serializers
-from .models import (
-    QuestionSet, Question, QuestionOption, QuestionTag, QuestionTagRelation,
-    QuestionAttempt, QuestionNote, QuestionBookmark, PracticeSession, ImportJob
-)
-from exams.models import ExamSession, Subject
+from .models import ExamQuestion, Question, QuestionOption, Tag, Attempt, Note, Bookmark
+from exams.models import Exam
 
 
 class QuestionOptionSerializer(serializers.ModelSerializer):
+    """題目選項序列化器"""
     class Meta:
         model = QuestionOption
-        fields = ['id', 'option_label', 'content', 'is_correct', 'order']
+        fields = ['id', 'content', 'is_correct']
         read_only_fields = ['id']
 
 
-class QuestionTagSerializer(serializers.ModelSerializer):
+class TagSerializer(serializers.ModelSerializer):
+    """標籤序列化器"""
     class Meta:
-        model = QuestionTag
-        fields = ['id', 'name', 'category', 'description']
-        read_only_fields = ['id', 'created_at']
+        model = Tag
+        fields = ['id', 'name']
+        read_only_fields = ['id']
 
 
 class QuestionListSerializer(serializers.ModelSerializer):
     """簡化版Question序列化器，用於列表顯示"""
-    exam_session_name = serializers.CharField(source='exam_session.__str__', read_only=True)
-    subject_name = serializers.CharField(source='subject.name', read_only=True)
-    accuracy_rate = serializers.ReadOnlyField()
-
-    class Meta:
-        model = Question
-        fields = [
-            'id', 'question_number', 'content', 'question_type', 'difficulty',
-            'points', 'status', 'exam_session_name', 'subject_name',
-            'view_count', 'attempt_count', 'accuracy_rate', 'created_at'
-        ]
-
-
-class QuestionDetailSerializer(serializers.ModelSerializer):
-    """完整Question序列化器，包含選項、標籤等"""
-    options = QuestionOptionSerializer(many=True, read_only=True)
-    tags = QuestionTagSerializer(source='tag_relations.tag', many=True, read_only=True)
-    exam_session = serializers.StringRelatedField(read_only=True)
-    subject = serializers.StringRelatedField(read_only=True)
-    accuracy_rate = serializers.ReadOnlyField()
     created_by_username = serializers.CharField(source='created_by.username', read_only=True)
 
     class Meta:
         model = Question
         fields = [
-            'id', 'question_set', 'exam_session', 'subject', 'question_number',
-            'content', 'question_type', 'difficulty', 'points', 'analysis',
-            'answer_explanation', 'source_file', 'source_page', 'source_url',
-            'status', 'is_public', 'view_count', 'attempt_count', 'correct_count',
-            'accuracy_rate', 'version', 'options', 'tags', 'created_at',
-            'updated_at', 'published_at', 'created_by_username'
+            'content', 'status', 'created_at', 'created_by_username'
         ]
-        read_only_fields = ['id', 'view_count', 'attempt_count', 'correct_count', 'version']
+        read_only_fields = ['id', 'created_at']
+
+
+class QuestionDetailSerializer(serializers.ModelSerializer):
+    """完整Question序列化器，包含選項、標籤等"""
+    options = QuestionOptionSerializer(many=True, read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+
+    class Meta:
+        model = Question
+        fields = [
+            'content', 'explanation', 'status', 'created_at', 'created_by_username',
+            'options', 'tags'
+        ]
+        read_only_fields = ['id', 'created_at', 'created_by_username']
 
 
 class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
     """用於創建和更新Question"""
     options = QuestionOptionSerializer(many=True, required=False)
-    tag_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=False)
+    tag_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False,
+        help_text="標籤 ID 列表"
+    )
 
     class Meta:
         model = Question
         fields = [
-            'id', 'question_set', 'exam_session', 'subject', 'question_number',
-            'content', 'question_type', 'difficulty', 'points', 'analysis',
-            'answer_explanation', 'source_file', 'source_page', 'source_url',
-            'status', 'is_public', 'options', 'tag_ids'
+            'explanation', 'status', 'options', 'tag_ids'
         ]
+        read_only_fields = ['id']
 
     def create(self, validated_data):
         options_data = validated_data.pop('options', [])
@@ -83,21 +75,17 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
             QuestionOption.objects.create(question=question, **option_data)
 
         # Add tags
-        for tag_id in tag_ids:
-            QuestionTagRelation.objects.create(
-                question=question,
-                tag_id=tag_id,
-                created_by=self.context['request'].user
-            )
+        if tag_ids:
+            tags = Tag.objects.filter(id__in=tag_ids)
+            question.tags.set(tags)
 
         return question
 
     def update(self, instance, validated_data):
         options_data = validated_data.pop('options', None)
         tag_ids = validated_data.pop('tag_ids', None)
-        validated_data['updated_by'] = self.context['request'].user
-        validated_data['version'] = instance.version + 1
 
+        # Update question fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -110,71 +98,62 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
 
         # Update tags if provided
         if tag_ids is not None:
-            instance.tag_relations.all().delete()
-            for tag_id in tag_ids:
-                QuestionTagRelation.objects.create(
-                    question=instance,
-                    tag_id=tag_id,
-                    created_by=self.context['request'].user
-                )
+            tags = Tag.objects.filter(id__in=tag_ids)
+            instance.tags.set(tags)
 
         return instance
 
 
-class QuestionAttemptSerializer(serializers.ModelSerializer):
+class AttemptSerializer(serializers.ModelSerializer):
+    """作答紀錄序列化器"""
     question_detail = QuestionDetailSerializer(source='question', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
-        model = QuestionAttempt
+        model = Attempt
         fields = [
-            'id', 'user', 'question', 'selected_options', 'answer_text',
-            'is_correct', 'time_spent', 'practice_session', 'created_at',
-            'question_detail'
+            'id', 'user', 'username', 'question', 'selected_options',
+            'is_correct', 'created_at', 'question_detail'
         ]
         read_only_fields = ['id', 'user', 'created_at']
 
 
-class QuestionNoteSerializer(serializers.ModelSerializer):
+class AttemptCreateSerializer(serializers.ModelSerializer):
+    """創建作答紀錄的序列化器"""
     class Meta:
-        model = QuestionNote
-        fields = ['id', 'user', 'question', 'content', 'is_private', 'created_at', 'updated_at']
+        model = Attempt
+        fields = ['question', 'selected_options', 'is_correct']
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        selected_options = validated_data.pop('selected_options', [])
+
+        attempt = Attempt.objects.create(**validated_data)
+        attempt.selected_options.set(selected_options)
+
+        return attempt
+
+
+class NoteSerializer(serializers.ModelSerializer):
+    """筆記序列化器"""
+    username = serializers.CharField(source='user.username', read_only=True)
+    question_content = serializers.CharField(source='question.content', read_only=True)
+
+    class Meta:
+        model = Note
+        fields = [
+            'id', 'user', 'username', 'question', 'question_content',
+            'content', 'created_at', 'updated_at'
+        ]
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
 
 
-class QuestionBookmarkSerializer(serializers.ModelSerializer):
+class BookmarkSerializer(serializers.ModelSerializer):
+    """收藏序列化器"""
     question_detail = QuestionListSerializer(source='question', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
-        model = QuestionBookmark
-        fields = ['id', 'user', 'question', 'created_at', 'question_detail']
+        model = Bookmark
+        fields = ['id', 'user', 'username', 'question', 'created_at', 'question_detail']
         read_only_fields = ['id', 'user', 'created_at']
-
-
-class PracticeSessionSerializer(serializers.ModelSerializer):
-    accuracy_rate = serializers.ReadOnlyField()
-    exam_session_name = serializers.CharField(source='exam_session.__str__', read_only=True)
-    subject_name = serializers.CharField(source='subject.name', read_only=True)
-
-    class Meta:
-        model = PracticeSession
-        fields = [
-            'id', 'user', 'mode', 'status', 'total_questions', 'answered_questions',
-            'correct_answers', 'accuracy_rate', 'exam_session', 'exam_session_name',
-            'subject', 'subject_name', 'difficulty', 'started_at', 'completed_at',
-            'total_time_spent'
-        ]
-        read_only_fields = ['id', 'user', 'started_at']
-
-
-class ImportJobSerializer(serializers.ModelSerializer):
-    user_name = serializers.CharField(source='user.username', read_only=True)
-
-    class Meta:
-        model = ImportJob
-        fields = [
-            'id', 'user', 'user_name', 'file_name', 'file_path', 'file_type',
-            'status', 'total_items', 'processed_items', 'success_items',
-            'failed_items', 'error_log', 'result_summary', 'created_at',
-            'started_at', 'completed_at'
-        ]
-        read_only_fields = ['id', 'user', 'created_at', 'started_at', 'completed_at']

@@ -35,8 +35,12 @@ class ExtractExamPDFView(APIView):
         try:
             questions = PDFParser.parse_questions(pdf_file)
             return Response({
-                "count": len(questions),
-                "questions": questions,
+                "count": len(questions["questions"]),
+                "level": questions["level"],
+                "category": questions["category"],
+                "subject": questions["subject"],
+                "time_length": questions["time_length"],
+                "questions": questions["questions"],
             }, status=status.HTTP_200_OK)
 
         except Exception as e:

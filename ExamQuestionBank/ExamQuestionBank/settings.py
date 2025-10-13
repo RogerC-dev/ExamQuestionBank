@@ -52,8 +52,8 @@ INSTALLED_APPS = [
     'guardian',
     'reversion',
 
-    'question_bank',
     'users',
+    'question_bank',
     'exams',
     'flashcards',
 ]

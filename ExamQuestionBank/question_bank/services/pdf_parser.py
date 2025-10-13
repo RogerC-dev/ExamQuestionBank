@@ -19,6 +19,11 @@ class PDFParser:
     @staticmethod
     def parse_questions(file):
         questions = []
+        level = ""
+        category = ""
+        subject = ""
+        time_length = ""
+        
         with pdfplumber.open(io.BytesIO(file.read())) as pdf:
             temp = {
                 "question": "",
@@ -35,7 +40,26 @@ class PDFParser:
             for index, page in enumerate(pdf.pages):
                 for word in page.extract_words():
                     if index == 0:
-                        if word["bottom"] < 205: # \ue12b禁止使用電子計算器。 此行以下 (只有在第一頁)
+                        
+                        if word["bottom"] < 205: # \ue12b禁止使用電子計算器。 此行以下 (只有在第一頁)                 
+                            if level_ := re.fullmatch(r"別：(.*)", word['text']):
+                                level = level_.group(1).strip()
+                                print("LEVEL", level)
+                                continue
+                            if category_ := re.fullmatch(r"科：(.*)", word['text']):
+                                category = category_.group(1).strip()
+                                print("CATEGORY", category)
+                                continue
+                            if subject_ := re.fullmatch(r"目：(.*)", word['text']):
+                                subject = subject_.group(1).strip()
+                                print("SUBJECT", subject)
+                                continue
+                            if time_length_ := re.fullmatch(r"考試時間：(.*)", word['text']):
+                                time_length = time_length_.group(1).strip()
+                                print("TIME LENGTH", time_length)
+                                continue
+                            
+                            print("SKIP", word['text'])
                             continue
                     else:
                         if re.fullmatch(r"代號：[0-9]+|頁次：[0-9]+－[0-9]+", word['text']): # 移除代號和頁次
@@ -68,12 +92,20 @@ class PDFParser:
                             flag = Flag.OPTION_4
                         
                     if flag == Flag.QUESTION:
+                        print("QUESTION", word["text"])
                         temp["question"] += word["text"]
                     else:
+                        print(flag, word["text"])
                         temp["options"][flag.value] += word["text"].lstrip(u"\ue18c\ue18d\ue18e\ue18f")
 
             questions.append(temp)
-        return questions
+        return {
+            "level": level,
+            "category": category,
+            "subject": subject,
+            "time_length": time_length,
+            "questions": questions
+        }
     
     def parse_answers(file):
         answers = []
