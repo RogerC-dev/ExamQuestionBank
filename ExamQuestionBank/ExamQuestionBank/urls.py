@@ -8,9 +8,11 @@ from django.conf.urls.static import static
 from django.views.generic import RedirectView
 
 from rest_framework import permissions
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+
+from users.views import CustomTokenObtainPairView
 
 
 schema_view = get_schema_view(
@@ -41,16 +43,18 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
     # JWT Authentication
-    path('api/v1/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/v1/auth/login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/v1/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
    # Question Bank URLs
     path("api/v1/question_bank/", include("question_bank.urls")),
+    path("api/v1/", include("question_bank.urls")),  # 也支援 /api/v1/questions/
+
+    # Exams URLs
+    path("api/v1/", include("exams.urls")),
 
     # App URLs (to be created)
     # path('api/v1/', include('users.urls')),
-    # path('api/v1/', include('exams.urls')),
-    # path('api/v1/', include('question_bank.urls')),
     # path('api/v1/', include('flashcards.urls')),
 ]
 

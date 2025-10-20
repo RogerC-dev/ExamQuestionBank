@@ -27,6 +27,18 @@ const router = createRouter({
       name: 'Admin',
       component: () => import('@/views/AdminView.vue'),
       meta: { requiresAdmin: true }
+    },
+    {
+      path: '/admin/exams/new',
+      name: 'ExamCreate',
+      component: () => import('@/views/ExamEditView.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/admin/exams/:id/edit',
+      name: 'ExamEdit',
+      component: () => import('@/views/ExamEditView.vue'),
+      meta: { requiresAdmin: true }
     }
   ]
 })
@@ -34,18 +46,34 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('access_token')
+  const userRole = localStorage.getItem('user_role')
 
+  // 需要認證但未登入
   if (to.meta.requiresAuth && !token) {
-    next('/login')
-  } else if (to.meta.requiresAdmin) {
-    // Check if user is admin (you'll need to store this in localStorage or a store)
-    const userRole = localStorage.getItem('user_role')
-    if (userRole === 'admin') {
+    // 儲存原本要前往的路徑
+    sessionStorage.setItem('intended_path', to.fullPath)
+    // 觸發登入彈窗
+    window.dispatchEvent(new Event('show-login'))
+    // 停留在當前頁面
+    next(false)
+  }
+  // 需要管理員權限
+  else if (to.meta.requiresAdmin) {
+    if (!token) {
+      // 未登入，觸發登入彈窗
+      sessionStorage.setItem('intended_path', to.fullPath)
+      window.dispatchEvent(new Event('show-login'))
+      next('/practice')
+    } else if (userRole === 'admin') {
+      // 已登入且是管理員
       next()
     } else {
+      // 已登入但不是管理員
+      alert('需要管理員權限才能訪問此頁面')
       next('/practice')
     }
-  } else {
+  }
+  else {
     next()
   }
 })

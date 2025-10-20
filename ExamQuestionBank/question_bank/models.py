@@ -11,7 +11,7 @@ class ExamQuestion(models.Model):
     question = models.ForeignKey('Question', on_delete=models.CASCADE, related_name='exam_questions', verbose_name="題目")
 
     # 資料庫欄位
-    order = models.PositiveIntegerField(verbose_name="題目順序")
+    order = models.IntegerField(verbose_name="題目順序")  # 使用 IntegerField 以支援負數作為臨時占位符
     points = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="配分")
 
     class Meta:
@@ -19,7 +19,7 @@ class ExamQuestion(models.Model):
         verbose_name = '考卷題目'
         verbose_name_plural = '考卷題目'
         ordering = ['order']
-        unique_together = [['exam', 'question']]
+        unique_together = [['exam', 'question'], ['exam', 'order']]
 
     def __str__(self):
         return f"{self.exam.name} - 題目{self.order}"

@@ -55,5 +55,30 @@ export default {
    */
   getAttempts(params = {}) {
     return api.get('/questions/attempts/', { params })
+  },
+
+  /**
+   * Update a question
+   * @param {number} questionId - Question ID
+   * @param {Object} data - Question data
+   */
+  updateQuestion(questionId, data) {
+    return api.patch(`/question_bank/questions/${questionId}/`, data)
+  },
+
+  /**
+   * Create a new question
+   * @param {Object} data - Question data
+   */
+  createQuestion(data) {
+    return api.post('/question_bank/questions/', data)
+  },
+
+  /**
+   * Delete a question
+   * @param {number} questionId - Question ID
+   */
+  deleteQuestion(questionId) {
+    return api.delete(`/question_bank/questions/${questionId}/`)
   }
 }
