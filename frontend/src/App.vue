@@ -8,13 +8,15 @@ const router = useRouter()
 const route = useRoute()
 
 const tabs = [
+  { name: '首頁', path: '/', key: 'landing' },
   { name: '練習模式', path: '/practice', key: 'practice' },
   { name: '快閃卡', path: '/flashcard', key: 'flashcard' },
+  { name: 'AI 助手', path: '/ai-chat', key: 'ai-chat' },
   { name: '學習追蹤', path: '/analytics', key: 'analytics' },
   { name: '題庫管理', path: '/admin', key: 'admin' }
 ]
 
-const activeTab = ref(route.path.split('/')[1] || 'practice')
+const activeTab = ref(route.path === '/' ? 'landing' : route.path.split('/')[1] || 'practice')
 const showLoginModal = ref(false)
 
 // 使用 ref 來追蹤登入狀態變化

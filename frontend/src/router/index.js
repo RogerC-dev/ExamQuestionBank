@@ -5,7 +5,8 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/practice'
+      name: 'Landing',
+      component: () => import('@/views/LandingView.vue')
     },
     {
       path: '/practice',
@@ -39,6 +40,17 @@ const router = createRouter({
       name: 'ExamEdit',
       component: () => import('@/views/ExamEditView.vue'),
       meta: { requiresAdmin: true }
+    },
+    {
+      path: '/ai-chat',
+      name: 'AIChat',
+      component: () => import('@/views/AIChatView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/subscription',
+      name: 'Subscription',
+      component: () => import('@/views/SubscriptionView.vue')
     }
   ]
 })

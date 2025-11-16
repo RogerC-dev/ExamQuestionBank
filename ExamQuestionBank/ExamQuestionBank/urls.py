@@ -53,8 +53,8 @@ urlpatterns = [
     # Exams URLs
     path("api/v1/", include("exams.urls")),
 
-    # App URLs (to be created)
-    # path('api/v1/', include('users.urls')),
+    # Users URLs
+    path('api/v1/', include('users.urls')),
     # path('api/v1/', include('flashcards.urls')),
 ]
 

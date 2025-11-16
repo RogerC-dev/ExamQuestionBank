@@ -50,3 +50,6 @@ django-storages>=1.14
 python-dateutil>=2.9.0
 pytz>=2024.1
 pdfplumber==0.11.7
+
+# AI Services
+openai>=1.0.0
