@@ -1,8 +1,10 @@
 import os
-import openai
+import logging
 from django.conf import settings
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
+from openai import OpenAI, OpenAIError
 
+logger = logging.getLogger(__name__)
 
 class AIService:
     """AI 服務類，處理與 OpenAI API 的互動"""
@@ -10,9 +12,12 @@ class AIService:
     def __init__(self):
         # 從環境變數或設定檔取得 API key
         self.api_key = os.getenv('OPENAI_API_KEY', getattr(settings, 'OPENAI_API_KEY', None))
+        self.client = None
         if self.api_key:
-            openai.api_key = self.api_key
+            self.client = OpenAI(api_key=self.api_key)
+        
         self.model = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
+        self.system_prompt = self._get_system_prompt()
 
     def _get_system_prompt(self) -> str:
         """取得系統提示詞"""
@@ -26,7 +31,11 @@ class AIService:
 
 請用繁體中文回答，回答要準確、清晰，並適時引用相關法條。"""
 
-    def chat(self, message: str, context: Optional[Dict] = None) -> str:
+    def is_configured(self) -> bool:
+        """檢查是否已設定 API Key"""
+        return self.client is not None
+
+    def chat(self, message: str, context: Optional[Dict[str, Any]] = None) -> str:
         """
         發送訊息給 AI 並取得回應
 
@@ -37,13 +46,14 @@ class AIService:
         Returns:
             AI 回應文字
         """
-        if not self.api_key:
+        if not self.is_configured():
+            logger.warning("OpenAI API key not configured")
             return "AI 服務尚未設定，請聯繫管理員設定 OpenAI API Key。"
 
         try:
             # 建立訊息列表
             messages = [
-                {"role": "system", "content": self._get_system_prompt()}
+                {"role": "system", "content": self.system_prompt}
             ]
 
             # 如果有上下文，加入上下文資訊
@@ -56,7 +66,7 @@ class AIService:
             messages.append({"role": "user", "content": message})
 
             # 呼叫 OpenAI API
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 temperature=0.7,
@@ -65,22 +75,19 @@ class AIService:
 
             return response.choices[0].message.content.strip()
 
+        except OpenAIError as e:
+            logger.error(f"OpenAI API error: {str(e)}")
+            return "AI 服務暫時無法使用，請稍後再試。"
         except Exception as e:
-            return f"AI 服務發生錯誤：{str(e)}"
+            logger.error(f"Unexpected error in AI chat: {str(e)}")
+            return "發生未預期的錯誤，請聯繫管理員。"
 
-    def _build_context_message(self, context: Dict) -> Optional[str]:
+    def _build_context_message(self, context: Dict[str, Any]) -> Optional[str]:
         """
         建立上下文訊息
 
         Args:
-            context: 上下文字典，可能包含：
-                - question_id: 題目ID
-                - question_content: 題目內容
-                - case_text: 案例文字
-                - related_laws: 相關法條列表
-
-        Returns:
-            格式化的上下文訊息
+            context: 上下文字典
         """
         parts = []
 
@@ -101,7 +108,7 @@ class AIService:
             return "\n".join(parts)
         return None
 
-    def analyze_case(self, case_text: str) -> Dict[str, str]:
+    def analyze_case(self, case_text: str) -> Dict[str, Any]:
         """
         分析法律案例
 
@@ -111,12 +118,14 @@ class AIService:
         Returns:
             包含分析結果的字典
         """
-        if not self.api_key:
-            return {
-                "summary": "AI 服務尚未設定",
-                "key_points": [],
-                "related_laws": []
-            }
+        default_response = {
+            "summary": "無法進行分析",
+            "key_points": [],
+            "related_laws": []
+        }
+
+        if not self.is_configured():
+            return {**default_response, "summary": "AI 服務尚未設定"}
 
         try:
             prompt = f"""請分析以下法律案例，並提供：
@@ -129,11 +138,11 @@ class AIService:
 """
 
             messages = [
-                {"role": "system", "content": self._get_system_prompt()},
+                {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": prompt}
             ]
 
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 temperature=0.7,
@@ -142,7 +151,6 @@ class AIService:
 
             analysis_text = response.choices[0].message.content.strip()
 
-            # 簡單解析回應（實際應用中可以使用更複雜的解析邏輯）
             return {
                 "summary": analysis_text,
                 "key_points": self._extract_key_points(analysis_text),
@@ -150,30 +158,30 @@ class AIService:
             }
 
         except Exception as e:
-            return {
-                "summary": f"分析時發生錯誤：{str(e)}",
-                "key_points": [],
-                "related_laws": []
-            }
+            logger.error(f"Error analyzing case: {str(e)}")
+            return {**default_response, "summary": f"分析時發生錯誤：{str(e)}"}
 
     def _extract_key_points(self, text: str) -> List[str]:
         """從分析文字中提取關鍵點"""
-        # 簡單實現：尋找以數字開頭的行
         lines = text.split('\n')
         key_points = []
         for line in lines:
             line = line.strip()
-            if line and (line[0].isdigit() or line.startswith('•') or line.startswith('-') or line.startswith('*')):
-                key_points.append(line)
-        return key_points[:5]  # 最多返回5個
+            # 支援多種列表格式
+            if line and (line[0].isdigit() or line.startswith(('•', '-', '*'))):
+                # 移除標號
+                content = line.lstrip('0123456789.-*• ')
+                if content:
+                    key_points.append(content)
+        return key_points[:5]
 
     def _extract_laws(self, text: str) -> List[str]:
         """從分析文字中提取法條"""
-        # 簡單實現：尋找包含「法」或「條」的文字
         import re
-        pattern = r'[第]*\d+[條項款]'
+        # 改進的正則表達式，匹配更多法條格式
+        pattern = r'(?:第\s*\d+\s*[條項款]|[\u4e00-\u9fa5]+法\s*第\s*\d+\s*條)'
         matches = re.findall(pattern, text)
-        return list(set(matches))[:10]  # 去重並最多返回10個
+        return list(set(matches))[:10]
 
 
 # 建立單例
