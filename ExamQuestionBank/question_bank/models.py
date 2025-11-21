@@ -39,7 +39,8 @@ class ExamSession(models.Model):
 class QuestionSet(models.Model):
     """題組"""
     exam_session = models.ForeignKey(ExamSession, on_delete=models.CASCADE, related_name='question_sets')
-    subject = models.CharField(max_length=50, verbose_name="科目")
+    subject = models.ForeignKey('Subject', on_delete=models.SET_NULL, null=True, blank=True, related_name='question_sets', verbose_name="科目")
+    subject_name = models.CharField(max_length=50, blank=True, null=True, verbose_name="科目名稱（舊資料）")  # 保留舊資料
     question_type = models.CharField(max_length=20, verbose_name="題型", default="選擇題")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -50,7 +51,8 @@ class QuestionSet(models.Model):
         verbose_name_plural = '題組'
 
     def __str__(self):
-        return f"{self.exam_session} - {self.subject}"
+        subject_display = self.subject.name if self.subject else (self.subject_name or 'Unknown')
+        return f"{self.exam_session} - {subject_display}"
 
 
 class Tag(models.Model):
@@ -71,6 +73,7 @@ class Tag(models.Model):
 class Question(models.Model):
     """題目主體"""
     question_set = models.ForeignKey(QuestionSet, on_delete=models.CASCADE, related_name='questions', null=True, blank=True)
+    subject = models.ForeignKey('Subject', on_delete=models.SET_NULL, null=True, blank=True, related_name='questions', verbose_name="科目")
     content = models.TextField(verbose_name="題目內容")
     question_type = models.CharField(max_length=20, verbose_name="題型", default="選擇題")
     difficulty = models.CharField(max_length=20, verbose_name="難度", default="medium")
@@ -84,6 +87,9 @@ class Question(models.Model):
         db_table = 'question'
         verbose_name = '題目'
         verbose_name_plural = '題目'
+        indexes = [
+            models.Index(fields=['subject']),
+        ]
 
     def __str__(self):
         return self.content[:50] + "..." if len(self.content) > 50 else self.content
@@ -198,3 +204,196 @@ class AIChatHistory(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.message[:30]}"
+
+
+class Subject(models.Model):
+    """科目主表（標準化科目）"""
+    name = models.CharField(max_length=100, unique=True, verbose_name="科目名稱")
+    code = models.CharField(max_length=20, unique=True, verbose_name="科目代碼")
+    category = models.CharField(max_length=50, verbose_name="分類", default="general")
+    description = models.TextField(blank=True, null=True, verbose_name="說明")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'subject'
+        verbose_name = '科目'
+        verbose_name_plural = '科目'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class UserProgress(models.Model):
+    """使用者學習進度追蹤"""
+    MASTERY_LEVEL_CHOICES = [
+        ('novice', '初學'),
+        ('beginner', '入門'),
+        ('intermediate', '中等'),
+        ('advanced', '進階'),
+        ('master', '精通'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_progress')
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='user_progress')
+    subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True, blank=True, related_name='user_progress')
+    exam_session = models.ForeignKey(ExamSession, on_delete=models.SET_NULL, null=True, blank=True, related_name='user_progress')
+    is_correct = models.BooleanField(verbose_name="是否正確")
+    time_spent = models.IntegerField(default=0, verbose_name="花費時間（秒）")
+    attempt_count = models.IntegerField(default=1, verbose_name="嘗試次數")
+    last_attempt_at = models.DateTimeField(auto_now=True, verbose_name="最後嘗試時間")
+    mastery_level = models.CharField(max_length=20, choices=MASTERY_LEVEL_CHOICES, default='novice', verbose_name="熟練度")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'user_progress'
+        verbose_name = '使用者進度'
+        verbose_name_plural = '使用者進度'
+        ordering = ['-last_attempt_at']
+        indexes = [
+            models.Index(fields=['user', 'subject']),
+            models.Index(fields=['user', 'last_attempt_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.question.id} - {self.mastery_level}"
+
+
+class StudySession(models.Model):
+    """學習時段追蹤"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_sessions')
+    started_at = models.DateTimeField(auto_now_add=True, verbose_name="開始時間")
+    ended_at = models.DateTimeField(null=True, blank=True, verbose_name="結束時間")
+    duration = models.IntegerField(default=0, verbose_name="持續時間（秒）")
+    questions_attempted = models.IntegerField(default=0, verbose_name="答題數量")
+    accuracy = models.DecimalField(max_digits=5, decimal_places=2, default=0.0, verbose_name="正確率")
+    subjects_covered = models.ManyToManyField(Subject, related_name='study_sessions', blank=True)
+
+    class Meta:
+        db_table = 'study_session'
+        verbose_name = '學習時段'
+        verbose_name_plural = '學習時段'
+        ordering = ['-started_at']
+        indexes = [
+            models.Index(fields=['user', 'started_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.started_at.strftime('%Y-%m-%d %H:%M')}"
+
+    def end_session(self):
+        """結束學習時段"""
+        from django.utils import timezone
+        self.ended_at = timezone.now()
+        if self.started_at:
+            delta = self.ended_at - self.started_at
+            self.duration = int(delta.total_seconds())
+        self.save()
+
+
+class EssaySubmission(models.Model):
+    """申論題提交"""
+    STATUS_CHOICES = [
+        ('pending', '待批改'),
+        ('grading', '批改中'),
+        ('completed', '已完成'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='essay_submissions')
+    subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True, related_name='essay_submissions')
+    exam_year = models.IntegerField(verbose_name="考試年度")
+    exam_session = models.ForeignKey(ExamSession, on_delete=models.SET_NULL, null=True, blank=True, related_name='essay_submissions')
+    question_text = models.TextField(verbose_name="題目內容")
+    answer_text = models.TextField(verbose_name="答案內容")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="狀態")
+    submitted_at = models.DateTimeField(auto_now_add=True, verbose_name="提交時間")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'essay_submission'
+        verbose_name = '申論題提交'
+        verbose_name_plural = '申論題提交'
+        ordering = ['-submitted_at']
+        indexes = [
+            models.Index(fields=['user', 'subject']),
+            models.Index(fields=['user', 'submitted_at']),
+            models.Index(fields=['status']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.subject.name if self.subject else 'Unknown'} - {self.submitted_at.strftime('%Y-%m-%d')}"
+
+
+class EssayGrading(models.Model):
+    """申論題批改結果"""
+    GRADING_METHOD_CHOICES = [
+        ('ai', 'AI 批改'),
+        ('manual', '人工批改'),
+    ]
+
+    essay_submission = models.OneToOneField(EssaySubmission, on_delete=models.CASCADE, related_name='grading')
+    score = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="得分")
+    max_score = models.DecimalField(max_digits=5, decimal_places=2, default=100.0, verbose_name="滿分")
+    feedback = models.TextField(verbose_name="總體評語")
+    strengths = models.TextField(blank=True, null=True, verbose_name="優點")
+    weaknesses = models.TextField(blank=True, null=True, verbose_name="缺點")
+    suggestions = models.TextField(blank=True, null=True, verbose_name="改進建議")
+    grading_method = models.CharField(max_length=20, choices=GRADING_METHOD_CHOICES, default='ai', verbose_name="批改方式")
+    graded_at = models.DateTimeField(auto_now_add=True, verbose_name="批改時間")
+
+    class Meta:
+        db_table = 'essay_grading'
+        verbose_name = '申論題批改'
+        verbose_name_plural = '申論題批改'
+        ordering = ['-graded_at']
+
+    def __str__(self):
+        return f"{self.essay_submission.user.username} - {self.score}/{self.max_score}"
+
+    @property
+    def percentage_score(self):
+        """計算百分比分數"""
+        if self.max_score > 0:
+            return (self.score / self.max_score) * 100
+        return 0
+
+
+class StudyRecommendation(models.Model):
+    """學習建議"""
+    RECOMMENDATION_TYPE_CHOICES = [
+        ('subject_focus', '科目重點'),
+        ('weak_area', '弱項加強'),
+        ('practice_schedule', '練習安排'),
+        ('review_reminder', '複習提醒'),
+        ('exam_prep', '考試準備'),
+    ]
+
+    PRIORITY_CHOICES = [
+        ('low', '低'),
+        ('medium', '中'),
+        ('high', '高'),
+        ('urgent', '緊急'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_recommendations')
+    recommendation_type = models.CharField(max_length=30, choices=RECOMMENDATION_TYPE_CHOICES, verbose_name="建議類型")
+    subject = models.ForeignKey(Subject, on_delete=models.SET_NULL, null=True, blank=True, related_name='study_recommendations')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', verbose_name="優先級")
+    content = models.TextField(verbose_name="建議內容")
+    generated_at = models.DateTimeField(auto_now_add=True, verbose_name="生成時間")
+    is_read = models.BooleanField(default=False, verbose_name="已讀")
+    read_at = models.DateTimeField(null=True, blank=True, verbose_name="閱讀時間")
+
+    class Meta:
+        db_table = 'study_recommendation'
+        verbose_name = '學習建議'
+        verbose_name_plural = '學習建議'
+        ordering = ['-priority', '-generated_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read']),
+            models.Index(fields=['user', 'generated_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_recommendation_type_display()} - {self.get_priority_display()}"

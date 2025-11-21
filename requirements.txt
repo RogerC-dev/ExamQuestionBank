@@ -53,3 +53,11 @@ pdfplumber==0.11.7
 
 # AI Services
 openai>=1.0.0
+
+# RAG & Vector Database
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+faiss-cpu>=1.7.4
+
+# N8N Integration (optional)
+requests>=2.31.0

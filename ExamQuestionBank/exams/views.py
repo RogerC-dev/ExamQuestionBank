@@ -1,12 +1,17 @@
+import logging
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from django.db import transaction
 
-from .models import Exam
-from question_bank.models import ExamQuestion
+from .models import Exam, MockExam
+from question_bank.models import ExamQuestion, Question, QuestionOption, Subject
+from question_bank.services.ai_service import ai_service
+from question_bank.services.rag_service import rag_service
 from .serializers import (
     ExamListSerializer,
     ExamDetailSerializer,
@@ -14,6 +19,8 @@ from .serializers import (
     ExamQuestionCreateSerializer,
     ExamQuestionSerializer
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ExamViewSet(viewsets.ModelViewSet):

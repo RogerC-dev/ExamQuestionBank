@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from .models import ExamQuestion, Question, QuestionOption, Tag, Attempt, Note, Bookmark
+from .models import (
+    ExamQuestion, Question, QuestionOption, Tag, Attempt, Note, Bookmark,
+    Subject, UserProgress, StudySession, EssaySubmission, EssayGrading, StudyRecommendation
+)
 from exams.models import Exam
 
 
@@ -157,3 +160,115 @@ class BookmarkSerializer(serializers.ModelSerializer):
         model = Bookmark
         fields = ['id', 'user', 'username', 'question', 'created_at', 'question_detail']
         read_only_fields = ['id', 'user', 'created_at']
+
+
+class SubjectSerializer(serializers.ModelSerializer):
+    """科目序列化器"""
+    class Meta:
+        model = Subject
+        fields = ['id', 'name', 'code', 'category', 'description', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class UserProgressSerializer(serializers.ModelSerializer):
+    """使用者進度序列化器"""
+    question_content = serializers.CharField(source='question.content', read_only=True)
+    subject_name = serializers.CharField(source='subject.name', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = UserProgress
+        fields = [
+            'id', 'user', 'username', 'question', 'question_content',
+            'subject', 'subject_name', 'exam_session', 'is_correct',
+            'time_spent', 'attempt_count', 'last_attempt_at', 'mastery_level', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'last_attempt_at']
+
+
+class StudySessionSerializer(serializers.ModelSerializer):
+    """學習時段序列化器"""
+    username = serializers.CharField(source='user.username', read_only=True)
+    subjects_covered_names = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StudySession
+        fields = [
+            'id', 'user', 'username', 'started_at', 'ended_at', 'duration',
+            'questions_attempted', 'accuracy', 'subjects_covered', 'subjects_covered_names'
+        ]
+        read_only_fields = ['id', 'started_at']
+
+    def get_subjects_covered_names(self, obj):
+        return [s.name for s in obj.subjects_covered.all()]
+
+
+class EssaySubmissionSerializer(serializers.ModelSerializer):
+    """申論題提交序列化器"""
+    username = serializers.CharField(source='user.username', read_only=True)
+    subject_name = serializers.CharField(source='subject.name', read_only=True)
+    grading = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EssaySubmission
+        fields = [
+            'id', 'user', 'username', 'subject', 'subject_name', 'exam_year',
+            'exam_session', 'question_text', 'answer_text', 'status',
+            'submitted_at', 'updated_at', 'grading'
+        ]
+        read_only_fields = ['id', 'user', 'submitted_at', 'updated_at', 'status']
+
+    def get_grading(self, obj):
+        if hasattr(obj, 'grading'):
+            return EssayGradingSerializer(obj.grading).data
+        return None
+
+
+class EssaySubmissionCreateSerializer(serializers.ModelSerializer):
+    """申論題提交創建序列化器"""
+    class Meta:
+        model = EssaySubmission
+        fields = [
+            'subject', 'exam_year', 'exam_session', 'question_text', 'answer_text'
+        ]
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        validated_data['status'] = 'pending'
+        return super().create(validated_data)
+
+
+class EssayGradingSerializer(serializers.ModelSerializer):
+    """申論題批改序列化器"""
+    percentage_score = serializers.ReadOnlyField()
+    essay_submission_info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EssayGrading
+        fields = [
+            'id', 'essay_submission', 'essay_submission_info', 'score', 'max_score',
+            'percentage_score', 'feedback', 'strengths', 'weaknesses', 'suggestions',
+            'grading_method', 'graded_at'
+        ]
+        read_only_fields = ['id', 'graded_at']
+
+    def get_essay_submission_info(self, obj):
+        return {
+            'id': obj.essay_submission.id,
+            'subject': obj.essay_submission.subject.name if obj.essay_submission.subject else None,
+            'exam_year': obj.essay_submission.exam_year
+        }
+
+
+class StudyRecommendationSerializer(serializers.ModelSerializer):
+    """學習建議序列化器"""
+    username = serializers.CharField(source='user.username', read_only=True)
+    subject_name = serializers.CharField(source='subject.name', read_only=True)
+
+    class Meta:
+        model = StudyRecommendation
+        fields = [
+            'id', 'user', 'username', 'recommendation_type', 'subject', 'subject_name',
+            'priority', 'content', 'generated_at', 'is_read', 'read_at'
+        ]
+        read_only_fields = ['id', 'generated_at']
