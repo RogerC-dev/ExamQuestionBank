@@ -72,16 +72,13 @@ class Tag(models.Model):
 
 class Question(models.Model):
     """題目主體"""
-    question_set = models.ForeignKey(QuestionSet, on_delete=models.CASCADE, related_name='questions', null=True, blank=True)
-    subject = models.ForeignKey('Subject', on_delete=models.SET_NULL, null=True, blank=True, related_name='questions', verbose_name="科目")
+    subject = models.CharField(max_length=100, verbose_name="科目")
+    category = models.CharField(max_length=50, verbose_name="題型分類")
+    status = models.CharField(max_length=20, choices=[('draft', '草稿'), ('published', '已發布')], default='draft', verbose_name="狀態")
     content = models.TextField(verbose_name="題目內容")
-    question_type = models.CharField(max_length=20, verbose_name="題型", default="選擇題")
-    difficulty = models.CharField(max_length=20, verbose_name="難度", default="medium")
     explanation = models.TextField(blank=True, null=True, verbose_name="解析")
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_questions')
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    tags = models.ManyToManyField(Tag, related_name='questions', blank=True)
 
     class Meta:
         db_table = 'question'
