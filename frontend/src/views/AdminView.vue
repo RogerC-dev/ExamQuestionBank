@@ -18,6 +18,11 @@
         <div class="upload-hint">支援格式: JSON, CSV, PDF</div>
       </div>
 
+      <!-- PDF 匯入模組 -->
+      <div class="pdf-upload-wrapper">
+        <PdfUploadSection @import-success="handlePdfImportFromAdmin" />
+      </div>
+
       <!-- Question Table -->
       <div class="question-table">
         <table>
@@ -76,6 +81,9 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import PdfUploadSection from '@/components/PdfUploadSection.vue'
+import { usePdfImportStore } from '@/stores/pdfImport'
 
 const questions = ref([
   {
@@ -131,6 +139,15 @@ const viewLogs = () => {
 
 const handleUpload = () => {
   alert('📁 檔案上傳功能 - 實際需實作檔案選擇')
+}
+
+const router = useRouter()
+const pdfImportStore = usePdfImportStore()
+
+const handlePdfImportFromAdmin = (payload) => {
+  pdfImportStore.setPayload(payload)
+  alert('匯入成功，將前往考卷編輯頁面以完成設定。')
+  router.push('/admin/exams/new?source=pdf')
 }
 
 const editQuestion = (id) => {
@@ -232,6 +249,10 @@ const deleteQuestion = (id) => {
 .upload-hint {
   font-size: 14px;
   color: #999;
+}
+
+.pdf-upload-wrapper {
+  margin-bottom: 30px;
 }
 
 .question-table {

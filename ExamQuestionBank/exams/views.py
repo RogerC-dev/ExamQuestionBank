@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import NotFound
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.db import transaction
@@ -17,7 +18,9 @@ from .serializers import (
     ExamDetailSerializer,
     ExamCreateUpdateSerializer,
     ExamQuestionCreateSerializer,
-    ExamQuestionSerializer
+    ExamQuestionSerializer,
+    MockExamSerializer,
+    MockExamGenerateSerializer
 )
 
 logger = logging.getLogger(__name__)
@@ -257,3 +260,164 @@ class ExamViewSet(viewsets.ModelViewSet):
                 {"error": "考卷題目不存在"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+class MockExamView(APIView):
+    """模擬測驗生成與列表 API"""
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="產生模擬測驗",
+        operation_description="透過 AI/題庫生成模擬測驗",
+        request_body=MockExamGenerateSerializer,
+        responses={201: MockExamSerializer()}
+    )
+    def post(self, request):
+        serializer = MockExamGenerateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        subject = data['subject']
+        requested_question_count = data['question_count']
+        difficulty = data['difficulty']
+        reuse_question_bank = data['reuse_question_bank']
+        topic = data.get('topic')
+        exam_year = data.get('exam_year')
+        time_limit = data.get('time_limit')
+        name = data['name']
+
+        exam = None
+
+        if reuse_question_bank:
+            selected_questions = self._select_questions_from_bank(subject, requested_question_count, difficulty, topic)
+            if not selected_questions:
+                return Response({"error": "題庫中沒有符合條件的題目"}, status=status.HTTP_404_NOT_FOUND)
+            exam = self._create_exam_from_existing_questions(name, subject, selected_questions)
+            question_count = len(selected_questions)
+        else:
+            generated_questions = self._generate_questions_with_ai(subject, requested_question_count, difficulty, exam_year, topic)
+            if not generated_questions:
+                return Response({"error": "無法生成題目，請稍後再試"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            exam = self._persist_generated_exam(name, subject, generated_questions)
+            question_count = len(generated_questions)
+
+        mock_exam = MockExam.objects.create(
+            user=request.user,
+            exam=exam,
+            name=name,
+            subject=subject,
+            question_count=question_count,
+            time_limit=time_limit,
+            ai_generated=not reuse_question_bank
+        )
+
+        return Response(MockExamSerializer(mock_exam).data, status=status.HTTP_201_CREATED)
+
+    @swagger_auto_schema(
+        operation_summary="取得模擬測驗列表",
+        responses={200: MockExamSerializer(many=True)}
+    )
+    def get(self, request):
+        mock_exams = MockExam.objects.filter(user=request.user).select_related('subject', 'exam').order_by('-generated_at')
+        serializer = MockExamSerializer(mock_exams, many=True)
+        return Response(serializer.data)
+
+    def _generate_questions_with_ai(self, subject, question_count, difficulty, exam_year=None, topic=None):
+        rag_context = rag_service.get_context_for_question_generation(subject.name, topic) if rag_service.is_configured() else None
+        ai_result = ai_service.generate_mock_exam(
+            subject=subject.name,
+            question_count=question_count,
+            difficulty=difficulty,
+            exam_year=exam_year,
+            rag_context=rag_context
+        )
+        return ai_result.get('questions', [])
+
+    def _select_questions_from_bank(self, subject, question_count, difficulty, topic=None):
+        filters = {
+            'subject': subject,
+            'question_type': '選擇題'
+        }
+        if difficulty:
+            filters['difficulty'] = difficulty
+        if topic:
+            filters['content__icontains'] = topic
+
+        return list(
+            Question.objects.filter(**filters)
+            .prefetch_related('options')
+            .order_by('?')[:question_count]
+        )
+
+    def _create_exam_from_existing_questions(self, name, subject, questions):
+        exam = Exam.objects.create(
+            name=name,
+            description=f"題庫抽選的 {subject.name} 模擬測驗",
+            time_limit=None
+        )
+
+        with transaction.atomic():
+            for index, question in enumerate(questions, start=1):
+                ExamQuestion.objects.create(
+                    exam=exam,
+                    question=question,
+                    order=index
+                )
+        return exam
+
+    def _persist_generated_exam(self, name, subject, generated_questions):
+        exam = Exam.objects.create(
+            name=name,
+            description=f"AI 生成的 {subject.name} 模擬測驗",
+            time_limit=None
+        )
+
+        with transaction.atomic():
+            for index, question_data in enumerate(generated_questions, start=1):
+                question = Question.objects.create(
+                    subject=subject,
+                    content=question_data['content'],
+                    question_type='選擇題',
+                    difficulty='medium'
+                )
+                options = question_data.get('options', [])
+                for opt in options:
+                    QuestionOption.objects.create(
+                        question=question,
+                        content=opt['text'],
+                        is_correct=opt.get('label') == question_data.get('correct_answer'),
+                        order=ord(opt.get('label', 'A')) - 64
+                    )
+
+                ExamQuestion.objects.create(
+                    exam=exam,
+                    question=question,
+                    order=index
+                )
+        return exam
+
+
+class MockExamDetailView(APIView):
+    """模擬測驗詳細 API"""
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="取得模擬測驗詳細資訊",
+        responses={200: MockExamSerializer()}
+    )
+    def get(self, request, pk):
+        mock_exam = self._get_mock_exam(pk, request.user)
+        return Response(MockExamSerializer(mock_exam).data)
+
+    @swagger_auto_schema(operation_summary="刪除模擬測驗")
+    def delete(self, request, pk):
+        mock_exam = self._get_mock_exam(pk, request.user)
+        mock_exam.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def _get_mock_exam(self, pk, user):
+        try:
+            mock_exam = MockExam.objects.select_related('subject', 'exam').get(pk=pk, user=user)
+            return mock_exam
+        except MockExam.DoesNotExist:
+            raise NotFound({"error": "模擬測驗不存在"})

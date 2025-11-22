@@ -57,6 +57,7 @@ import AddQuestionModal from '../components/AddQuestionModal.vue'
 import PdfUploadSection from '../components/PdfUploadSection.vue'
 import examService from '../services/examService'
 import questionService from '../services/questionService'
+import { usePdfImportStore } from '@/stores/pdfImport'
 
 const route = useRoute()
 const router = useRouter()
@@ -80,6 +81,8 @@ const savingQuestion = ref(false)
 
 // 新增題目彈窗
 const showAddModal = ref(false)
+
+const pdfImportStore = usePdfImportStore()
 
 // 計算 examId
 const examId = computed(() => {
@@ -503,8 +506,16 @@ const handlePdfImport = ({ examData, questions, answers }) => {
   alert(`已匯入 ${processedQuestions.length} 題到暫存列表\n請儲存考卷以建立這些題目`)
 }
 
-onMounted(() => {
-  loadExam()
+const consumePendingPdfImport = () => {
+  const payload = pdfImportStore.consumePayload()
+  if (payload) {
+    handlePdfImport(payload)
+  }
+}
+
+onMounted(async () => {
+  await loadExam()
+  consumePendingPdfImport()
 })
 </script>
 

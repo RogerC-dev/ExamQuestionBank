@@ -3,9 +3,33 @@ import logging
 import json
 from django.conf import settings
 from typing import Optional, Dict, List, Any
-from openai import OpenAI, OpenAIError
 
 logger = logging.getLogger(__name__)
+
+# Lazy import OpenAI to avoid breaking schema generation if package is not installed
+_openai_available = None
+_OpenAI = None
+_OpenAIError = None
+
+def _get_openai_client():
+    """Lazy import OpenAI client"""
+    global _openai_available, _OpenAI, _OpenAIError
+    if _openai_available is None:
+        try:
+            from openai import OpenAI as _OpenAI, OpenAIError as _OpenAIError
+            _openai_available = True
+        except ImportError:
+            logger.warning("OpenAI package not installed. AI features will be disabled.")
+            _openai_available = False
+            # Create dummy classes to avoid errors
+            class DummyOpenAI:
+                def __init__(self, *args, **kwargs):
+                    pass
+            class DummyError(Exception):
+                pass
+            _OpenAI = DummyOpenAI
+            _OpenAIError = DummyError
+    return _openai_available, _OpenAI, _OpenAIError
 
 class AIService:
     """AI 服務類，處理與 OpenAI API 的互動"""
@@ -14,8 +38,12 @@ class AIService:
         # 從環境變數或設定檔取得 API key
         self.api_key = os.getenv('OPENAI_API_KEY', getattr(settings, 'OPENAI_API_KEY', None))
         self.client = None
-        if self.api_key:
-            self.client = OpenAI(api_key=self.api_key)
+        openai_available, OpenAIClass, _ = _get_openai_client()
+        if self.api_key and openai_available:
+            try:
+                self.client = OpenAIClass(api_key=self.api_key)
+            except Exception as e:
+                logger.warning(f"Failed to initialize OpenAI client: {e}")
         
         self.model = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
         self.system_prompt = self._get_system_prompt()
@@ -67,6 +95,7 @@ class AIService:
             messages.append({"role": "user", "content": message})
 
             # 呼叫 OpenAI API
+            _, _, OpenAIError = _get_openai_client()
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -76,12 +105,14 @@ class AIService:
 
             return response.choices[0].message.content.strip()
 
-        except OpenAIError as e:
-            logger.error(f"OpenAI API error: {str(e)}")
-            return "AI 服務暫時無法使用，請稍後再試。"
         except Exception as e:
-            logger.error(f"Unexpected error in AI chat: {str(e)}")
-            return "發生未預期的錯誤，請聯繫管理員。"
+            _, _, OpenAIError = _get_openai_client()
+            if OpenAIError and isinstance(e, OpenAIError):
+                logger.error(f"OpenAI API error: {str(e)}")
+                return "AI 服務暫時無法使用，請稍後再試。"
+            else:
+                logger.error(f"Unexpected error in AI chat: {str(e)}")
+                return "發生未預期的錯誤，請聯繫管理員。"
 
     def _build_context_message(self, context: Dict[str, Any]) -> Optional[str]:
         """
