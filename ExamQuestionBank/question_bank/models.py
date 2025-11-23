@@ -72,8 +72,23 @@ class Tag(models.Model):
 
 class Question(models.Model):
     """題目主體"""
+    QUESTION_TYPE_CHOICES = [
+        ('選擇題', '選擇題'),
+        ('多選題', '多選題'),
+        ('是非題', '是非題'),
+        ('申論題', '申論題'),
+    ]
+
+    DIFFICULTY_CHOICES = [
+        ('easy', '容易'),
+        ('medium', '中等'),
+        ('hard', '困難'),
+    ]
+
     subject = models.CharField(max_length=100, verbose_name="科目")
     category = models.CharField(max_length=50, verbose_name="題型分類")
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPE_CHOICES, default='選擇題', verbose_name="題型")
+    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default='medium', verbose_name="難度")
     status = models.CharField(max_length=20, choices=[('draft', '草稿'), ('published', '已發布')], default='draft', verbose_name="狀態")
     content = models.TextField(verbose_name="題目內容")
     explanation = models.TextField(blank=True, null=True, verbose_name="解析")
@@ -86,6 +101,8 @@ class Question(models.Model):
         verbose_name_plural = '題目'
         indexes = [
             models.Index(fields=['subject']),
+            models.Index(fields=['question_type']),
+            models.Index(fields=['difficulty']),
         ]
 
     def __str__(self):
@@ -136,7 +153,7 @@ class Attempt(models.Model):
     """作答記錄"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attempts')
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='attempts')
-    selected_option = models.ForeignKey(QuestionOption, on_delete=models.SET_NULL, null=True, blank=True)
+    selected_options = models.ManyToManyField(QuestionOption, blank=True, related_name='attempts', verbose_name="選擇的選項")
     is_correct = models.BooleanField(verbose_name="是否正確")
     created_at = models.DateTimeField(auto_now_add=True)
 
