@@ -3,17 +3,26 @@
     class="question-item"
     :class="{
       active: isActive,
-      pending: item.isPending
+      pending: item.isPending,
+      'has-pending-edit': hasPendingEdit
     }"
     @click="$emit('select', item)"
   >
-    <div class="question-number" :class="{ pending: item.isPending, draft: item.status === 'draft' }">
+    <div
+      class="question-number"
+      :class="{
+        pending: item.isPending,
+        draft: item.status === 'draft',
+        'has-pending-edit': hasPendingEdit && !item.isPending
+      }"
+    >
       {{ item.order }}
     </div>
     <div class="question-content">
       <div class="question-text">
         {{ item.question_content }}
         <span v-if="item.isPending" class="pending-badge">暫存</span>
+        <span v-else-if="hasPendingEdit" class="pending-badge neutral">暫存</span>
       </div>
       <div class="question-meta">
         <span class="badge">{{ item.question_subject }}</span>
@@ -38,6 +47,10 @@ defineProps({
     required: true
   },
   isActive: {
+    type: Boolean,
+    default: false
+  },
+  hasPendingEdit: {
     type: Boolean,
     default: false
   }
@@ -110,6 +123,24 @@ defineEmits(['select', 'remove'])
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
+}
+
+.pending-badge.neutral {
+  background: #6366f1;
+}
+
+.question-item.has-pending-edit:not(.pending) {
+  border-color: #6366f1;
+  border-style: dashed;
+  background: #eef2ff;
+}
+
+.question-item.has-pending-edit:not(.pending).active {
+  background: #e0e7ff;
+}
+
+.question-number.has-pending-edit {
+  background: #6366f1;
 }
 
 .question-content {

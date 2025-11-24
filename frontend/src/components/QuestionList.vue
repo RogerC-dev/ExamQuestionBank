@@ -1,10 +1,34 @@
 <template>
   <div class="question-list">
     <div class="list-header">
-      <h3>題目列表</h3>
-      <button class="btn btn-sm btn-primary" @click="$emit('add-question')">
-        + 新增題目
-      </button>
+      <div>
+        <h3>題目列表</h3>
+        <p class="subtitle">管理目前考卷的所有題目與配分</p>
+      </div>
+
+      <div class="header-actions">
+        <div class="total-points-control">
+          <label for="totalPointsInput">滿分</label>
+          <input
+            id="totalPointsInput"
+            type="number"
+            min="1"
+            step="1"
+            :value="totalPoints"
+            @input="$emit('update:total-points', Number($event.target.value))"
+          />
+        </div>
+        <button
+          class="btn btn-sm btn-secondary"
+          :disabled="autoDistributeDisabled"
+          @click="$emit('auto-distribute')"
+        >
+          {{ autoDistributeLoading ? '配分中...' : '自動配分' }}
+        </button>
+        <button class="btn btn-sm btn-primary" @click="$emit('add-question')">
+          + 新增題目
+        </button>
+      </div>
     </div>
 
     <div class="search-box">
@@ -28,6 +52,7 @@
         :key="item.id"
         :item="item"
         :is-active="selectedQuestionId === item.question"
+        :has-pending-edit="Boolean(pendingEdits[item.id])"
         @select="selectQuestion"
         @remove="(id) => $emit('remove-question', id)"
       />
@@ -51,10 +76,28 @@ const props = defineProps({
   loading: {
     type: Boolean,
     default: false
+  },
+  totalPoints: {
+    type: Number,
+    default: 100
+  },
+  autoDistributeLoading: {
+    type: Boolean,
+    default: false
+  },
+  pendingEdits: {
+    type: Object,
+    default: () => ({})
   }
 })
 
-const emit = defineEmits(['select-question', 'add-question', 'remove-question'])
+const emit = defineEmits([
+  'select-question',
+  'add-question',
+  'remove-question',
+  'auto-distribute',
+  'update:total-points'
+])
 
 const searchQuery = ref('')
 
@@ -82,6 +125,10 @@ const filteredQuestions = computed(() => {
 const selectQuestion = (item) => {
   emit('select-question', item)
 }
+
+const autoDistributeDisabled = computed(() => {
+  return props.autoDistributeLoading || props.questions.length === 0
+})
 </script>
 
 <style scoped>
@@ -108,6 +155,34 @@ const selectQuestion = (item) => {
   font-size: 18px;
   font-weight: 600;
   color: #333;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.total-points-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.total-points-control input {
+  width: 80px;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 .search-box {
@@ -163,5 +238,20 @@ const selectQuestion = (item) => {
 
 .btn-primary:hover {
   background: #45a049;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary:not(:disabled):hover {
+  background: #e5e7eb;
 }
 </style>

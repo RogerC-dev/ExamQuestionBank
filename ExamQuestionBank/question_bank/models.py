@@ -99,6 +99,7 @@ class Question(models.Model):
     explanation = models.TextField(blank=True, null=True, verbose_name="解析")
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_questions')
     created_at = models.DateTimeField(auto_now_add=True)
+    tags = models.ManyToManyField('Tag', through='QuestionTag', blank=True, related_name='questions', verbose_name="標籤")
 
     class Meta:
         db_table = 'question'
@@ -112,6 +113,19 @@ class Question(models.Model):
 
     def __str__(self):
         return self.content[:50] + "..." if len(self.content) > 50 else self.content
+
+
+class QuestionTag(models.Model):
+    """Question 與 Tag 之間的顯式中介表，方便後續擴充額外屬性。"""
+    question = models.ForeignKey('Question', on_delete=models.CASCADE, verbose_name="題目")
+    tag = models.ForeignKey('Tag', on_delete=models.CASCADE, verbose_name="標籤")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="建立時間")
+
+    class Meta:
+        db_table = 'question_tag'
+        verbose_name = '題目標籤'
+        verbose_name_plural = '題目標籤'
+        unique_together = [['question', 'tag']]
 
 
 class QuestionOption(models.Model):

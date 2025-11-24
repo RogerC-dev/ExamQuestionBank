@@ -1,8 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
 from hypothesis import given, strategies as st, settings
+from hypothesis.extra.django import TestCase as HypothesisTestCase
 
 from question_bank.models import Question
 from .models import Discussion, DiscussionVote, ContentReport
@@ -12,7 +13,11 @@ User = get_user_model()
 
 class DiscussionAPITests(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='discussion-user', password='pass1234')
+        self.user = User.objects.create_user(
+            username='discussion-user',
+            email='discussion-user@example.com',
+            password='pass1234'
+        )
         self.question = Question.objects.create(
             subject='民法',
             category='測驗題',
@@ -52,9 +57,14 @@ class DiscussionAPITests(APITestCase):
         self.assertTrue(ContentReport.objects.filter(discussion=discussion).exists())
 
 
-class DiscussionPropertyTests(APITestCase):
+class DiscussionPropertyTests(HypothesisTestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='prop-disc', password='pass1234')
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username='prop-disc',
+            email='prop-disc@example.com',
+            password='pass1234'
+        )
         self.question = Question.objects.create(
             subject='刑法',
             category='測驗題',

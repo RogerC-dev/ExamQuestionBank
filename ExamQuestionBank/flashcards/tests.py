@@ -21,7 +21,11 @@ class FlashcardTestBase(TestCase):
 
 	def setUp(self):
 		self.factory = APIRequestFactory()
-		self.user = User.objects.create_user(username='prop-user', password='secret123')
+		self.user = User.objects.create_user(
+			username='prop-user',
+			email='prop-user@example.com',
+			password='secret123'
+		)
 
 	def _create_question(self, subject='刑法') -> Question:
 		return Question.objects.create(
@@ -45,7 +49,11 @@ class FlashcardTestBase(TestCase):
 
 class SpacedRepetitionServiceTests(TestCase):
 	def setUp(self):
-		self.user = User.objects.create_user(username='tester', password='pass1234')
+		self.user = User.objects.create_user(
+			username='tester',
+			email='tester@example.com',
+			password='pass1234'
+		)
 		self.question = Question.objects.create(
 			subject='民法',
 			category='測驗題',
@@ -87,7 +95,11 @@ class SpacedRepetitionServiceTests(TestCase):
 class FlashcardDueFilterTests(TestCase):
 	def setUp(self):
 		self.factory = APIRequestFactory()
-		self.user = User.objects.create_user(username='due-user', password='secret123')
+		self.user = User.objects.create_user(
+			username='due-user',
+			email='due-user@example.com',
+			password='secret123'
+		)
 		self.question = Question.objects.create(
 			subject='刑法',
 			category='單選',

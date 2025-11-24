@@ -67,7 +67,11 @@ class AIServiceTest(TestCase):
 class AIChatViewTest(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create_user(username='testuser', password='password')
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='testuser@example.com',
+            password='password'
+        )
         self.client.force_authenticate(user=self.user)
         self.url = reverse('ai_chat')
 
@@ -107,7 +111,11 @@ class AIChatViewTest(TestCase):
 class AIAnalyzeCaseViewTest(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create_user(username='testuser', password='password')
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='testuser2@example.com',
+            password='password'
+        )
         self.client.force_authenticate(user=self.user)
         self.url = reverse('ai_analyze_case')
 

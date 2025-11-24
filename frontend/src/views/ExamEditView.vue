@@ -31,9 +31,13 @@
           :questions="allQuestions"
           :selected-question-id="selectedQuestionId"
           :loading="loadingQuestions"
+          v-model:total-points="autoPointsTotal"
+          :auto-distribute-loading="autoDistributeLoading"
+          :pending-edits="pendingQuestionEdits"
           @select-question="handleSelectQuestion"
           @add-question="handleAddQuestion"
           @remove-question="handleRemoveQuestion"
+          @auto-distribute="autoDistributePoints"
         />
       </div>
     </div>
@@ -65,6 +69,9 @@ const router = useRouter()
 // 考卷資料
 const exam = ref(null)
 const examQuestions = ref([])
+const autoPointsTotal = ref(100)
+const autoDistributeLoading = ref(false)
+const pendingQuestionEdits = ref({})
 
 // 暫存的 PDF 解析題目（尚未儲存到資料庫）
 const pendingQuestions = ref([])
@@ -150,6 +157,9 @@ const handleSaveExam = async (examData) => {
       await router.replace(`/admin/exams/${response.data.id}/edit`)
     }
 
+    const summaryParts = []
+    let shouldReload = false
+
     // 如果有暫存的題目，批次建立並加入考卷
     if (pendingQuestions.value.length > 0) {
       console.log(`開始批次建立 ${pendingQuestions.value.length} 個題目...`)
@@ -190,14 +200,25 @@ const handleSaveExam = async (examData) => {
 
       // 清空暫存列表
       pendingQuestions.value = []
-
-      // 重新載入考卷資料
-      await loadExam()
-
-      alert(`考卷儲存成功！\n題目建立：成功 ${successCount} 題，失敗 ${failCount} 題`)
-    } else {
-      alert('考卷儲存成功')
+      shouldReload = true
+      summaryParts.push(`題目建立：成功 ${successCount} 題，失敗 ${failCount} 題`)
     }
+
+    const { questionUpdates, settingUpdates } = await applyPendingQuestionEdits(currentExamId)
+    if (questionUpdates || settingUpdates) {
+      shouldReload = true
+      summaryParts.push(`暫存更新：題目內容 ${questionUpdates} 題、配分/順序 ${settingUpdates} 題`)
+    }
+
+    if (shouldReload) {
+      await loadExam()
+    }
+
+    const baseMessage = summaryParts.length
+      ? `考卷儲存成功！\n${summaryParts.join('\n')}`
+      : '考卷儲存成功'
+
+    alert(baseMessage)
   } catch (error) {
     console.error('儲存考卷失敗:', error)
     console.error('錯誤詳情:', error.response?.data)
@@ -216,7 +237,10 @@ const handleCancel = () => {
 // 選擇題目
 const handleSelectQuestion = async (examQuestion) => {
   selectedQuestionId.value = examQuestion.question
-  selectedExamQuestion.value = examQuestion
+  selectedExamQuestion.value = {
+    ...examQuestion,
+    ...(pendingQuestionEdits.value[examQuestion.id]?.examSettings || {})
+  }
 
   // 如果是暫存題目，直接使用暫存的資料
   if (examQuestion.isPending && examQuestion.pendingData) {
@@ -239,7 +263,10 @@ const handleSelectQuestion = async (examQuestion) => {
   loadingQuestions.value = true
   try {
     const response = await questionService.getQuestion(examQuestion.question)
-    selectedQuestion.value = response.data
+    const pendingEdit = pendingQuestionEdits.value[examQuestion.id]
+    selectedQuestion.value = pendingEdit?.questionData
+      ? { ...response.data, ...pendingEdit.questionData }
+      : response.data
   } catch (error) {
     console.error('載入題目失敗:', error)
     alert('載入題目失敗')
@@ -284,6 +311,63 @@ const reorderPendingQuestions = (currentId, newOrder, oldOrder) => {
   })
 }
 
+const queueExamQuestionEdit = (examQuestionId, payload) => {
+  const current = pendingQuestionEdits.value[examQuestionId] || {}
+
+  pendingQuestionEdits.value = {
+    ...pendingQuestionEdits.value,
+    [examQuestionId]: {
+      questionId: payload.questionId || current.questionId,
+      questionData: payload.questionData || current.questionData,
+      examSettings: payload.examSettings
+        ? { ...(current.examSettings || {}), ...payload.examSettings }
+        : current.examSettings
+    }
+  }
+}
+
+const applyPendingQuestionEdits = async (currentExamId) => {
+  if (!currentExamId) {
+    return { questionUpdates: 0, settingUpdates: 0 }
+  }
+
+  const entries = Object.entries(pendingQuestionEdits.value)
+  if (!entries.length) {
+    return { questionUpdates: 0, settingUpdates: 0 }
+  }
+
+  let questionUpdates = 0
+  let settingUpdates = 0
+
+  for (const [examQuestionId, edit] of entries) {
+    if (edit.questionData && edit.questionId) {
+      await questionService.updateQuestion(edit.questionId, edit.questionData)
+      questionUpdates += 1
+    }
+
+    if (edit.examSettings) {
+      const payload = {}
+      if (edit.examSettings.order !== undefined) {
+        payload.order = edit.examSettings.order
+      }
+      if (edit.examSettings.points !== undefined) {
+        payload.points = edit.examSettings.points
+      }
+
+      if (Object.keys(payload).length > 0) {
+        await examService.updateExamQuestion(currentExamId, {
+          exam_question_id: Number(examQuestionId),
+          ...payload
+        })
+        settingUpdates += 1
+      }
+    }
+  }
+
+  pendingQuestionEdits.value = {}
+  return { questionUpdates, settingUpdates }
+}
+
 // 儲存題目
 const handleSaveQuestion = async ({ questionData, examSettings }) => {
   savingQuestion.value = true
@@ -322,36 +406,41 @@ const handleSaveQuestion = async ({ questionData, examSettings }) => {
       return
     }
 
-    // 已儲存的題目，正常更新
-    if (!selectedQuestionId.value) return
+    if (!selectedExamQuestion.value || !selectedQuestionId.value) return
 
-    // 如果有考卷設定，更新考卷中的題目資訊
-    // 注意：後端 API 會自動重排序其他題目，避免 unique constraint 衝突
-    if (examSettings && selectedExamQuestion.value) {
-      await examService.updateExamQuestion(examId.value, {
-        exam_question_id: selectedExamQuestion.value.id,
-        order: examSettings.order,
-        points: examSettings.points
-      })
-    }
+    queueExamQuestionEdit(selectedExamQuestion.value.id, {
+      questionId: selectedQuestionId.value,
+      questionData,
+      examSettings: examSettings || undefined
+    })
 
-    // 更新題目本身
-    await questionService.updateQuestion(selectedQuestionId.value, questionData)
-
-    alert('題目儲存成功')
-
-    // 重新載入考卷資料
-    await loadExam()
-
-    // 重新載入選中的題目
-    if (selectedExamQuestion.value) {
-      const updatedExamQuestion = examQuestions.value.find(
-        eq => eq.id === selectedExamQuestion.value.id
-      )
-      if (updatedExamQuestion) {
-        await handleSelectQuestion(updatedExamQuestion)
+    const eqIndex = examQuestions.value.findIndex(eq => eq.id === selectedExamQuestion.value.id)
+    if (eqIndex !== -1) {
+      const current = examQuestions.value[eqIndex]
+      examQuestions.value[eqIndex] = {
+        ...current,
+        question_content: questionData.content,
+        question_subject: questionData.subject,
+        question_category: questionData.category,
+        points: examSettings?.points ?? current.points,
+        order: examSettings?.order ?? current.order
       }
     }
+
+    selectedExamQuestion.value = {
+      ...selectedExamQuestion.value,
+      points: examSettings?.points ?? selectedExamQuestion.value.points,
+      order: examSettings?.order ?? selectedExamQuestion.value.order,
+      question_content: questionData.content,
+      question_subject: questionData.subject,
+      question_category: questionData.category
+    }
+
+    selectedQuestion.value = selectedQuestion.value
+      ? { ...selectedQuestion.value, ...questionData }
+      : { ...questionData }
+
+    alert('變更已暫存，請於儲存考卷後套用至資料庫。')
   } catch (error) {
     console.error('儲存題目失敗:', error)
     alert('儲存題目失敗：' + (error.response?.data?.message || error.message))
@@ -441,6 +530,12 @@ const handleRemoveQuestion = async (examQuestionId) => {
     }
 
     // 已儲存的題目，呼叫 API 移除
+    if (pendingQuestionEdits.value[examQuestionId]) {
+      const nextEdits = { ...pendingQuestionEdits.value }
+      delete nextEdits[examQuestionId]
+      pendingQuestionEdits.value = nextEdits
+    }
+
     await examService.removeQuestionFromExam(examId.value, examQuestionId)
     alert('題目移除成功')
 
@@ -456,6 +551,83 @@ const handleRemoveQuestion = async (examQuestionId) => {
   } catch (error) {
     console.error('移除題目失敗:', error)
     alert('移除題目失敗：' + (error.response?.data?.message || error.message))
+  }
+}
+
+const autoDistributePoints = async () => {
+  const questions = [...allQuestions.value].sort((a, b) => {
+    const orderA = Number.isFinite(Number(a.order)) ? Number(a.order) : Number.MAX_SAFE_INTEGER
+    const orderB = Number.isFinite(Number(b.order)) ? Number(b.order) : Number.MAX_SAFE_INTEGER
+    if (orderA === orderB) {
+      return String(a.id).localeCompare(String(b.id))
+    }
+    return orderA - orderB
+  })
+
+  if (!questions.length) {
+    alert('目前尚無題目可配分')
+    return
+  }
+
+  const total = Number(autoPointsTotal.value)
+  if (!Number.isFinite(total) || total <= 0) {
+    alert('請輸入大於 0 的滿分')
+    return
+  }
+
+  autoDistributeLoading.value = true
+
+  try {
+    const totalCents = Math.round(total * 100)
+    if (totalCents <= 0) {
+      alert('請輸入至少 0.01 分的滿分')
+      return
+    }
+
+    const count = questions.length
+    const base = Math.floor(totalCents / count)
+    let remainder = totalCents - base * count
+
+    questions.forEach((question) => {
+      let cents = base
+      if (remainder > 0) {
+        cents += 1
+        remainder -= 1
+      }
+      const points = cents / 100
+
+      if (question.isPending) {
+        const pendingIndex = parseInt(String(question.id).replace('pending-', ''), 10)
+        if (!Number.isNaN(pendingIndex) && pendingQuestions.value[pendingIndex]) {
+          pendingQuestions.value[pendingIndex].points = points
+        }
+      } else if (question.id) {
+        queueExamQuestionEdit(question.id, {
+          examSettings: { points }
+        })
+
+        const eqIndex = examQuestions.value.findIndex(eq => eq.id === question.id)
+        if (eqIndex !== -1) {
+          examQuestions.value[eqIndex] = {
+            ...examQuestions.value[eqIndex],
+            points
+          }
+        }
+
+        if (selectedExamQuestion.value?.id === question.id) {
+          selectedExamQuestion.value = {
+            ...selectedExamQuestion.value,
+            points
+          }
+        }
+      }
+    })
+    alert(`已依滿分 ${total} 分自動配分，共 ${questions.length} 題。\n請記得儲存考卷以套用變更。`)
+  } catch (error) {
+    console.error('自動配分失敗:', error)
+    alert(error.response?.data?.detail || '自動配分失敗，請稍後再試。')
+  } finally {
+    autoDistributeLoading.value = false
   }
 }
 

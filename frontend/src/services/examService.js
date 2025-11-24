@@ -5,8 +5,8 @@ const examService = {
    * 取得考卷列表
    * @returns {Promise} 考卷列表
    */
-  getExams() {
-    return api.get('/exams/')
+  getExams(params = {}) {
+    return api.get('/exams/', { params })
   },
 
   /**

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -18,6 +19,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env file
 load_dotenv(os.path.join(BASE_DIR, '.env'))
+
+DB_NAME = os.getenv('DB_NAME', '')
+TEST_DB_NAME = os.getenv('TEST_DB_NAME', f'test_{DB_NAME}' if DB_NAME else '')
 
 
 # Quick-start development settings - unsuitable for production
@@ -97,8 +101,8 @@ WSGI_APPLICATION = 'ExamQuestionBank.wsgi.application'
 
 DATABASES = {
     'default': {
-        "ENGINE": "mssql", 
-        "NAME": os.getenv('DB_NAME', ''),
+        "ENGINE": "mssql",
+        "NAME": DB_NAME,
         "USER": os.getenv('DB_USER', ''),
         "PASSWORD": os.getenv('DB_PASSWORD', ''),
         "HOST": os.getenv('DB_HOST', ''),
@@ -107,10 +111,18 @@ DATABASES = {
             "driver": "ODBC Driver 17 for SQL Server",
         },
         'TEST': {
-            'NAME': 'test_'+os.getenv('DB_NAME', ''),
+            'NAME': os.getenv('TEST_DB_NAME', ''),
         }
     }
 }
+
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',  # 使用記憶體資料庫（超快）
+        }
+    }
 
 
 # Password validation

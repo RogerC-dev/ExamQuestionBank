@@ -10,7 +10,11 @@ User = get_user_model()
 
 class GamificationAPITests(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='gamer', password='pass1234')
+        self.user = User.objects.create_user(
+            username='gamer',
+            email='gamer@example.com',
+            password='pass1234'
+        )
         self.client.force_authenticate(user=self.user)
         self.badge = Badge.objects.create(name='Starter', threshold=10)
 
@@ -37,6 +41,5 @@ class GamificationAPITests(APITestCase):
             'payload': {'type': 'study'},
             'scheduled_for': '2030-01-01T00:00:00Z',
         }
-        response = self.client.post('/api/v1/notifications/', payload)
+        response = self.client.post('/api/v1/notifications/', payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
