@@ -53,9 +53,20 @@ urlpatterns = [
     # Exams URLs
     path("api/v1/", include("exams.urls")),
 
-    # Users URLs
-    path('api/v1/', include('users.urls')),
-    # path('api/v1/', include('flashcards.urls')),
+   # Users URLs
+   path('api/v1/', include('users.urls')),
+
+   # Flashcards URLs
+   path('api/v1/', include('flashcards.urls')),
+
+   # Discussions URLs
+   path('api/v1/', include('discussions.urls')),
+
+   # Gamification URLs
+   path('api/v1/', include('gamification.urls')),
+
+   # Analytics URLs
+   path('api/v1/', include('analytics.urls')),
 ]
 
 # Serve media files in development

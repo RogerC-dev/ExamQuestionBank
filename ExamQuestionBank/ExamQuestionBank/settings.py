@@ -56,6 +56,9 @@ INSTALLED_APPS = [
     'question_bank',
     'exams',
     'flashcards',
+    'discussions',
+    'gamification',
+    'analytics',
 ]
 
 MIDDLEWARE = [

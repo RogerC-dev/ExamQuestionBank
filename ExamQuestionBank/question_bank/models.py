@@ -1,5 +1,9 @@
 from django.db import models
-from users.models import User
+from django.utils import timezone
+from django.conf import settings
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class ExamSeries(models.Model):
@@ -60,6 +64,7 @@ class Tag(models.Model):
     name = models.CharField(max_length=100, unique=True, verbose_name="標籤名稱")
     category = models.CharField(max_length=50, verbose_name="分類", default="general")
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'tag'

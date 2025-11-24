@@ -61,3 +61,6 @@ faiss-cpu>=1.7.4
 
 # N8N Integration (optional)
 requests>=2.31.0
+
+# Property-based testing
+hypothesis>=6.115.0

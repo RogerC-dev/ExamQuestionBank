@@ -161,8 +161,26 @@ class SyncFlashcardsView(APIView):
                     )
                     flashcard.next_review_date = next_review.date()
 
-                if flashcard_data.get('review_count'):
+                if flashcard_data.get('last_reviewed'):
+                    last_reviewed = datetime.fromisoformat(
+                        flashcard_data['last_reviewed'].replace('Z', '+00:00')
+                    )
+                    flashcard.last_reviewed_at = last_reviewed
+
+                if flashcard_data.get('review_count') is not None:
                     flashcard.review_count = flashcard_data['review_count']
+
+                if flashcard_data.get('ease_factor') is not None:
+                    flashcard.ease_factor = flashcard_data['ease_factor']
+
+                if flashcard_data.get('interval') is not None:
+                    flashcard.interval = flashcard_data['interval']
+
+                if flashcard_data.get('repetition') is not None:
+                    flashcard.repetition = flashcard_data['repetition']
+
+                if flashcard_data.get('status') in dict(Flashcard.STATUS_CHOICES):
+                    flashcard.status = flashcard_data['status']
 
                 flashcard.save()
                 synced_count += 1

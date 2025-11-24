@@ -1,323 +1,640 @@
 <template>
   <div class="flashcard-view">
     <div class="container">
-      <div class="flashcard-header">
-        <h2>快閃卡複習系統</h2>
-        <p>使用間隔重複演算法，提升記憶效果</p>
-      </div>
+      <header class="flashcard-header">
+        <div>
+          <h2>快閃卡複習系統</h2>
+          <p>整合 SM-2 間隔重複演算法，提供個人化的複習節奏</p>
+        </div>
+        <button class="ghost-btn" @click="refreshAll" :disabled="isRefreshing">
+          {{ isRefreshing ? '更新中...' : '重新整理' }}
+        </button>
+      </header>
 
-      <!-- Flashcard Review Boxes -->
-      <div class="flashcard-boxes">
-        <div class="flashcard-box today">
-          <div class="flashcard-indicator"></div>
-          <div class="flashcard-content">
-            <div class="flashcard-label">今日待複習</div>
-            <div class="flashcard-count">24 張卡片</div>
-          </div>
-          <button class="flashcard-action" @click="startReview('today')">立即複習</button>
-        </div>
-        <div class="flashcard-box tomorrow">
-          <div class="flashcard-indicator"></div>
-          <div class="flashcard-content">
-            <div class="flashcard-label">明日預定</div>
-            <div class="flashcard-count">18 張卡片</div>
-          </div>
-          <button class="flashcard-action" @click="viewDetails('tomorrow')">查看詳情</button>
-        </div>
-        <div class="flashcard-box week">
-          <div class="flashcard-indicator"></div>
-          <div class="flashcard-content">
-            <div class="flashcard-label">本週預定</div>
-            <div class="flashcard-count">67 張卡片</div>
-          </div>
-          <button class="flashcard-action" @click="viewDetails('week')">查看詳情</button>
-        </div>
-      </div>
+      <transition name="fade">
+        <div v-if="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+      </transition>
+      <transition name="fade">
+        <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
+      </transition>
 
-      <!-- Flashcard Management -->
-      <div class="flashcard-management">
-        <h3 class="section-title">快閃卡管理</h3>
-        <div class="management-actions">
-          <button class="btn btn-primary" @click="createCard">建立新卡片</button>
-          <button class="btn btn-secondary" @click="batchImport">批次匯入</button>
-          <select v-model="filterStatus" class="btn" style="background: white; border: 1px solid #ddd;">
-            <option value="">全部卡片</option>
+      <section class="stats-grid">
+        <article class="stat-card today">
+          <div>
+            <p class="label">今日待複習</p>
+            <h3>{{ todayDueCount }}</h3>
+            <small>完成率 {{ stats.completion_percent }}%</small>
+          </div>
+          <button class="primary-btn" @click="refreshDue" :disabled="isDueLoading">
+            {{ isDueLoading ? '載入中...' : '立即複習' }}
+          </button>
+        </article>
+        <article class="stat-card tomorrow">
+          <div>
+            <p class="label">明日預定</p>
+            <h3>{{ tomorrowCount }}</h3>
+          </div>
+          <span class="helper-text">提前規劃，維持節奏</span>
+        </article>
+        <article class="stat-card week">
+          <div>
+            <p class="label">本週預定</p>
+            <h3>{{ weekCount }}</h3>
+          </div>
+          <span class="helper-text">下次複習 {{ formattedNextReview }}</span>
+        </article>
+        <article class="stat-card streak" :class="{ active: stats.review_streak > 0 }">
+          <div>
+            <p class="label">連續複習天數</p>
+            <h3>{{ stats.review_streak }}</h3>
+          </div>
+          <span class="helper-text">堅持就能累積成果</span>
+        </article>
+      </section>
+
+      <section class="review-section">
+        <div class="section-header">
+          <div>
+            <h3>待複習卡片</h3>
+            <p class="section-subtitle">依照記憶強度選擇評分，系統會調整下次複習時間</p>
+          </div>
+        </div>
+        <div v-if="isDueLoading" class="loading-state">載入待複習卡片中...</div>
+        <div v-else-if="dueFlashcards.length === 0" class="empty-state">
+          今日沒有待複習卡片，太棒了！
+        </div>
+        <div v-else class="review-list">
+          <article v-for="card in dueFlashcards" :key="card.id" class="review-card">
+            <div class="review-meta">
+              <span class="badge">{{ card.question_subject }}</span>
+              <span class="badge outline">{{ statusLabel(card.status) }}</span>
+              <span class="badge outline">難度：{{ card.question_difficulty }}</span>
+            </div>
+            <p class="question" v-text="card.question_content"></p>
+            <div class="review-actions">
+              <button
+                v-for="rating in ratings"
+                :key="rating.value"
+                class="rating-btn"
+                :class="rating.variant"
+                :disabled="reviewingCardId === card.id"
+                @click="handleReview(card.id, rating.value)"
+              >
+                {{ rating.label }}
+              </button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="management-section">
+        <div class="section-header">
+          <div>
+            <h3>快閃卡管理</h3>
+            <p class="section-subtitle">快速建立、篩選並掌握整體進度</p>
+          </div>
+          <select v-model="statusFilter" class="select">
+            <option value="all">全部狀態</option>
             <option value="learning">學習中</option>
+            <option value="reviewing">複習中</option>
             <option value="mastered">已掌握</option>
+            <option value="due">僅顯示待複習</option>
           </select>
         </div>
-        <div class="card-list">
-          <div class="card-item">
+
+        <form class="create-form" @submit.prevent="handleCreate">
+          <input
+            type="number"
+            min="1"
+            class="input"
+            placeholder="輸入題目 ID 建立快閃卡"
+            v-model="questionIdInput"
+          />
+          <button class="primary-btn" type="submit" :disabled="isCreating">
+            {{ isCreating ? '建立中...' : '建立新卡片' }}
+          </button>
+        </form>
+
+        <div v-if="isListLoading" class="loading-state">載入快閃卡資料中...</div>
+        <div v-else-if="flashcards.length === 0" class="empty-state">
+          尚未找到符合條件的卡片
+        </div>
+        <div v-else class="card-list">
+          <article v-for="card in flashcards" :key="card.id" class="card-item">
             <div>
-              <div class="card-title">民法第 184 條第 1 項規定之侵權行為構成要件為何？</div>
+              <h4>{{ card.question_subject }}</h4>
+              <p class="question-snippet">{{ card.question_content }}</p>
               <div class="card-meta">
-                <span class="card-badge">民法</span>
-                <span class="card-badge learning">學習中</span>
-                <span>下次複習: 2天後</span>
+                <span>狀態：{{ statusLabel(card.status) }}</span>
+                <span>下次複習：{{ formatDate(card.next_review_date) }}</span>
+                <span>複習次數：{{ card.review_count }}</span>
               </div>
             </div>
-            <div class="card-actions">
-              <button class="icon-btn" @click="editCard(1)">✏️</button>
-              <button class="icon-btn" @click="deleteCard(1)">🗑️</button>
-            </div>
-          </div>
+            <button class="ghost-btn danger" @click="handleDelete(card.id)" :disabled="deletingCardId === card.id">
+              {{ deletingCardId === card.id ? '刪除中...' : '刪除' }}
+            </button>
+          </article>
         </div>
-      </div>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import flashcardService from '@/services/flashcardService'
 
-const filterStatus = ref('')
+const stats = ref({
+  total_cards: 0,
+  due_cards: 0,
+  completion_percent: 0,
+  review_streak: 0,
+  next_review_date: null
+})
+const flashcards = ref([])
+const dueFlashcards = ref([])
+const statusFilter = ref('all')
+const questionIdInput = ref('')
+const isListLoading = ref(false)
+const isDueLoading = ref(false)
+const isRefreshing = ref(false)
+const isCreating = ref(false)
+const deletingCardId = ref(null)
+const reviewingCardId = ref(null)
+const errorMessage = ref('')
+const successMessage = ref('')
 
-const startReview = (period) => {
-  alert(`🎴 開始${period === 'today' ? '今日' : ''}複習`)
+const ratings = [
+  { value: 5, label: '很好記', variant: 'positive' },
+  { value: 4, label: '還可以', variant: 'positive-light' },
+  { value: 3, label: '差點忘記', variant: 'neutral' },
+  { value: 2, label: '需要加強', variant: 'warning' },
+  { value: 1, label: '完全忘記', variant: 'danger' }
+]
+
+const todayDueCount = computed(() => dueFlashcards.value.length)
+
+const getDaysUntil = (dateString) => {
+  if (!dateString) return Infinity
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const target = new Date(dateString)
+  target.setHours(0, 0, 0, 0)
+  return Math.round((target - today) / 86400000)
 }
 
-const viewDetails = (period) => {
-  alert(`查看${period === 'tomorrow' ? '明日' : '本週'}卡片詳情`)
+const tomorrowCount = computed(() =>
+  flashcards.value.filter(card => getDaysUntil(card.next_review_date) === 1).length
+)
+
+const weekCount = computed(() =>
+  flashcards.value.filter(card => {
+    const diff = getDaysUntil(card.next_review_date)
+    return diff >= 2 && diff <= 7
+  }).length
+)
+
+const formattedNextReview = computed(() => stats.value.next_review_date || '尚無記錄')
+
+const statusLabel = (status) => ({
+  learning: '學習中',
+  reviewing: '複習中',
+  mastered: '已掌握'
+}[status] || '未知')
+
+const formatDate = (value) => {
+  if (!value) return '尚未安排'
+  return new Date(value).toLocaleDateString('zh-TW')
 }
 
-const createCard = () => {
-  alert('建立新卡片')
+const showError = (message) => {
+  errorMessage.value = message
+  setTimeout(() => (errorMessage.value = ''), 5000)
 }
 
-const batchImport = () => {
-  alert('批次匯入卡片')
+const showSuccess = (message) => {
+  successMessage.value = message
+  setTimeout(() => (successMessage.value = ''), 3000)
 }
 
-const editCard = (id) => {
-  alert(`編輯卡片 ${id}`)
-}
-
-const deleteCard = (id) => {
-  if (confirm('確定要刪除此卡片嗎？')) {
-    alert(`卡片 ${id} 已刪除`)
+const loadFlashcards = async () => {
+  try {
+    isListLoading.value = true
+    const params = {}
+    if (statusFilter.value !== 'all') {
+      params.status = statusFilter.value
+    }
+    flashcards.value = await flashcardService.getFlashcards(params)
+  } catch (error) {
+    showError(error.message)
+  } finally {
+    isListLoading.value = false
   }
 }
+
+const loadDueFlashcards = async () => {
+  try {
+    isDueLoading.value = true
+    dueFlashcards.value = await flashcardService.getDueFlashcards()
+  } catch (error) {
+    showError(error.message)
+  } finally {
+    isDueLoading.value = false
+  }
+}
+
+const loadStats = async () => {
+  try {
+    stats.value = await flashcardService.getStatistics()
+  } catch (error) {
+    showError(error.message)
+  }
+}
+
+const refreshAll = async () => {
+  try {
+    isRefreshing.value = true
+    await Promise.all([loadStats(), loadFlashcards(), loadDueFlashcards()])
+  } finally {
+    isRefreshing.value = false
+  }
+}
+
+const refreshDue = async () => {
+  await Promise.all([loadDueFlashcards(), loadStats()])
+}
+
+const handleReview = async (flashcardId, rating) => {
+  try {
+    reviewingCardId.value = flashcardId
+    const updatedCard = await flashcardService.reviewFlashcard(flashcardId, rating)
+    flashcards.value = flashcards.value.map(card => (card.id === updatedCard.id ? updatedCard : card))
+    dueFlashcards.value = dueFlashcards.value.filter(card => card.id !== flashcardId)
+    await loadStats()
+    showSuccess('已記錄複習結果')
+  } catch (error) {
+    showError(error.message)
+  } finally {
+    reviewingCardId.value = null
+  }
+}
+
+const handleCreate = async () => {
+  if (!questionIdInput.value) {
+    showError('請輸入題目 ID')
+    return
+  }
+
+  try {
+    isCreating.value = true
+    await flashcardService.createFlashcard({ question: Number(questionIdInput.value) })
+    questionIdInput.value = ''
+    await Promise.all([loadFlashcards(), loadStats()])
+    showSuccess('快閃卡建立成功')
+  } catch (error) {
+    showError(error.message)
+  } finally {
+    isCreating.value = false
+  }
+}
+
+const handleDelete = async (cardId) => {
+  if (!confirm('確定要刪除這張快閃卡嗎？')) return
+
+  try {
+    deletingCardId.value = cardId
+    await flashcardService.deleteFlashcard(cardId)
+    flashcards.value = flashcards.value.filter(card => card.id !== cardId)
+    dueFlashcards.value = dueFlashcards.value.filter(card => card.id !== cardId)
+    await loadStats()
+    showSuccess('已刪除快閃卡')
+  } catch (error) {
+    showError(error.message)
+  } finally {
+    deletingCardId.value = null
+  }
+}
+
+watch(statusFilter, loadFlashcards)
+onMounted(refreshAll)
 </script>
 
 <style scoped>
+.flashcard-view {
+  background: #f5f6fa;
+  min-height: 100vh;
+}
+
 .container {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 32px 20px 60px;
 }
 
 .flashcard-header {
-  text-align: center;
-  margin-bottom: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
 }
 
 .flashcard-header h2 {
   font-size: 28px;
-  font-weight: bold;
   margin-bottom: 8px;
-  color: #2c3e50;
+  color: #1f2d3d;
 }
 
 .flashcard-header p {
-  color: #7f8c8d;
-  font-size: 14px;
+  color: #65738e;
 }
 
-.flashcard-boxes {
+.stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-bottom: 40px;
-}
-
-.flashcard-box {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  border: 2px solid #e0e0e0;
-  display: flex;
-  align-items: center;
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
+  margin-bottom: 32px;
 }
 
-.flashcard-box.today {
-  border-color: #ff6b6b;
+.stat-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e5e7f1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.stat-card.today {
+  border: 2px solid #ff6b6b;
   background: #fff5f5;
 }
 
-.flashcard-box.tomorrow {
-  border-color: #ffd43b;
-  background: #fffbeb;
+.stat-card.tomorrow {
+  border: 2px solid #ffd166;
+  background: #fff9e8;
 }
 
-.flashcard-box.week {
-  border-color: #51cf66;
-  background: #f4fdf6;
+.stat-card.week {
+  border: 2px solid #51cf66;
+  background: #f1fff3;
 }
 
-.flashcard-indicator {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
+.stat-card.streak.active {
+  border: 2px solid #2979ff;
+  background: #e9f0ff;
 }
 
-.flashcard-box.today .flashcard-indicator {
-  background: #ff6b6b;
-}
-
-.flashcard-box.tomorrow .flashcard-indicator {
-  background: #ffd43b;
-}
-
-.flashcard-box.week .flashcard-indicator {
-  background: #51cf66;
-}
-
-.flashcard-content {
-  flex: 1;
-}
-
-.flashcard-label {
+.label {
   font-size: 14px;
-  color: #666;
+  color: #6b7280;
+}
+
+.stat-card h3 {
+  font-size: 32px;
+  margin: 4px 0;
+}
+
+.helper-text,
+.stat-card small {
+  color: #708097;
+}
+
+.review-section,
+.management-section {
+  background: #fff;
+  padding: 28px;
+  border-radius: 16px;
+  margin-bottom: 28px;
+  border: 1px solid #e5e7f1;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.section-header h3 {
+  font-size: 22px;
   margin-bottom: 4px;
 }
 
-.flashcard-count {
-  font-size: 18px;
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-.flashcard-action {
-  padding: 10px 20px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
+.section-subtitle {
+  color: #7a869a;
   font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.3s;
 }
 
-.flashcard-action:hover {
-  background: #0056b3;
+.review-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
 }
 
-.flashcard-management {
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+.review-card {
+  border: 1px solid #f0f2f8;
+  border-radius: 12px;
+  padding: 20px;
+  background: #fcfdff;
 }
 
-.section-title {
-  font-size: 20px;
-  font-weight: bold;
-  color: #2c3e50;
-  margin-bottom: 24px;
-}
-
-.management-actions {
+.review-meta {
   display: flex;
   gap: 12px;
-  margin-bottom: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 
-.btn {
-  padding: 10px 24px;
+.badge {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #edf2ff;
+  color: #3d5af1;
+}
+
+.badge.outline {
+  background: transparent;
+  border: 1px solid #cad4f3;
+  color: #56627c;
+}
+
+.question {
+  font-size: 16px;
+  color: #1f2d3d;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.review-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.rating-btn {
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
+  padding: 10px 12px;
   font-size: 14px;
-  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: transform 0.2s ease;
 }
 
-.btn-primary {
-  background: #007bff;
-  color: white;
+.rating-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.btn-primary:hover {
-  background: #0056b3;
+.rating-btn.positive {
+  background: #d1f7c4;
+  color: #216c2a;
 }
 
-.btn-secondary {
-  background: #6c757d;
-  color: white;
+.rating-btn.positive-light {
+  background: #e5fdd1;
+  color: #2f6b1f;
 }
 
-.btn-secondary:hover {
-  background: #5a6268;
+.rating-btn.neutral {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.rating-btn.warning {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.rating-btn.danger {
+  background: #ffe0e5;
+  color: #b42318;
+}
+
+.create-form {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0 24px;
 }
 
 .card-list {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .card-item {
-  background: white;
+  border: 1px solid #edf0f7;
+  border-radius: 12px;
   padding: 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  gap: 16px;
 }
 
-.card-title {
-  font-size: 15px;
-  color: #2c3e50;
-  margin-bottom: 8px;
+.question-snippet {
+  color: #4b5563;
+  line-height: 1.5;
+  margin: 8px 0;
 }
 
 .card-meta {
   display: flex;
   gap: 16px;
-  align-items: center;
-  font-size: 13px;
-  color: #7f8c8d;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: #6b7280;
 }
 
-.card-badge {
-  padding: 4px 12px;
-  background: #e3f2fd;
-  color: #1976d2;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
+.alert {
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 18px;
 }
 
-.card-badge.learning {
-  background: #fff3e0;
-  color: #f57c00;
+.alert-error {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
-.card-actions {
-  display: flex;
-  gap: 12px;
+.alert-success {
+  background: #dcfce7;
+  color: #166534;
 }
 
-.icon-btn {
-  background: none;
+.input,
+.select {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d0d7ec;
+  font-size: 14px;
+}
+
+.primary-btn,
+.ghost-btn {
   border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 14px;
   cursor: pointer;
-  font-size: 18px;
-  color: #666;
-  padding: 8px;
-  transition: color 0.3s;
 }
 
-.icon-btn:hover {
-  color: #007bff;
+.primary-btn {
+  background: #2563eb;
+  color: #fff;
 }
 
-@media (max-width: 768px) {
-  .flashcard-boxes {
+.ghost-btn {
+  background: transparent;
+  border: 1px solid #d4d9e8;
+  color: #374151;
+}
+
+.ghost-btn.danger {
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.loading-state,
+.empty-state {
+  padding: 24px;
+  text-align: center;
+  color: #6b7280;
+  background: #f8fafc;
+  border-radius: 12px;
+  margin-top: 20px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@media (max-width: 970px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .flashcard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .create-form {
+    flex-direction: column;
   }
 }
 </style>

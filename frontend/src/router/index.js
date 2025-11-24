@@ -51,6 +51,30 @@ const router = createRouter({
       path: '/subscription',
       name: 'Subscription',
       component: () => import('@/views/SubscriptionView.vue')
+    },
+    {
+      path: '/discussions',
+      name: 'Discussions',
+      component: () => import('@/views/DiscussionView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/gamification',
+      name: 'GamificationDashboard',
+      component: () => import('@/views/GamificationDashboard.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/study-groups',
+      name: 'StudyGroups',
+      component: () => import('@/views/StudyGroupView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/mock-exams',
+      name: 'MockExams',
+      component: () => import('@/views/MockExamView.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 })
