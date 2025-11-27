@@ -1,12 +1,14 @@
 import api from './api'
 
+const BASE_PREFIX = '/question_bank/questions'
+
 export default {
   /**
    * Get questions with filters
    * @param {Object} params - Filter parameters (examSeries, year, subject, difficulty, keyword)
    */
   getQuestions(params = {}) {
-    return api.get('/questions/', { params })
+    return api.get(`${BASE_PREFIX}/`, { params })
   },
 
   /**
@@ -14,7 +16,7 @@ export default {
    * @param {number} id - Question ID
    */
   getQuestion(id) {
-    return api.get(`/questions/${id}/`)
+    return api.get(`${BASE_PREFIX}/${id}/`)
   },
 
   /**
@@ -23,7 +25,7 @@ export default {
    * @param {Object} data - Answer data (selected_options, answer_text, time_spent)
    */
   submitAttempt(questionId, data) {
-    return api.post(`/questions/${questionId}/attempt/`, data)
+    return api.post(`${BASE_PREFIX}/${questionId}/attempt/`, data)
   },
 
   /**
@@ -31,7 +33,7 @@ export default {
    * @param {number} questionId - Question ID
    */
   bookmarkQuestion(questionId) {
-    return api.post(`/questions/${questionId}/bookmark/`)
+    return api.post(`${BASE_PREFIX}/${questionId}/bookmark/`)
   },
 
   /**
@@ -39,14 +41,14 @@ export default {
    * @param {Object} params - Filter parameters
    */
   getNextQuestion(params = {}) {
-    return api.get('/questions/next/', { params })
+    return api.get(`${BASE_PREFIX}/next/`, { params })
   },
 
   /**
    * Get user's bookmarked questions
    */
   getBookmarkedQuestions() {
-    return api.get('/questions/bookmarks/')
+    return api.get(`${BASE_PREFIX}/bookmarks/`)
   },
 
   /**
@@ -54,7 +56,7 @@ export default {
    * @param {Object} params - Filter parameters
    */
   getAttempts(params = {}) {
-    return api.get('/questions/attempts/', { params })
+    return api.get(`${BASE_PREFIX}/attempts/`, { params })
   },
 
   /**
@@ -63,7 +65,7 @@ export default {
    * @param {Object} data - Question data
    */
   updateQuestion(questionId, data) {
-    return api.patch(`/question_bank/questions/${questionId}/`, data)
+    return api.patch(`${BASE_PREFIX}/${questionId}/`, data)
   },
 
   /**
@@ -71,7 +73,7 @@ export default {
    * @param {Object} data - Question data
    */
   createQuestion(data) {
-    return api.post('/question_bank/questions/', data)
+    return api.post(`${BASE_PREFIX}/`, data)
   },
 
   /**
@@ -79,6 +81,6 @@ export default {
    * @param {number} questionId - Question ID
    */
   deleteQuestion(questionId) {
-    return api.delete(`/question_bank/questions/${questionId}/`)
+    return api.delete(`${BASE_PREFIX}/${questionId}/`)
   }
 }

@@ -38,6 +38,8 @@
         />
       </div>
 
+      <div v-if="formError" class="form-error">{{ formError }}</div>
+
       <div class="form-actions">
         <button type="submit" class="btn btn-primary" :disabled="saving">
           {{ saving ? '儲存中...' : '儲存' }}
@@ -74,6 +76,8 @@ const formData = ref({
   time_limit: null
 })
 
+const formError = ref('')
+
 // 定義函數（必須在 watch 之前）
 const resetForm = () => {
   formData.value = {
@@ -84,11 +88,19 @@ const resetForm = () => {
 }
 
 const handleSubmit = () => {
-  // 清理數據：將 null 值移除或轉換
+  const trimmedName = formData.value.name.trim()
+  if (!trimmedName) {
+    formError.value = '請輸入考卷名稱'
+    return
+  }
+  formError.value = ''
+
   const cleanedData = {
-    name: formData.value.name,
-    description: formData.value.description || '',
-    ...(formData.value.time_limit ? { time_limit: formData.value.time_limit } : {})
+    name: trimmedName,
+    description: formData.value.description?.trim() || '',
+    ...(Number.isFinite(formData.value.time_limit) && formData.value.time_limit > 0
+      ? { time_limit: formData.value.time_limit }
+      : {})
   }
   emit('save', cleanedData)
 }
@@ -106,6 +118,7 @@ watch(() => props.exam, (newExam) => {
       description: newExam.description || '',
       time_limit: newExam.time_limit || null
     }
+    formError.value = ''
   } else {
     isEditMode.value = false
     resetForm()
@@ -196,5 +209,11 @@ textarea.form-input {
 
 .btn-secondary:hover {
   background: #e0e0e0;
+}
+
+.form-error {
+  color: #d93025;
+  margin: 8px 0;
+  font-size: 13px;
 }
 </style>

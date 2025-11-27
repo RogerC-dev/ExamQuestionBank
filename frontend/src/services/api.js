@@ -55,4 +55,7 @@ api.interceptors.response.use(
   }
 )
 
+const fetchSubjects = () => api.get('/question_bank/subjects/')
+
+export { fetchSubjects }
 export default api

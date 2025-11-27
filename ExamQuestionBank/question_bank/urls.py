@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ExtractExamPDFView, ExtractAnswerPDFView, QuestionViewSet
+from .views import ExtractExamPDFView, ExtractAnswerPDFView, QuestionViewSet, SubjectListView
 from .ai_views import AIChatView, AIChatHistoryView, AIAnalyzeCaseView
 from .extension_views import ExtensionStatsView, SyncBookmarksView, SyncFlashcardsView
 from .essay_views import EssaySubmissionView, EssayDetailView, EssayGradingView
@@ -14,6 +14,7 @@ router = DefaultRouter()
 router.register(r'questions', QuestionViewSet, basename='question')
 
 urlpatterns = [
+    path("subjects/", SubjectListView.as_view(), name="subjects"),
     path("extract-questions-pdf/", ExtractExamPDFView.as_view(), name="extract-questions_pdf"),
     path("extract-answers-pdf/", ExtractAnswerPDFView.as_view(), name="extract-answers_pdf"),
     # AI endpoints

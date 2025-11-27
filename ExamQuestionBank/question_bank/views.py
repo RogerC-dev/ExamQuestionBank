@@ -9,12 +9,23 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from .services.pdf_parser import PDFParser
-from .models import Question
+from .models import Question, Subject
 from .serializers import (
     QuestionListSerializer,
     QuestionDetailSerializer,
-    QuestionCreateUpdateSerializer
+    QuestionCreateUpdateSerializer,
+    SubjectSerializer,
 )
+
+
+class SubjectListView(APIView):
+    """取得科目列表"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        subjects = Subject.objects.all().order_by('name')
+        serializer = SubjectSerializer(subjects, many=True)
+        return Response(serializer.data)
 
 
 class ExtractExamPDFView(APIView):
@@ -101,7 +112,12 @@ class QuestionViewSet(viewsets.ModelViewSet):
     partial_update: 部分更新題目
     destroy: 刪除題目
     """
-    queryset = Question.objects.all().prefetch_related('options', 'tags').select_related('created_by')
+    queryset = (
+        Question.objects.all()
+        .prefetch_related('options', 'tags')
+        .select_related('created_by')
+        .order_by('id')  # 明確排序以避免分頁警告
+    )
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):

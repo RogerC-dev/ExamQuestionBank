@@ -261,6 +261,24 @@ class ExamViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+    @action(detail=False, methods=['get'], url_path='historical')
+    def historical(self, request):
+        exams = self.filter_queryset(self.get_queryset()).order_by('-created_at')
+        page = self.paginate_queryset(exams)
+        serializer = ExamListSerializer(page, many=True) if page is not None else ExamListSerializer(exams, many=True)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='start')
+    def start(self, request, pk=None):
+        exam = self.get_object()
+        return Response({
+            'exam_id': exam.id,
+            'name': exam.name,
+            'question_count': exam.exam_questions.count()
+        })
+
 
 class MockExamView(APIView):
     """模擬測驗生成與列表 API"""

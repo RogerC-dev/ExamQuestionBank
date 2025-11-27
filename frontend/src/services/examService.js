@@ -74,6 +74,23 @@ const examService = {
    */
   updateExamQuestion(examId, data) {
     return api.patch(`/exams/${examId}/update_question/`, data)
+  },
+
+  /**
+   * 取得歷史考卷列表
+   * @returns {Promise} 歷史考卷列表
+   */
+  getHistoricalExams(params = {}) {
+    return api.get('/exams/historical/', { params })
+  },
+
+  /**
+   * 開始考試
+   * @param {number} examId - 考卷 ID
+   * @returns {Promise} 考試開始資訊
+   */
+  startExam(examId) {
+    return api.post(`/exams/${examId}/start/`)
   }
 }
 

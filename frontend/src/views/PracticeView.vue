@@ -55,30 +55,27 @@
       <!-- Practice Modes -->
       <h2 class="section-title">選擇練習模式</h2>
       <div class="practice-modes">
-        <div class="mode-card">
-          <div class="mode-icon">📚</div>
-          <div class="mode-title">歷屆考題</div>
-          <div class="mode-desc">按年度練習歷屆考題</div>
-          <button class="btn-mode" @click="startPractice('historical')">開始練習</button>
+        <div
+          v-for="mode in practiceModes"
+          :key="mode.key"
+          class="mode-card"
+        >
+          <div class="mode-icon">{{ mode.icon }}</div>
+          <div class="mode-title">{{ mode.title }}</div>
+          <div class="mode-desc">{{ mode.description }}</div>
+          <button
+            class="btn-mode"
+            :disabled="isLoading && selectedMode === mode.key"
+            @click="startPractice(mode.key)"
+          >
+            <span v-if="isLoading && selectedMode === mode.key">載入中...</span>
+            <span v-else>{{ mode.cta }}</span>
+          </button>
         </div>
-        <div class="mode-card">
-          <div class="mode-icon">📝</div>
-          <div class="mode-title">模擬考試</div>
-          <div class="mode-desc">模擬真實考試情境</div>
-          <button class="btn-mode" @click="startPractice('simulation')">開始測驗</button>
-        </div>
-        <div class="mode-card">
-          <div class="mode-icon">🔀</div>
-          <div class="mode-title">混合練習</div>
-          <div class="mode-desc">隨機混合不同年度題目</div>
-          <button class="btn-mode" @click="startPractice('mixed')">隨機練習</button>
-        </div>
-        <div class="mode-card">
-          <div class="mode-icon">⭐</div>
-          <div class="mode-title">收藏題庫</div>
-          <div class="mode-desc">複習已收藏的題目</div>
-          <button class="btn-mode" @click="startPractice('bookmarked')">快速收藏</button>
-        </div>
+      </div>
+
+      <div v-if="errorMessage" class="alert alert-error">
+        {{ errorMessage }}
       </div>
 
       <!-- Statistics -->
@@ -100,13 +97,49 @@
           <div class="stat-label">待複習</div>
         </div>
       </div>
+
+      <!-- Historical Exams Section -->
+      <section class="historical-exams">
+        <div class="section-header">
+          <h3>歷屆考卷</h3>
+          <button class="btn btn-primary" @click="router.push('/admin/exams')">前往管理</button>
+        </div>
+        <div v-if="loadingExams" class="table-status">載入中...</div>
+        <div v-else-if="!historicalExams.length" class="table-status">目前尚無考卷</div>
+        <table v-else>
+          <thead>
+            <tr>
+              <th>名稱</th>
+              <th>題數</th>
+              <th>時間限制</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="exam in historicalExams" :key="exam.id">
+              <td>{{ exam.name }}</td>
+              <td>{{ exam.question_count }}</td>
+              <td>{{ exam.time_limit || '-' }}</td>
+              <td><button class="btn btn-secondary" @click="viewExam(exam.id)">查看</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
     </div>
 
   </div>
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { computed, reactive, ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useQuestionBankStore } from '@/stores/questionBank'
+import questionService from '@/services/questionService'
+import examService from '@/services/examService'
+import mockExamService from '@/services/mockExamService'
+
+const router = useRouter()
+const questionBankStore = useQuestionBankStore()
 
 const filters = reactive({
   examSeries: '',
@@ -114,6 +147,21 @@ const filters = reactive({
   subject: '',
   difficulty: '',
   keyword: ''
+})
+
+const isLoading = ref(false)
+const selectedMode = ref(null)
+const errorMessage = ref('')
+
+const practiceModes = [
+  { key: 'historical', icon: '📚', title: '歷屆考題', description: '按年度練習歷屆考題', cta: '開始練習' },
+  { key: 'simulation', icon: '📝', title: '模擬考試', description: '模擬真實考試情境', cta: '開始測驗' },
+  { key: 'mixed', icon: '🔀', title: '混合練習', description: '隨機混合不同年度題目', cta: '隨機練習' },
+  { key: 'bookmarked', icon: '⭐', title: '收藏題庫', description: '複習已收藏的題目', cta: '快速收藏' }
+]
+
+const filtersChanged = computed(() => {
+  return Object.values(filters).some(value => value !== '')
 })
 
 const applyFilters = () => {
@@ -130,9 +178,97 @@ const resetFilters = () => {
   alert('🔄 篩選已重置')
 }
 
-const startPractice = () => {
-  alert('開始練習 - 實際需載入題目')
+const startPractice = async (mode) => {
+  if (isLoading.value) return
+  selectedMode.value = mode
+  isLoading.value = true
+  errorMessage.value = ''
+
+  try {
+    switch (mode) {
+      case 'historical': {
+        // Persist filters back to Pinia so downstream views stay in sync
+        Object.entries(filters).forEach(([key, value]) => {
+          questionBankStore.setFilter(key, value || null)
+        })
+        await questionBankStore.fetchQuestions(1)
+        router.push({ name: 'Practice', query: { mode: 'historical' } })
+        break
+      }
+      case 'simulation': {
+        const payload = buildMockExamPayload()
+        const { data } = await mockExamService.generateMockExam(payload)
+        router.push({ name: 'MockExams', query: { focus: data.id } })
+        break
+      }
+      case 'mixed': {
+        const response = await questionService.getQuestions({ ...buildQuestionParams(), order: 'random' })
+        questionBankStore.questions = response.data.results || response.data
+        router.push({ name: 'Practice', query: { mode: 'mixed' } })
+        break
+      }
+      case 'bookmarked': {
+        const response = await questionService.getBookmarkedQuestions()
+        questionBankStore.questions = response.data.results || response.data
+        router.push({ name: 'Practice', query: { mode: 'bookmarked' } })
+        break
+      }
+      default:
+        throw new Error('unknown-mode')
+    }
+  } catch (error) {
+    if (error.response?.status === 401) {
+      window.dispatchEvent(new Event('show-login'))
+      errorMessage.value = '請先登入後再進行練習'
+    } else {
+      errorMessage.value = error.response?.data?.message || '啟動練習時發生錯誤，請稍後再試。'
+    }
+    console.error('Failed to start practice:', error)
+  } finally {
+    isLoading.value = false
+    selectedMode.value = null
+  }
 }
+
+const buildQuestionParams = () => ({
+  exam_series: filters.examSeries || undefined,
+  year: filters.year || undefined,
+  subject: filters.subject || undefined,
+  difficulty: filters.difficulty || undefined,
+  keyword: filters.keyword || undefined,
+})
+
+const mockQuestionCount = computed(() => Number(filters.keyword) || 20)
+
+const buildMockExamPayload = () => ({
+  subject_id: filters.subject || undefined,
+  question_count: mockQuestionCount.value,
+  difficulty: filters.difficulty || 'medium',
+  reuse_question_bank: true
+})
+
+const historicalExams = ref([])
+const loadingExams = ref(false)
+
+const loadHistoricalExams = async () => {
+  loadingExams.value = true
+  try {
+    const { data } = await examService.getExams({ ordering: '-created_at', page_size: 5 })
+    historicalExams.value = Array.isArray(data) ? data : data.results ?? []
+  } catch (error) {
+    console.error('Failed to load exams', error)
+  } finally {
+    loadingExams.value = false
+  }
+}
+
+const viewExam = (examId) => {
+  router.push({ name: 'ExamPreview', params: { id: examId } })
+}
+
+onMounted(() => {
+  loadHistoricalExams()
+})
 </script>
 
 <style scoped>
@@ -321,6 +457,68 @@ const startPractice = () => {
 .stat-label {
   font-size: 16px;
   opacity: 0.95;
+}
+
+.alert {
+  margin: 0 0 24px;
+  padding: 12px 16px;
+  border-radius: 6px;
+}
+
+.alert-error {
+  background: #fdecea;
+  border: 1px solid #f5c2c0;
+  color: #b42318;
+}
+
+.table-status {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.historical-exams {
+  margin-top: 40px;
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.section-header h3 {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin: 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background: #f9f9f9;
+  color: #333;
+  font-weight: 500;
+}
+
+tr:hover {
+  background: #f1f1f1;
 }
 
 @media (max-width: 768px) {
