@@ -1,141 +1,162 @@
 <template>
   <div class="flashcard-view">
     <div class="container">
-      <header class="flashcard-header">
-        <div>
-          <h2>快閃卡複習系統</h2>
-          <p>整合 SM-2 間隔重複演算法，提供個人化的複習節奏</p>
+      <!-- Review Mode -->
+      <div v-if="reviewMode" class="review-mode">
+        <div class="review-header">
+          <span>{{ currentIndex + 1 }} / {{ reviewCards.length }}</span>
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: ((currentIndex + 1) / reviewCards.length * 100) + '%' }"></div>
+          </div>
+          <button class="btn-exit" @click="exitReview">✕ 結束</button>
         </div>
-        <button class="ghost-btn" @click="refreshAll" :disabled="isRefreshing">
-          {{ isRefreshing ? '更新中...' : '重新整理' }}
-        </button>
-      </header>
 
-      <transition name="fade">
-        <div v-if="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
-      </transition>
-      <transition name="fade">
-        <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
-      </transition>
-
-      <section class="stats-grid">
-        <article class="stat-card today">
-          <div>
-            <p class="label">今日待複習</p>
-            <h3>{{ todayDueCount }}</h3>
-            <small>完成率 {{ stats.completion_percent }}%</small>
-          </div>
-          <button class="primary-btn" @click="refreshDue" :disabled="isDueLoading">
-            {{ isDueLoading ? '載入中...' : '立即複習' }}
-          </button>
-        </article>
-        <article class="stat-card tomorrow">
-          <div>
-            <p class="label">明日預定</p>
-            <h3>{{ tomorrowCount }}</h3>
-          </div>
-          <span class="helper-text">提前規劃，維持節奏</span>
-        </article>
-        <article class="stat-card week">
-          <div>
-            <p class="label">本週預定</p>
-            <h3>{{ weekCount }}</h3>
-          </div>
-          <span class="helper-text">下次複習 {{ formattedNextReview }}</span>
-        </article>
-        <article class="stat-card streak" :class="{ active: stats.review_streak > 0 }">
-          <div>
-            <p class="label">連續複習天數</p>
-            <h3>{{ stats.review_streak }}</h3>
-          </div>
-          <span class="helper-text">堅持就能累積成果</span>
-        </article>
-      </section>
-
-      <section class="review-section">
-        <div class="section-header">
-          <div>
-            <h3>待複習卡片</h3>
-            <p class="section-subtitle">依照記憶強度選擇評分，系統會調整下次複習時間</p>
-          </div>
-        </div>
-        <div v-if="isDueLoading" class="loading-state">載入待複習卡片中...</div>
-        <div v-else-if="dueFlashcards.length === 0" class="empty-state">
-          今日沒有待複習卡片，太棒了！
-        </div>
-        <div v-else class="review-list">
-          <article v-for="card in dueFlashcards" :key="card.id" class="review-card">
-            <div class="review-meta">
-              <span class="badge">{{ card.question_subject }}</span>
-              <span class="badge outline">{{ statusLabel(card.status) }}</span>
-              <span class="badge outline">難度：{{ card.question_difficulty }}</span>
+        <div class="card-container">
+          <div class="flashcard" :class="{ flipped: isFlipped }" @click="flipCard">
+            <!-- Front - Question -->
+            <div class="card-face card-front">
+              <div class="card-badge">{{ currentCard?.question_subject }}</div>
+              <div class="card-content">
+                <p class="card-question">{{ currentCard?.question_content }}</p>
+              </div>
+              <div class="card-hint">點擊卡片查看答案</div>
             </div>
-            <p class="question" v-text="card.question_content"></p>
-            <div class="review-actions">
-              <button
-                v-for="rating in ratings"
-                :key="rating.value"
-                class="rating-btn"
-                :class="rating.variant"
-                :disabled="reviewingCardId === card.id"
-                @click="handleReview(card.id, rating.value)"
-              >
-                {{ rating.label }}
-              </button>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section class="management-section">
-        <div class="section-header">
-          <div>
-            <h3>快閃卡管理</h3>
-            <p class="section-subtitle">快速建立、篩選並掌握整體進度</p>
-          </div>
-          <select v-model="statusFilter" class="select">
-            <option value="all">全部狀態</option>
-            <option value="learning">學習中</option>
-            <option value="reviewing">複習中</option>
-            <option value="mastered">已掌握</option>
-            <option value="due">僅顯示待複習</option>
-          </select>
-        </div>
-
-        <form class="create-form" @submit.prevent="handleCreate">
-          <input
-            type="number"
-            min="1"
-            class="input"
-            placeholder="輸入題目 ID 建立快閃卡"
-            v-model="questionIdInput"
-          />
-          <button class="primary-btn" type="submit" :disabled="isCreating">
-            {{ isCreating ? '建立中...' : '建立新卡片' }}
-          </button>
-        </form>
-
-        <div v-if="isListLoading" class="loading-state">載入快閃卡資料中...</div>
-        <div v-else-if="flashcards.length === 0" class="empty-state">
-          尚未找到符合條件的卡片
-        </div>
-        <div v-else class="card-list">
-          <article v-for="card in flashcards" :key="card.id" class="card-item">
-            <div>
-              <h4>{{ card.question_subject }}</h4>
-              <p class="question-snippet">{{ card.question_content }}</p>
-              <div class="card-meta">
-                <span>狀態：{{ statusLabel(card.status) }}</span>
-                <span>下次複習：{{ formatDate(card.next_review_date) }}</span>
-                <span>複習次數：{{ card.review_count }}</span>
+            <!-- Back - Answer -->
+            <div class="card-face card-back">
+              <div class="card-badge">答案</div>
+              <div class="card-content">
+                <div v-if="currentOptions.length" class="answer-options">
+                  <div v-for="opt in currentOptions" :key="opt.id" class="answer-option" :class="{ correct: opt.is_correct }">
+                    <span class="option-marker">{{ opt.is_correct ? '✓' : '' }}</span>
+                    <span>{{ getLabel(opt.order) }}. {{ opt.content }}</span>
+                  </div>
+                </div>
+                <p v-else class="no-options">無選項資料</p>
               </div>
             </div>
-            <button class="ghost-btn danger" @click="handleDelete(card.id)" :disabled="deletingCardId === card.id">
-              {{ deletingCardId === card.id ? '刪除中...' : '刪除' }}
-            </button>
-          </article>
+          </div>
         </div>
-      </section>
+
+        <div v-if="isFlipped" class="rating-section">
+          <p class="rating-prompt">你記得這題嗎？</p>
+          <div class="rating-buttons">
+            <button class="rating-btn again" @click="rateCard(1)" :disabled="isRating">
+              <span class="rating-icon">😫</span>
+              <span class="rating-text">完全忘記</span>
+              <span class="rating-interval">1天後</span>
+            </button>
+            <button class="rating-btn hard" @click="rateCard(2)" :disabled="isRating">
+              <span class="rating-icon">😓</span>
+              <span class="rating-text">很難想起</span>
+              <span class="rating-interval">1天後</span>
+            </button>
+            <button class="rating-btn good" @click="rateCard(3)" :disabled="isRating">
+              <span class="rating-icon">🤔</span>
+              <span class="rating-text">想了一下</span>
+              <span class="rating-interval">{{ currentCard?.interval || 1 }}天後</span>
+            </button>
+            <button class="rating-btn easy" @click="rateCard(4)" :disabled="isRating">
+              <span class="rating-icon">😊</span>
+              <span class="rating-text">還記得</span>
+              <span class="rating-interval">{{ Math.round((currentCard?.interval || 1) * 1.5) }}天後</span>
+            </button>
+            <button class="rating-btn perfect" @click="rateCard(5)" :disabled="isRating">
+              <span class="rating-icon">🎯</span>
+              <span class="rating-text">非常熟悉</span>
+              <span class="rating-interval">{{ Math.round((currentCard?.interval || 1) * 2) }}天後</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard Mode -->
+      <template v-else>
+        <header class="page-header">
+          <h2>🃏 快閃卡複習</h2>
+          <p>SM-2 間隔重複演算法，越熟悉的卡片間隔越長</p>
+        </header>
+
+        <div v-if="errorMessage" class="alert error">{{ errorMessage }}</div>
+        <div v-if="successMessage" class="alert success">{{ successMessage }}</div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card primary">
+            <div class="stat-icon">📚</div>
+            <div class="stat-info">
+              <span class="stat-value">{{ stats.due_cards }}</span>
+              <span class="stat-label">今日待複習</span>
+            </div>
+            <button v-if="stats.due_cards > 0" class="btn-start" @click="startReview">
+              開始複習 →
+            </button>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-info">
+              <span class="stat-value">{{ stats.total_cards }}</span>
+              <span class="stat-label">總卡片數</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🔥</div>
+            <div class="stat-info">
+              <span class="stat-value">{{ stats.review_streak }}</span>
+              <span class="stat-label">連續天數</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-info">
+              <span class="stat-value">{{ stats.completion_percent }}%</span>
+              <span class="stat-label">完成率</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Add -->
+        <div class="quick-add">
+          <h3>新增快閃卡</h3>
+          <form @submit.prevent="handleCreate" class="add-form">
+            <input v-model="questionIdInput" type="number" placeholder="輸入題目 ID" min="1" />
+            <button type="submit" :disabled="isCreating">{{ isCreating ? '新增中...' : '新增' }}</button>
+          </form>
+        </div>
+
+        <!-- Card List -->
+        <div class="card-list-section">
+          <div class="list-header">
+            <h3>我的快閃卡 ({{ flashcards.length }})</h3>
+            <select v-model="statusFilter">
+              <option value="all">全部</option>
+              <option value="learning">學習中</option>
+              <option value="reviewing">複習中</option>
+              <option value="mastered">已掌握</option>
+            </select>
+          </div>
+          <div v-if="isListLoading" class="loading">載入中...</div>
+          <div v-else-if="flashcards.length === 0" class="empty">
+            <p>尚無快閃卡</p>
+            <p class="hint">從練習頁面的錯題本或收藏題目加入快閃卡</p>
+          </div>
+          <div v-else class="card-list">
+            <div v-for="card in flashcards" :key="card.id" class="list-card">
+              <div class="list-card-content">
+                <span class="list-card-subject">{{ card.question_subject }}</span>
+                <p class="list-card-question">{{ card.question_content }}</p>
+                <div class="list-card-meta">
+                  <span :class="'status-' + card.status">{{ statusLabel(card.status) }}</span>
+                  <span>下次：{{ formatDate(card.next_review_date) }}</span>
+                  <span>複習 {{ card.review_count }} 次</span>
+                </div>
+              </div>
+              <button class="btn-delete" @click="handleDelete(card.id)" :disabled="deletingCardId === card.id">
+                🗑️
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -143,498 +164,329 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import flashcardService from '@/services/flashcardService'
+import questionService from '@/services/questionService'
 
-const stats = ref({
-  total_cards: 0,
-  due_cards: 0,
-  completion_percent: 0,
-  review_streak: 0,
-  next_review_date: null
-})
+// State
+const stats = ref({ total_cards: 0, due_cards: 0, completion_percent: 0, review_streak: 0 })
 const flashcards = ref([])
 const dueFlashcards = ref([])
 const statusFilter = ref('all')
 const questionIdInput = ref('')
 const isListLoading = ref(false)
-const isDueLoading = ref(false)
-const isRefreshing = ref(false)
 const isCreating = ref(false)
 const deletingCardId = ref(null)
-const reviewingCardId = ref(null)
 const errorMessage = ref('')
 const successMessage = ref('')
 
-const ratings = [
-  { value: 5, label: '很好記', variant: 'positive' },
-  { value: 4, label: '還可以', variant: 'positive-light' },
-  { value: 3, label: '差點忘記', variant: 'neutral' },
-  { value: 2, label: '需要加強', variant: 'warning' },
-  { value: 1, label: '完全忘記', variant: 'danger' }
-]
+// Review mode state
+const reviewMode = ref(false)
+const reviewCards = ref([])
+const currentIndex = ref(0)
+const isFlipped = ref(false)
+const isRating = ref(false)
+const currentOptions = ref([])
 
-const todayDueCount = computed(() => dueFlashcards.value.length)
+const currentCard = computed(() => reviewCards.value[currentIndex.value])
+const getLabel = (order) => String.fromCharCode(64 + (order || 1))
 
-const getDaysUntil = (dateString) => {
-  if (!dateString) return Infinity
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const target = new Date(dateString)
-  target.setHours(0, 0, 0, 0)
-  return Math.round((target - today) / 86400000)
-}
+const statusLabel = (status) => ({ learning: '學習中', reviewing: '複習中', mastered: '已掌握' }[status] || status)
+const formatDate = (d) => d ? new Date(d).toLocaleDateString('zh-TW') : '未排定'
 
-const tomorrowCount = computed(() =>
-  flashcards.value.filter(card => getDaysUntil(card.next_review_date) === 1).length
-)
+const showError = (msg) => { errorMessage.value = msg; setTimeout(() => errorMessage.value = '', 4000) }
+const showSuccess = (msg) => { successMessage.value = msg; setTimeout(() => successMessage.value = '', 3000) }
 
-const weekCount = computed(() =>
-  flashcards.value.filter(card => {
-    const diff = getDaysUntil(card.next_review_date)
-    return diff >= 2 && diff <= 7
-  }).length
-)
-
-const formattedNextReview = computed(() => stats.value.next_review_date || '尚無記錄')
-
-const statusLabel = (status) => ({
-  learning: '學習中',
-  reviewing: '複習中',
-  mastered: '已掌握'
-}[status] || '未知')
-
-const formatDate = (value) => {
-  if (!value) return '尚未安排'
-  return new Date(value).toLocaleDateString('zh-TW')
-}
-
-const showError = (message) => {
-  errorMessage.value = message
-  setTimeout(() => (errorMessage.value = ''), 5000)
-}
-
-const showSuccess = (message) => {
-  successMessage.value = message
-  setTimeout(() => (successMessage.value = ''), 3000)
+// Load data
+const loadStats = async () => {
+  try { stats.value = await flashcardService.getStatistics() } catch (e) { showError(e.message) }
 }
 
 const loadFlashcards = async () => {
   try {
     isListLoading.value = true
-    const params = {}
-    if (statusFilter.value !== 'all') {
-      params.status = statusFilter.value
-    }
+    const params = statusFilter.value !== 'all' ? { status: statusFilter.value } : {}
     flashcards.value = await flashcardService.getFlashcards(params)
-  } catch (error) {
-    showError(error.message)
-  } finally {
-    isListLoading.value = false
-  }
+  } catch (e) { showError(e.message) }
+  finally { isListLoading.value = false }
 }
 
 const loadDueFlashcards = async () => {
-  try {
-    isDueLoading.value = true
-    dueFlashcards.value = await flashcardService.getDueFlashcards()
-  } catch (error) {
-    showError(error.message)
-  } finally {
-    isDueLoading.value = false
-  }
+  try { dueFlashcards.value = await flashcardService.getDueFlashcards() } catch (e) { showError(e.message) }
 }
 
-const loadStats = async () => {
-  try {
-    stats.value = await flashcardService.getStatistics()
-  } catch (error) {
-    showError(error.message)
-  }
-}
-
-const refreshAll = async () => {
-  try {
-    isRefreshing.value = true
-    await Promise.all([loadStats(), loadFlashcards(), loadDueFlashcards()])
-  } finally {
-    isRefreshing.value = false
-  }
-}
-
-const refreshDue = async () => {
-  await Promise.all([loadDueFlashcards(), loadStats()])
-}
-
-const handleReview = async (flashcardId, rating) => {
-  try {
-    reviewingCardId.value = flashcardId
-    const updatedCard = await flashcardService.reviewFlashcard(flashcardId, rating)
-    flashcards.value = flashcards.value.map(card => (card.id === updatedCard.id ? updatedCard : card))
-    dueFlashcards.value = dueFlashcards.value.filter(card => card.id !== flashcardId)
-    await loadStats()
-    showSuccess('已記錄複習結果')
-  } catch (error) {
-    showError(error.message)
-  } finally {
-    reviewingCardId.value = null
-  }
-}
-
-const handleCreate = async () => {
-  if (!questionIdInput.value) {
-    showError('請輸入題目 ID')
+// Review functions
+const startReview = async () => {
+  await loadDueFlashcards()
+  if (dueFlashcards.value.length === 0) {
+    showError('沒有待複習的卡片')
     return
   }
+  reviewCards.value = [...dueFlashcards.value]
+  currentIndex.value = 0
+  isFlipped.value = false
+  await loadCurrentOptions()
+  reviewMode.value = true
+}
 
+const loadCurrentOptions = async () => {
+  if (!currentCard.value?.question) return
   try {
-    isCreating.value = true
-    await flashcardService.createFlashcard({ question: Number(questionIdInput.value) })
-    questionIdInput.value = ''
-    await Promise.all([loadFlashcards(), loadStats()])
-    showSuccess('快閃卡建立成功')
-  } catch (error) {
-    showError(error.message)
-  } finally {
-    isCreating.value = false
+    const { data } = await questionService.getQuestion(currentCard.value.question)
+    currentOptions.value = data.options || []
+  } catch (e) {
+    currentOptions.value = []
   }
 }
 
-const handleDelete = async (cardId) => {
-  if (!confirm('確定要刪除這張快閃卡嗎？')) return
+const flipCard = () => {
+  if (!isFlipped.value) isFlipped.value = true
+}
 
+const rateCard = async (rating) => {
+  if (!currentCard.value || isRating.value) return
+  isRating.value = true
   try {
-    deletingCardId.value = cardId
-    await flashcardService.deleteFlashcard(cardId)
-    flashcards.value = flashcards.value.filter(card => card.id !== cardId)
-    dueFlashcards.value = dueFlashcards.value.filter(card => card.id !== cardId)
-    await loadStats()
-    showSuccess('已刪除快閃卡')
-  } catch (error) {
-    showError(error.message)
+    await flashcardService.reviewFlashcard(currentCard.value.id, rating)
+    // Next card or finish
+    if (currentIndex.value < reviewCards.value.length - 1) {
+      currentIndex.value++
+      isFlipped.value = false
+      await loadCurrentOptions()
+    } else {
+      showSuccess(`🎉 完成！複習了 ${reviewCards.value.length} 張卡片`)
+      exitReview()
+    }
+  } catch (e) {
+    showError(e.message)
   } finally {
-    deletingCardId.value = null
+    isRating.value = false
   }
+}
+
+const exitReview = () => {
+  reviewMode.value = false
+  reviewCards.value = []
+  currentIndex.value = 0
+  isFlipped.value = false
+  loadStats()
+  loadFlashcards()
+}
+
+// CRUD
+const handleCreate = async () => {
+  if (!questionIdInput.value) return
+  isCreating.value = true
+  try {
+    await flashcardService.createFlashcard({ question: parseInt(questionIdInput.value) })
+    questionIdInput.value = ''
+    showSuccess('已新增快閃卡')
+    loadStats()
+    loadFlashcards()
+  } catch (e) { showError(e.message) }
+  finally { isCreating.value = false }
+}
+
+const handleDelete = async (id) => {
+  deletingCardId.value = id
+  try {
+    await flashcardService.deleteFlashcard(id)
+    flashcards.value = flashcards.value.filter(c => c.id !== id)
+    loadStats()
+  } catch (e) { showError(e.message) }
+  finally { deletingCardId.value = null }
 }
 
 watch(statusFilter, loadFlashcards)
-onMounted(refreshAll)
+onMounted(() => { loadStats(); loadFlashcards() })
 </script>
 
 <style scoped>
-.flashcard-view {
-  background: #f5f6fa;
-  min-height: 100vh;
-}
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
 
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 32px 20px 60px;
-}
+/* Page Header */
+.page-header { text-align: center; margin-bottom: 30px; }
+.page-header h2 { font-size: 28px; margin-bottom: 8px; }
+.page-header p { color: #666; }
 
-.flashcard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-}
+/* Alerts */
+.alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+.alert.error { background: #fee2e2; color: #991b1b; }
+.alert.success { background: #d1fae5; color: #065f46; }
 
-.flashcard-header h2 {
-  font-size: 28px;
-  margin-bottom: 8px;
-  color: #1f2d3d;
-}
-
-.flashcard-header p {
-  color: #65738e;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
+/* Stats Grid */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 30px; }
 .stat-card {
-  background: #fff;
-  border-radius: 16px;
+  background: white;
   padding: 20px;
-  border: 1px solid #e5e7f1;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
 }
-
-.stat-card.today {
-  border: 2px solid #ff6b6b;
-  background: #fff5f5;
+.stat-card.primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.stat-icon { font-size: 32px; }
+.stat-info { text-align: center; }
+.stat-value { display: block; font-size: 28px; font-weight: bold; }
+.stat-label { font-size: 13px; opacity: 0.8; }
+.btn-start {
+  margin-top: 8px;
+  padding: 10px 20px;
+  background: rgba(255,255,255,0.2);
+  border: 2px solid white;
+  color: white;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
 }
+.btn-start:hover { background: white; color: #667eea; }
 
-.stat-card.tomorrow {
-  border: 2px solid #ffd166;
-  background: #fff9e8;
-}
+/* Quick Add */
+.quick-add { background: white; padding: 20px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.quick-add h3 { margin-bottom: 12px; font-size: 16px; }
+.add-form { display: flex; gap: 12px; }
+.add-form input { flex: 1; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 15px; }
+.add-form button { padding: 12px 24px; background: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.add-form button:disabled { opacity: 0.6; }
 
-.stat-card.week {
-  border: 2px solid #51cf66;
-  background: #f1fff3;
-}
+/* Card List */
+.card-list-section { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.list-header h3 { font-size: 16px; }
+.list-header select { padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; }
+.loading, .empty { text-align: center; padding: 40px; color: #666; }
+.empty .hint { font-size: 13px; margin-top: 8px; }
 
-.stat-card.streak.active {
-  border: 2px solid #2979ff;
-  background: #e9f0ff;
-}
+.card-list { display: flex; flex-direction: column; gap: 12px; }
+.list-card { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #f8fafc; border-radius: 12px; }
+.list-card-subject { font-size: 12px; color: #2563eb; font-weight: 600; }
+.list-card-question { margin: 8px 0; color: #1f2937; font-size: 15px; line-height: 1.5; }
+.list-card-meta { display: flex; gap: 16px; font-size: 12px; color: #666; }
+.status-learning { color: #f59e0b; }
+.status-reviewing { color: #3b82f6; }
+.status-mastered { color: #10b981; }
+.btn-delete { background: none; border: none; font-size: 18px; cursor: pointer; opacity: 0.5; }
+.btn-delete:hover { opacity: 1; }
 
-.label {
-  font-size: 14px;
-  color: #6b7280;
-}
+/* ========== REVIEW MODE ========== */
+.review-mode { min-height: 80vh; display: flex; flex-direction: column; }
 
-.stat-card h3 {
-  font-size: 32px;
-  margin: 4px 0;
-}
-
-.helper-text,
-.stat-card small {
-  color: #708097;
-}
-
-.review-section,
-.management-section {
-  background: #fff;
-  padding: 28px;
-  border-radius: 16px;
-  margin-bottom: 28px;
-  border: 1px solid #e5e7f1;
-}
-
-.section-header {
+.review-header {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 30px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+}
+.progress-bar { flex: 1; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.3s; }
+.btn-exit { padding: 8px 16px; background: #f3f4f6; border: none; border-radius: 8px; cursor: pointer; }
+
+/* Flashcard */
+.card-container { perspective: 1000px; margin-bottom: 30px; }
+.flashcard {
+  width: 100%;
+  height: 400px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+.flashcard.flipped { transform: rotateY(180deg); }
+
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 24px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+
+.card-front {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.card-back {
+  background: white;
+  transform: rotateY(180deg);
+  border: 3px solid #e5e7eb;
+}
+
+.card-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  align-self: flex-start;
+}
+.card-back .card-badge { background: #f3f4f6; color: #374151; }
+
+.card-content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.card-question { font-size: 22px; line-height: 1.6; text-align: center; }
+.card-hint { text-align: center; font-size: 14px; opacity: 0.7; }
+
+/* Answer Options */
+.answer-options { display: flex; flex-direction: column; gap: 12px; }
+.answer-option {
+  display: flex;
   align-items: flex-start;
-  gap: 16px;
-}
-
-.section-header h3 {
-  font-size: 22px;
-  margin-bottom: 4px;
-}
-
-.section-subtitle {
-  color: #7a869a;
-  font-size: 14px;
-}
-
-.review-list {
-  display: grid;
-  gap: 16px;
-  margin-top: 24px;
-}
-
-.review-card {
-  border: 1px solid #f0f2f8;
-  border-radius: 12px;
-  padding: 20px;
-  background: #fcfdff;
-}
-
-.review-meta {
-  display: flex;
   gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-
-.badge {
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  background: #edf2ff;
-  color: #3d5af1;
-}
-
-.badge.outline {
-  background: transparent;
-  border: 1px solid #cad4f3;
-  color: #56627c;
-}
-
-.question {
-  font-size: 16px;
-  color: #1f2d3d;
-  margin-bottom: 16px;
-  line-height: 1.5;
-}
-
-.review-actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-}
-
-.rating-btn {
-  border: none;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.rating-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.rating-btn.positive {
-  background: #d1f7c4;
-  color: #216c2a;
-}
-
-.rating-btn.positive-light {
-  background: #e5fdd1;
-  color: #2f6b1f;
-}
-
-.rating-btn.neutral {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.rating-btn.warning {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.rating-btn.danger {
-  background: #ffe0e5;
-  color: #b42318;
-}
-
-.create-form {
-  display: flex;
-  gap: 12px;
-  margin: 16px 0 24px;
-}
-
-.card-list {
-  display: grid;
-  gap: 16px;
-}
-
-.card-item {
-  border: 1px solid #edf0f7;
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.question-snippet {
-  color: #4b5563;
-  line-height: 1.5;
-  margin: 8px 0;
-}
-
-.card-meta {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  font-size: 14px;
-  color: #6b7280;
-}
-
-.alert {
   padding: 14px 18px;
-  border-radius: 10px;
-  margin-bottom: 18px;
-}
-
-.alert-error {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.alert-success {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.input,
-.select {
-  flex: 1;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #d0d7ec;
-  font-size: 14px;
-}
-
-.primary-btn,
-.ghost-btn {
-  border: none;
-  border-radius: 10px;
-  padding: 10px 18px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.primary-btn {
-  background: #2563eb;
-  color: #fff;
-}
-
-.ghost-btn {
-  background: transparent;
-  border: 1px solid #d4d9e8;
-  color: #374151;
-}
-
-.ghost-btn.danger {
-  border-color: #fca5a5;
-  color: #b91c1c;
-}
-
-.loading-state,
-.empty-state {
-  padding: 24px;
-  text-align: center;
-  color: #6b7280;
   background: #f8fafc;
   border-radius: 12px;
-  margin-top: 20px;
+  font-size: 15px;
+  line-height: 1.5;
 }
+.answer-option.correct { background: #d1fae5; border: 2px solid #10b981; }
+.option-marker { font-weight: bold; color: #10b981; min-width: 20px; }
+.no-options { text-align: center; color: #666; }
 
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s;
+/* Rating Section */
+.rating-section { text-align: center; }
+.rating-prompt { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #374151; }
+.rating-buttons { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+
+.rating-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 20px;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
 }
+.rating-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.rating-icon { font-size: 28px; }
+.rating-text { font-size: 13px; font-weight: 600; }
+.rating-interval { font-size: 11px; opacity: 0.7; }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+.rating-btn.again { background: #fee2e2; color: #991b1b; }
+.rating-btn.hard { background: #fef3c7; color: #92400e; }
+.rating-btn.good { background: #e0f2fe; color: #0369a1; }
+.rating-btn.easy { background: #d1fae5; color: #065f46; }
+.rating-btn.perfect { background: #ede9fe; color: #5b21b6; }
 
-@media (max-width: 970px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.rating-btn:hover:not(:disabled) { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
-  .flashcard-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-}
-
-@media (max-width: 640px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .create-form {
-    flex-direction: column;
-  }
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .flashcard { height: 350px; }
+  .card-question { font-size: 18px; }
+  .rating-buttons { gap: 8px; }
+  .rating-btn { min-width: 80px; padding: 12px 14px; }
 }
 </style>

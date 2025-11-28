@@ -16,7 +16,8 @@ const router = createRouter({
     {
       path: '/flashcard',
       name: 'Flashcard',
-      component: () => import('@/views/FlashcardView.vue')
+      component: () => import('@/views/FlashcardView.vue'),
+      meta: { requiresAuth: true }
     },
     {
       path: '/analytics',

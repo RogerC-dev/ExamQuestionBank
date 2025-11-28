@@ -30,7 +30,13 @@ export default {
     async getFlashcards(params = {}) {
         try {
             const { data } = await api.get('/flashcards/', { params })
-            return data
+            if (Array.isArray(data)) {
+                return data
+            }
+            if (data?.results) {
+                return data.results
+            }
+            return []
         } catch (error) {
             normalizeError(error)
         }
