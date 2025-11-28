@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.utils import timezone
 
 from question_bank.models import Question
 from .models import Flashcard, FlashcardReviewLog
@@ -33,12 +34,18 @@ class FlashcardSerializer(serializers.ModelSerializer):
             'ease_factor',
             'interval',
             'repetition',
-            'next_review_date',
             'last_reviewed_at',
             'review_count',
             'is_due',
             'created_at',
         ]
+
+    def validate_next_review_date(self, value):
+        if isinstance(value, str):
+            value = serializers.DateField().to_internal_value(value)
+        if hasattr(value, 'date'):
+            value = value.date()
+        return value
 
     def validate_question(self, value: Question) -> Question:
         user = self.context['request'].user
@@ -48,6 +55,8 @@ class FlashcardSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
+        if 'next_review_date' not in validated_data:
+            validated_data['next_review_date'] = timezone.localdate()
         return super().create(validated_data)
 
     def get_is_due(self, obj: Flashcard) -> bool:

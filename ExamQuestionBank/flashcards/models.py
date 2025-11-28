@@ -18,7 +18,7 @@ class Flashcard(models.Model):
     ease_factor = models.FloatField(default=2.5, verbose_name="熟練因子")
     interval = models.IntegerField(default=1, verbose_name="間隔天數")
     repetition = models.IntegerField(default=0, verbose_name="連續成功次數")
-    next_review_date = models.DateField(default=timezone.now, verbose_name="下次複習日期")
+    next_review_date = models.DateField(default=timezone.localdate, verbose_name="下次複習日期")
     last_reviewed_at = models.DateTimeField(null=True, blank=True, verbose_name="最後複習時間")
     review_count = models.IntegerField(default=0, verbose_name="複習次數")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="建立時間")

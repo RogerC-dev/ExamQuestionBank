@@ -1,6 +1,11 @@
 import api from './api'
 
 const normalizeError = (error, fallbackMessage = '快閃卡服務目前無法使用，請稍後再試。') => {
+    if (error.response?.status === 401) {
+        window.dispatchEvent(new Event('show-login'))
+        throw new Error('請先登入後再使用快閃卡功能')
+    }
+    
     const responseData = error.response?.data
     let message = fallbackMessage
 

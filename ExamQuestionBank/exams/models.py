@@ -22,6 +22,26 @@ class ExamResult(models.Model):
         return f"{self.user.username} - {self.exam.name} - {self.score}分"
 
 
+class WrongQuestion(models.Model):
+    """錯題記錄"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='wrong_questions')
+    question = models.ForeignKey('question_bank.Question', on_delete=models.CASCADE, related_name='wrong_records')
+    exam_result = models.ForeignKey(ExamResult, on_delete=models.CASCADE, related_name='wrong_questions', null=True)
+    wrong_count = models.IntegerField(default=1, verbose_name="錯誤次數")
+    last_wrong_at = models.DateTimeField(auto_now=True, verbose_name="最後錯誤時間")
+    reviewed = models.BooleanField(default=False, verbose_name="已複習")
+
+    class Meta:
+        db_table = 'wrong_question'
+        verbose_name = '錯題'
+        verbose_name_plural = '錯題'
+        unique_together = [['user', 'question']]
+        ordering = ['-last_wrong_at']
+
+    def __str__(self):
+        return f"{self.user.username} - Q{self.question.id} - {self.wrong_count}次"
+
+
 class Exam(models.Model):
     """
     考試/考卷

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Exam, MockExam, ExamResult
+from .models import Exam, MockExam, ExamResult, WrongQuestion
 from question_bank.models import ExamQuestion, Question, Subject
 
 
@@ -20,6 +20,18 @@ class ExamResultCreateSerializer(serializers.Serializer):
     correct_count = serializers.IntegerField(min_value=0)
     total_count = serializers.IntegerField(min_value=1)
     duration_seconds = serializers.IntegerField(required=False, min_value=0)
+    wrong_question_ids = serializers.ListField(child=serializers.IntegerField(), required=False, default=[])
+
+
+class WrongQuestionSerializer(serializers.ModelSerializer):
+    """錯題序列化器"""
+    question_content = serializers.CharField(source='question.content', read_only=True)
+    question_subject = serializers.CharField(source='question.subject', read_only=True)
+
+    class Meta:
+        model = WrongQuestion
+        fields = ['id', 'question', 'question_content', 'question_subject', 'wrong_count', 'last_wrong_at', 'reviewed']
+        read_only_fields = ['id', 'wrong_count', 'last_wrong_at']
 
 
 class ExamListSerializer(serializers.ModelSerializer):

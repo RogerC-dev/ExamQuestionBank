@@ -28,6 +28,11 @@
         <span>答對：{{ examResults.correct }} / {{ examResults.total }}</span>
         <span>正確率：{{ Math.round((examResults.correct / examResults.total) * 100) }}%</span>
       </div>
+      <div class="results-actions-top">
+        <button class="btn btn-bookmark" @click="bookmarkWrongQuestions">⭐ 收藏錯題</button>
+        <button class="btn btn-bookmark" @click="bookmarkAllQuestions">📚 收藏全部</button>
+        <button class="btn btn-bookmark" @click="addWrongToFlashcard">🃏 錯題加入快閃卡</button>
+      </div>
       <div class="results-details">
         <h3>答題詳情</h3>
         <div v-for="(result, index) in examResults.details" :key="index" class="result-item">
@@ -36,6 +41,9 @@
             <span class="result-status" :class="{ correct: result.correct, wrong: !result.correct }">
               {{ result.correct ? '✓ 正確' : '✗ 錯誤' }}
             </span>
+            <button class="btn-icon" @click="toggleBookmark(result.questionId)" :title="isBookmarked(result.questionId) ? '取消收藏' : '收藏'">
+              {{ isBookmarked(result.questionId) ? '⭐' : '☆' }}
+            </button>
           </div>
           <p class="result-question">{{ result.question }}</p>
           <div class="result-answers">
@@ -119,6 +127,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import examService from '@/services/examService'
 import questionService from '@/services/questionService'
+import flashcardService from '@/services/flashcardService'
 
 const route = useRoute()
 const router = useRouter()
@@ -134,6 +143,7 @@ const questionDetails = ref({})
 const showResults = ref(false)
 const examResults = ref(null)
 const startTime = ref(null)
+const bookmarkedIds = ref(new Set())
 let timerHandle = null
 
 const formattedTime = computed(() => {
@@ -243,12 +253,14 @@ const submitExam = async (autoSubmit = false) => {
   let correct = 0
   let total = exam.value.exam_questions.length
   const results = []
+  const wrongQuestionIds = []
 
   exam.value.exam_questions.forEach((eq, index) => {
     const qId = eq.question
     const questionData = questionDetails.value[qId]
     if (!questionData) {
-      results.push({ question: eq.question_content, correct: false, userAnswer: null, correctAnswer: null })
+      results.push({ questionId: qId, question: eq.question_content, correct: false, userAnswer: null, correctAnswer: null })
+      wrongQuestionIds.push(qId)
       return
     }
 
@@ -257,9 +269,14 @@ const submitExam = async (autoSubmit = false) => {
     const userOption = questionData.options.find(opt => opt.id === userAnswerId)
 
     const isCorrect = correctOption && userAnswerId === correctOption.id
-    if (isCorrect) correct++
+    if (isCorrect) {
+      correct++
+    } else {
+      wrongQuestionIds.push(qId)
+    }
 
     results.push({
+      questionId: qId,
       question: eq.question_content,
       correct: isCorrect,
       userAnswer: userOption?.content || '未作答',
@@ -274,17 +291,18 @@ const submitExam = async (autoSubmit = false) => {
     correct,
     total,
     score,
-    details: results
+    details: results,
+    wrongQuestionIds
   }
 
-  // Save result to backend
   try {
     await examService.saveExamResult({
       exam_id: exam.value.id,
       score,
       correct_count: correct,
       total_count: total,
-      duration_seconds: durationSeconds
+      duration_seconds: durationSeconds,
+      wrong_question_ids: wrongQuestionIds
     })
   } catch (error) {
     console.error('Failed to save exam result:', error)
@@ -292,6 +310,56 @@ const submitExam = async (autoSubmit = false) => {
 
   showResults.value = true
   quizMessage.value = autoSubmit ? '時間到！測驗已自動提交' : '測驗已提交'
+}
+
+const isBookmarked = (qId) => bookmarkedIds.value.has(qId)
+
+const toggleBookmark = async (qId) => {
+  try {
+    if (bookmarkedIds.value.has(qId)) {
+      await examService.removeBookmark(qId)
+      bookmarkedIds.value.delete(qId)
+    } else {
+      await examService.addBookmark([qId])
+      bookmarkedIds.value.add(qId)
+    }
+  } catch (e) {
+    console.error('Bookmark error:', e)
+  }
+}
+
+const bookmarkWrongQuestions = async () => {
+  if (!examResults.value?.wrongQuestionIds?.length) return
+  try {
+    await examService.addBookmark(examResults.value.wrongQuestionIds)
+    examResults.value.wrongQuestionIds.forEach(id => bookmarkedIds.value.add(id))
+    alert('已收藏所有錯題')
+  } catch (e) {
+    console.error('Bookmark error:', e)
+  }
+}
+
+const bookmarkAllQuestions = async () => {
+  const allIds = exam.value.exam_questions.map(eq => eq.question)
+  try {
+    await examService.addBookmark(allIds)
+    allIds.forEach(id => bookmarkedIds.value.add(id))
+    alert('已收藏全部題目')
+  } catch (e) {
+    console.error('Bookmark error:', e)
+  }
+}
+
+const addWrongToFlashcard = async () => {
+  if (!examResults.value?.wrongQuestionIds?.length) return
+  try {
+    for (const qId of examResults.value.wrongQuestionIds) {
+      await flashcardService.createFlashcard({ question: qId })
+    }
+    alert('已將錯題加入快閃卡')
+  } catch (e) {
+    console.error('Flashcard error:', e)
+  }
 }
 
 const resetQuiz = () => {
@@ -637,6 +705,30 @@ onBeforeUnmount(() => {
 
 .btn-secondary:hover:not(:disabled) {
   background: #4b5563;
+}
+
+.btn-bookmark {
+  background: #f59e0b;
+  color: white;
+}
+
+.btn-bookmark:hover {
+  background: #d97706;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.results-actions-top {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
 .empty-state {

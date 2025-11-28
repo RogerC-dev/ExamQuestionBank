@@ -10,8 +10,8 @@ from drf_yasg import openapi
 from django.db import transaction
 from django.db.models import Sum, Count, Avg
 
-from .models import Exam, MockExam, ExamResult
-from question_bank.models import ExamQuestion, Question, QuestionOption, Subject
+from .models import Exam, MockExam, ExamResult, WrongQuestion
+from question_bank.models import ExamQuestion, Question, QuestionOption, Subject, Bookmark
 from question_bank.services.ai_service import ai_service
 from question_bank.services.rag_service import rag_service
 from .serializers import (
@@ -23,7 +23,8 @@ from .serializers import (
     MockExamSerializer,
     MockExamGenerateSerializer,
     ExamResultSerializer,
-    ExamResultCreateSerializer
+    ExamResultCreateSerializer,
+    WrongQuestionSerializer
 )
 
 logger = logging.getLogger(__name__)
@@ -471,6 +472,19 @@ class ExamResultView(APIView):
             total_count=data['total_count'],
             duration_seconds=data.get('duration_seconds')
         )
+
+        # Save wrong questions
+        for q_id in data.get('wrong_question_ids', []):
+            wq, created = WrongQuestion.objects.get_or_create(
+                user=request.user, question_id=q_id,
+                defaults={'exam_result': result}
+            )
+            if not created:
+                wq.wrong_count += 1
+                wq.exam_result = result
+                wq.reviewed = False
+                wq.save()
+
         return Response(ExamResultSerializer(result).data, status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(
@@ -480,6 +494,66 @@ class ExamResultView(APIView):
     def get(self, request):
         results = ExamResult.objects.filter(user=request.user).select_related('exam').order_by('-completed_at')
         return Response(ExamResultSerializer(results, many=True).data)
+
+
+class WrongQuestionView(APIView):
+    """錯題本 API"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """取得錯題列表"""
+        wrong_qs = WrongQuestion.objects.filter(user=request.user).select_related('question').order_by('-wrong_count', '-last_wrong_at')
+        return Response(WrongQuestionSerializer(wrong_qs, many=True).data)
+
+    def patch(self, request, pk):
+        """標記錯題為已複習"""
+        try:
+            wq = WrongQuestion.objects.get(pk=pk, user=request.user)
+            wq.reviewed = request.data.get('reviewed', True)
+            wq.save()
+            return Response(WrongQuestionSerializer(wq).data)
+        except WrongQuestion.DoesNotExist:
+            return Response({"error": "錯題不存在"}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk):
+        """刪除錯題記錄"""
+        WrongQuestion.objects.filter(pk=pk, user=request.user).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BookmarkView(APIView):
+    """收藏題目 API"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """取得收藏列表"""
+        bookmarks = Bookmark.objects.filter(user=request.user).select_related('question')
+        data = [{
+            'id': b.id,
+            'question': b.question.id,
+            'question_content': b.question.content,
+            'question_subject': b.question.subject,
+            'created_at': b.created_at
+        } for b in bookmarks]
+        return Response(data)
+
+    def post(self, request):
+        """收藏題目"""
+        question_ids = request.data.get('question_ids', [])
+        if isinstance(question_ids, int):
+            question_ids = [question_ids]
+        created = []
+        for q_id in question_ids:
+            obj, is_new = Bookmark.objects.get_or_create(user=request.user, question_id=q_id)
+            if is_new:
+                created.append(q_id)
+        return Response({'bookmarked': created}, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk=None):
+        """取消收藏"""
+        q_id = pk or request.data.get('question_id')
+        Bookmark.objects.filter(user=request.user, question_id=q_id).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ExamStatsView(APIView):
@@ -507,8 +581,9 @@ class ExamStatsView(APIView):
             for r in reversed(list(recent_results))
         ]
 
-        # 總題庫數（所有考卷的題目總數）
         total_bank = ExamQuestion.objects.count()
+        wrong_count = WrongQuestion.objects.filter(user=user, reviewed=False).count()
+        bookmark_count = Bookmark.objects.filter(user=user).count()
 
         return Response({
             'total_answered': total_questions,
@@ -517,5 +592,7 @@ class ExamStatsView(APIView):
             'exam_count': exam_count,
             'average_score': round(avg_score, 1),
             'accuracy': round(correct_questions / total_questions * 100, 1) if total_questions > 0 else 0,
-            'accuracy_trend': accuracy_trend
+            'accuracy_trend': accuracy_trend,
+            'wrong_count': wrong_count,
+            'bookmark_count': bookmark_count
         })
