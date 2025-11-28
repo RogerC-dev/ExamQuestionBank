@@ -81,20 +81,20 @@
       <!-- Statistics -->
       <div class="stats-section">
         <div class="stat-card">
-          <div class="stat-value">3,247</div>
+          <div class="stat-value">{{ stats.total_bank.toLocaleString() }}</div>
           <div class="stat-label">題庫數</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">1,582</div>
+          <div class="stat-value">{{ stats.total_answered.toLocaleString() }}</div>
           <div class="stat-label">已練習</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">73%</div>
+          <div class="stat-value">{{ stats.accuracy }}%</div>
           <div class="stat-label">正確率</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">156</div>
-          <div class="stat-label">待複習</div>
+          <div class="stat-value">{{ stats.exam_count }}</div>
+          <div class="stat-label">測驗次數</div>
         </div>
       </div>
 
@@ -152,6 +152,12 @@ const filters = reactive({
 const isLoading = ref(false)
 const selectedMode = ref(null)
 const errorMessage = ref('')
+const stats = reactive({
+  total_bank: 0,
+  total_answered: 0,
+  accuracy: 0,
+  exam_count: 0
+})
 
 const practiceModes = [
   { key: 'historical', icon: '📚', title: '歷屆考題', description: '按年度練習歷屆考題', cta: '開始練習' },
@@ -266,8 +272,18 @@ const viewExam = (examId) => {
   router.push({ name: 'ExamPreview', params: { id: examId } })
 }
 
+const loadStats = async () => {
+  try {
+    const { data } = await examService.getExamStats()
+    Object.assign(stats, data)
+  } catch (error) {
+    console.error('Failed to load stats', error)
+  }
+}
+
 onMounted(() => {
   loadHistoricalExams()
+  loadStats()
 })
 </script>
 

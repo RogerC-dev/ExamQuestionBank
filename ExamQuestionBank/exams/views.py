@@ -8,8 +8,9 @@ from rest_framework.exceptions import NotFound
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.db import transaction
+from django.db.models import Sum, Count, Avg
 
-from .models import Exam, MockExam
+from .models import Exam, MockExam, ExamResult
 from question_bank.models import ExamQuestion, Question, QuestionOption, Subject
 from question_bank.services.ai_service import ai_service
 from question_bank.services.rag_service import rag_service
@@ -20,7 +21,9 @@ from .serializers import (
     ExamQuestionCreateSerializer,
     ExamQuestionSerializer,
     MockExamSerializer,
-    MockExamGenerateSerializer
+    MockExamGenerateSerializer,
+    ExamResultSerializer,
+    ExamResultCreateSerializer
 )
 
 logger = logging.getLogger(__name__)
@@ -439,3 +442,80 @@ class MockExamDetailView(APIView):
             return mock_exam
         except MockExam.DoesNotExist:
             raise NotFound({"error": "模擬測驗不存在"})
+
+
+class ExamResultView(APIView):
+    """考試結果 API"""
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="儲存考試結果",
+        request_body=ExamResultCreateSerializer,
+        responses={201: ExamResultSerializer()}
+    )
+    def post(self, request):
+        serializer = ExamResultCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            exam = Exam.objects.get(pk=data['exam_id'])
+        except Exam.DoesNotExist:
+            return Response({"error": "考卷不存在"}, status=status.HTTP_404_NOT_FOUND)
+
+        result = ExamResult.objects.create(
+            user=request.user,
+            exam=exam,
+            score=data['score'],
+            correct_count=data['correct_count'],
+            total_count=data['total_count'],
+            duration_seconds=data.get('duration_seconds')
+        )
+        return Response(ExamResultSerializer(result).data, status=status.HTTP_201_CREATED)
+
+    @swagger_auto_schema(
+        operation_summary="取得考試結果列表",
+        responses={200: ExamResultSerializer(many=True)}
+    )
+    def get(self, request):
+        results = ExamResult.objects.filter(user=request.user).select_related('exam').order_by('-completed_at')
+        return Response(ExamResultSerializer(results, many=True).data)
+
+
+class ExamStatsView(APIView):
+    """考試統計 API"""
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(operation_summary="取得學習統計數據")
+    def get(self, request):
+        user = request.user
+        results = ExamResult.objects.filter(user=user)
+
+        total_questions = results.aggregate(total=Sum('total_count'))['total'] or 0
+        correct_questions = results.aggregate(total=Sum('correct_count'))['total'] or 0
+        exam_count = results.count()
+        avg_score = results.aggregate(avg=Avg('score'))['avg'] or 0
+
+        # 最近10次考試的正確率趨勢
+        recent_results = results.order_by('-completed_at')[:10]
+        accuracy_trend = [
+            {
+                'date': r.completed_at.strftime('%Y-%m-%d'),
+                'accuracy': round(r.correct_count / r.total_count * 100, 1) if r.total_count > 0 else 0,
+                'exam_name': r.exam.name
+            }
+            for r in reversed(list(recent_results))
+        ]
+
+        # 總題庫數（所有考卷的題目總數）
+        total_bank = ExamQuestion.objects.count()
+
+        return Response({
+            'total_answered': total_questions,
+            'correct_answered': correct_questions,
+            'total_bank': total_bank,
+            'exam_count': exam_count,
+            'average_score': round(avg_score, 1),
+            'accuracy': round(correct_questions / total_questions * 100, 1) if total_questions > 0 else 0,
+            'accuracy_trend': accuracy_trend
+        })

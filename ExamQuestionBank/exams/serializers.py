@@ -1,6 +1,25 @@
 from rest_framework import serializers
-from .models import Exam, MockExam
+from .models import Exam, MockExam, ExamResult
 from question_bank.models import ExamQuestion, Question, Subject
+
+
+class ExamResultSerializer(serializers.ModelSerializer):
+    """考試結果序列化器"""
+    exam_name = serializers.CharField(source='exam.name', read_only=True)
+
+    class Meta:
+        model = ExamResult
+        fields = ['id', 'exam', 'exam_name', 'score', 'correct_count', 'total_count', 'duration_seconds', 'completed_at']
+        read_only_fields = ['id', 'completed_at']
+
+
+class ExamResultCreateSerializer(serializers.Serializer):
+    """考試結果創建序列化器"""
+    exam_id = serializers.IntegerField()
+    score = serializers.IntegerField(min_value=0, max_value=100)
+    correct_count = serializers.IntegerField(min_value=0)
+    total_count = serializers.IntegerField(min_value=1)
+    duration_seconds = serializers.IntegerField(required=False, min_value=0)
 
 
 class ExamListSerializer(serializers.ModelSerializer):

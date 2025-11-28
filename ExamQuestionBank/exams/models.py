@@ -2,6 +2,26 @@ from django.db import models
 from django.conf import settings
 
 
+class ExamResult(models.Model):
+    """考試結果記錄"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='exam_results')
+    exam = models.ForeignKey('Exam', on_delete=models.CASCADE, related_name='results')
+    score = models.IntegerField(verbose_name="分數")
+    correct_count = models.IntegerField(verbose_name="答對題數")
+    total_count = models.IntegerField(verbose_name="總題數")
+    duration_seconds = models.IntegerField(null=True, blank=True, verbose_name="作答時間(秒)")
+    completed_at = models.DateTimeField(auto_now_add=True, verbose_name="完成時間")
+
+    class Meta:
+        db_table = 'exam_result'
+        verbose_name = '考試結果'
+        verbose_name_plural = '考試結果'
+        ordering = ['-completed_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.exam.name} - {self.score}分"
+
+
 class Exam(models.Model):
     """
     考試/考卷
