@@ -1,5 +1,5 @@
 <template>
-  <div class="practice-view">
+  <div :class="['practice-view', practiceViewClass]">
     <div class="container">
       <!-- Stats Summary -->
       <div class="stats-section">
@@ -27,10 +27,10 @@
           <div class="mode-title">收藏題庫</div>
           <div class="mode-desc">複習已收藏的題目</div>
         </div>
-        <div class="mode-card" @click="router.push('/flashcards')">
-          <div class="mode-icon">🃏</div>
-          <div class="mode-title">快閃卡</div>
-          <div class="mode-desc">SM-2間隔複習</div>
+        <div class="mode-card ask-ai-card" @click="openChat()">
+          <div class="mode-icon">🤖</div>
+          <div class="mode-title">Ask AI</div>
+          <div class="mode-desc">題目解析與追問</div>
         </div>
       </div>
 
@@ -45,7 +45,10 @@
       <div v-if="quizMode" class="quiz-panel">
         <div class="quiz-header">
           <span>第 {{ currentIndex + 1 }} / {{ quizQuestions.length }} 題</span>
-          <button class="btn btn-secondary" @click="exitQuiz">結束練習</button>
+          <div class="quiz-tools">
+            <button class="btn btn-ghost" @click="openChat(composeQuestionPrompt(currentQuestion))">Ask AI</button>
+            <button class="btn btn-secondary" @click="exitQuiz">結束練習</button>
+          </div>
         </div>
         <div class="quiz-question">
           <p class="question-content">{{ currentQuestion?.content || currentQuestion?.question_content }}</p>
@@ -100,7 +103,9 @@
       <section v-if="activeTab === 'wrong' && !quizMode" class="content-section">
         <div class="section-header">
           <h3>錯題本</h3>
-          <button v-if="wrongQuestions.length" class="btn btn-primary" @click="startQuiz(wrongQuestions, 'wrong')">全部重測</button>
+          <div class="section-actions">
+            <button v-if="wrongQuestions.length" class="btn btn-primary" @click="startQuiz(wrongQuestions, 'wrong')">全部重測</button>
+          </div>
         </div>
         <div v-if="loadingWrong" class="loading">載入中...</div>
         <div v-else-if="!wrongQuestions.length" class="empty">🎉 太棒了！沒有錯題</div>
@@ -115,6 +120,7 @@
               <button class="btn btn-sm" @click="startSingleQuiz(wq)">重測</button>
               <button class="btn btn-sm" @click="addToFlashcard(wq.question)">快閃卡</button>
               <button class="btn btn-sm btn-secondary" @click="markReviewed(wq.id)">已複習</button>
+              <button class="btn btn-sm btn-outline" @click="openChatFromQuestion(wq)">Ask AI</button>
             </div>
           </div>
         </div>
@@ -124,7 +130,9 @@
       <section v-if="activeTab === 'bookmarks' && !quizMode" class="content-section">
         <div class="section-header">
           <h3>收藏題目</h3>
-          <button v-if="bookmarks.length" class="btn btn-primary" @click="startQuiz(bookmarks, 'bookmark')">全部練習</button>
+          <div class="section-actions">
+            <button v-if="bookmarks.length" class="btn btn-primary" @click="startQuiz(bookmarks, 'bookmark')">全部練習</button>
+          </div>
         </div>
         <div v-if="loadingBookmarks" class="loading">載入中...</div>
         <div v-else-if="!bookmarks.length" class="empty">尚無收藏題目</div>
@@ -138,20 +146,37 @@
               <button class="btn btn-sm" @click="startSingleQuiz(bm)">練習</button>
               <button class="btn btn-sm" @click="addToFlashcard(bm.question)">快閃卡</button>
               <button class="btn btn-sm btn-danger" @click="removeBookmark(bm.question)">移除</button>
+              <button class="btn btn-sm btn-outline" @click="openChatFromQuestion(bm)">Ask AI</button>
             </div>
           </div>
         </div>
       </section>
     </div>
+
+    <Teleport to="body">
+      <transition name="chat-slide">
+        <aside v-if="isChatOpen" class="chat-sidebar global-chat-sidebar" :style="chatSidebarStyle">
+          <div class="chat-sidebar-header">
+            <div>
+              <p class="chat-label">Ask AI</p>
+              <p class="chat-hint">解題、追問、記錄</p>
+            </div>
+            <button class="btn-icon" @click="closeChat" aria-label="關閉 Ask AI">×</button>
+          </div>
+          <AIChatInterface :prefill="chatPrefill" class="chat-panel-body" />
+        </aside>
+      </transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import examService from '@/services/examService'
 import questionService from '@/services/questionService'
 import flashcardService from '@/services/flashcardService'
+import AIChatInterface from '@/components/AIChatInterface.vue'
 
 const router = useRouter()
 const activeTab = ref('exams')
@@ -228,89 +253,131 @@ const startQuiz = async (questions, type) => {
   quizMode.value = true
 }
 
-const startSingleQuiz = async (q) => {
-  await startQuiz([q], 'single')
-}
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1440)
 
-const loadQuestionOptions = async (questionId) => {
-  try {
-    const { data } = await questionService.getQuestion(questionId)
-    currentOptions.value = data.options || []
-  } catch (e) {
-    currentOptions.value = []
+const isChatOpen = ref(false)
+const chatPrefill = ref({ text: '', stamp: Date.now() })
+const sidebarWidth = ref(360)
+const sidebarBoundary = computed(() => Math.floor(windowWidth.value / 3))
+const chatSidebarWidth = computed(() => {
+  // On mobile, use full width or 80% max
+  if (windowWidth.value <= 768) {
+    return Math.min(windowWidth.value, 400)
   }
-}
-
-const selectAnswer = (optId) => {
-  selectedAnswer.value = optId
-}
-
-const checkAnswer = () => {
-  const correct = currentOptions.value.find(o => o.is_correct)
-  isCorrect.value = correct && selectedAnswer.value === correct.id
-  showAnswer.value = true
-}
-
-const nextQuestion = async () => {
-  if (currentIndex.value < quizQuestions.value.length - 1) {
-    currentIndex.value++
-    selectedAnswer.value = null
-    showAnswer.value = false
-    await loadQuestionOptions(quizQuestions.value[currentIndex.value].id)
-  } else {
-    exitQuiz()
+  // On tablet, use 80% max 400px
+  if (windowWidth.value <= 1024) {
+    return Math.min(Math.floor(windowWidth.value * 0.8), 400)
   }
+  // On desktop, use configured width or 33% max
+  return Math.min(sidebarWidth.value, Math.floor(windowWidth.value * 0.33))
+})
+const shouldFloat = computed(() => {
+  // Always float on mobile and tablet - prevents squeeze
+  if (windowWidth.value <= 1024) return true
+  // On desktop, always float to prevent squeeze issues
+  return true
+  // Uncomment below if you want boundary-based floating on desktop
+  // return chatSidebarWidth.value > sidebarBoundary.value
+})
+const chatSidebarStyle = computed(() => ({ width: `${chatSidebarWidth.value}px` }))
+
+const applyBodySplit = () => {
+  // Since we always float now, no need to squeeze the body
+  document.documentElement.style.removeProperty('--ask-ai-offset')
+  document.body.classList.remove('chat-squeezed')
 }
 
-const exitQuiz = () => {
-  quizMode.value = false
-  quizQuestions.value = []
-  currentIndex.value = 0
-  loadData() // Refresh data
+const openChat = (prefillText = '') => {
+  chatPrefill.value = { text: prefillText, stamp: Date.now() }
+  isChatOpen.value = true
+  applyBodySplit()
 }
 
-const addCurrentToFlashcard = async () => {
-  if (!currentQuestion.value) return
-  try {
-    await flashcardService.createFlashcard({ question: currentQuestion.value.id })
-    alert('已加入快閃卡')
-  } catch (e) {
-    alert(e.message || '加入失敗')
-  }
+const closeChat = () => {
+  isChatOpen.value = false
+  applyBodySplit()
 }
 
-const addToFlashcard = async (questionId) => {
-  try {
-    await flashcardService.createFlashcard({ question: questionId })
-    alert('已加入快閃卡')
-  } catch (e) {
-    alert(e.message || '加入失敗')
-  }
+const handleResize = () => {
+  windowWidth.value = window.innerWidth
 }
 
-const markReviewed = async (id) => {
-  try {
-    await examService.markWrongQuestionReviewed(id)
-    wrongQuestions.value = wrongQuestions.value.filter(w => w.id !== id)
-    stats.wrong_count = Math.max(0, (stats.wrong_count || 0) - 1)
-  } catch (e) {
-    console.error(e)
-  }
-}
+watch([isChatOpen, chatSidebarWidth, shouldFloat, sidebarBoundary], applyBodySplit)
 
-const removeBookmark = async (questionId) => {
-  try {
-    await examService.removeBookmark(questionId)
-    bookmarks.value = bookmarks.value.filter(b => b.question !== questionId)
-  } catch (e) {
-    console.error(e)
-  }
-}
+const practiceViewClass = computed(() => ({ 'chat-open': isChatOpen.value && !shouldFloat.value }))
 
-onMounted(loadData)
+onMounted(() => {
+  loadData()
+  applyBodySplit()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  document.documentElement.style.removeProperty('--ask-ai-offset')
+  document.body.classList.remove('chat-squeezed')
+  window.removeEventListener('resize', handleResize)
+})
 </script>
 
 <style scoped>
+/* Remove squeeze behavior since we always float now */
+:global(body.chat-squeezed) {
+  /* No squeeze needed */
+}
+
+/* Simplified container behavior */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  transition: none;
+}
+
+.practice-view.chat-open .container {
+  /* No margin adjustment needed since sidebar floats */
+  margin-right: auto;
+}
+
+.practice-view.chat-open .container {
+  margin-right: calc(var(--ask-ai-offset, 0px));
+}
+
+.global-chat-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  background: #ffffff;
+  border-left: 1px solid #e5e7eb;
+  box-shadow: -8px 0 24px rgba(0,0,0,0.15);
+  z-index: 2147483647;
+}
+
+/* Overlay for mobile to prevent squeeze */
+@media (max-width: 768px) {
+  .global-chat-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw !important;
+    max-width: 100vw;
+    z-index: 2147483647;
+  }
+}
+
+.chat-slide-enter-active,
+.chat-slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.chat-slide-enter-from,
+.chat-slide-leave-to {
+  transform: translateX(100%);
+}
+
 .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
 
 .stats-section {
@@ -358,6 +425,17 @@ onMounted(loadData)
 .mode-icon { font-size: 40px; margin-bottom: 12px; }
 .mode-title { font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; }
 .mode-desc { font-size: 13px; color: #7f8c8d; }
+
+.ask-ai-card {
+  background: #eef9ff;
+  border: 2px solid #2563eb;
+  color: #2563eb;
+}
+
+.ask-ai-card:hover {
+  background: #2563eb;
+  color: white;
+}
 
 .tabs {
   display: flex;
@@ -487,8 +565,136 @@ onMounted(loadData)
 
 .quiz-actions { display: flex; gap: 12px; margin-top: 20px; }
 
+.chat-sidebar {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  background: #ffffff;
+  color: #2c3e50;
+  height: 100vh;
+  border-left: 1px solid #e5e7eb;
+}
+
+.chat-sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #ffffff;
+}
+
+.chat-label {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #2c3e50;
+}
+
+.chat-hint {
+  font-size: 13px;
+  color: #7f8c8d;
+  margin: 0;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  color: #7f8c8d;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-icon:hover {
+  background: #f3f4f6;
+  color: #2c3e50;
+}
+
+.chat-panel-body {
+  flex: 1;
+  min-height: 0;
+}
+
+:global(.ai-chat-interface) {
+  height: 100%;
+}
+
+:global(.ai-chat-interface .chat-input-container) {
+  position: sticky;
+  bottom: 0;
+}
+
 @media (max-width: 768px) {
   .stats-section, .practice-modes { grid-template-columns: repeat(2, 1fr); }
   .exam-item, .question-item { flex-direction: column; align-items: flex-start; gap: 12px; }
+  
+  /* Chat sidebar responsive styles */
+  .global-chat-sidebar {
+    width: 100vw !important;
+    max-width: 100vw;
+  }
+  
+  .chat-sidebar {
+    width: 100%;
+  }
+  
+  /* On mobile, container should not be squeezed */
+  .practice-view.chat-open .container {
+    margin-right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  /* Better responsive behavior for chat open state */
+  :global(body.chat-squeezed) {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-right: 0 !important;
+  }
+  
+  /* Prevent horizontal scroll on mobile */
+  html, body {
+    overflow-x: hidden;
+  }
+  
+  /* Smaller padding on mobile */
+  .container {
+    padding: 16px 12px;
+  }
+  
+  /* Smaller stat cards on mobile */
+  .stat-card {
+    padding: 16px 12px;
+  }
+  
+  .stat-value {
+    font-size: 24px;
+  }
+  
+  .stat-label {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .global-chat-sidebar {
+    width: 80vw;
+    max-width: 400px;
+  }
+  
+  .container {
+    padding: 16px;
+  }
+  
+  .stats-section {
+    gap: 12px;
+  }
+  
+  .practice-modes {
+    gap: 12px;
+  }
 }
 </style>

@@ -1,79 +1,127 @@
 <template>
   <div class="ai-chat-interface">
-    <div class="chat-header">
-      <h3>AI 法律助手</h3>
-      <button class="btn-clear" @click="clearChat" v-if="messages.length > 0">
-        清除對話
-      </button>
+    <!-- Remove the duplicate header since it's now handled by the parent component -->
+    <div class="chat-tabs">
+      <button :class="{ active: activeTab === 'chat' }" @click="activeTab = 'chat'">即時對話</button>
+      <button :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">歷史記錄</button>
     </div>
 
-    <div class="chat-messages" ref="messagesContainer">
-      <div
-        v-for="(msg, index) in messages"
-        :key="index"
-        :class="['message', msg.role]"
-      >
-        <div class="message-content">
-          <div class="message-text" v-html="formatMessage(msg.content)"></div>
-          <div class="message-time">{{ formatTime(msg.timestamp) }}</div>
+    <div v-if="activeTab === 'chat'" class="chat-panel">
+      <div class="chat-messages" ref="messagesContainer">
+        <div
+          v-for="(msg, index) in messages"
+          :key="index"
+          :class="['message', msg.role]"
+        >
+          <div class="message-content">
+            <div class="message-text" v-html="formatMessage(msg.content)"></div>
+            <div class="message-time">{{ formatTime(msg.timestamp) }}</div>
+          </div>
         </div>
-      </div>
-      <div v-if="isLoading" class="message assistant">
-        <div class="message-content">
-          <div class="message-text typing">
-            <span></span><span></span><span></span>
+        <div v-if="isLoading" class="message assistant">
+          <div class="message-content">
+            <div class="message-text typing">
+              <span></span><span></span><span></span>
+            </div>
           </div>
         </div>
       </div>
+
+      <div v-if="errorMessage" class="error-message">
+        {{ errorMessage }}
+        <button v-if="errorMessage.includes('使用限制')" @click="goToSubscription" class="btn-upgrade">
+          升級至進階版
+        </button>
+      </div>
+
+      <div class="chat-input-container">
+        <textarea
+          ref="chatInputRef"
+          v-model="inputMessage"
+          @keydown.enter.exact.prevent="handleSend"
+          @keydown.enter.shift.exact="inputMessage += '\n'"
+          placeholder="輸入您的問題..."
+          class="chat-input"
+          rows="3"
+          :disabled="isLoading"
+        ></textarea>
+        <button
+          @click="handleSend"
+          class="btn-send"
+          :disabled="!inputMessage.trim() || isLoading"
+        >
+          發送
+        </button>
+      </div>
     </div>
 
-    <div v-if="errorMessage" class="error-message">
-      {{ errorMessage }}
-      <button v-if="errorMessage.includes('使用限制')" @click="goToSubscription" class="btn-upgrade">
-        升級至進階版
-      </button>
-    </div>
-
-    <div class="chat-input-container">
-      <textarea
-        v-model="inputMessage"
-        @keydown.enter.exact.prevent="handleSend"
-        @keydown.enter.shift.exact="inputMessage += '\n'"
-        placeholder="輸入您的問題..."
-        class="chat-input"
-        rows="3"
-        :disabled="isLoading"
-      ></textarea>
-      <button
-        @click="handleSend"
-        class="btn-send"
-        :disabled="!inputMessage.trim() || isLoading"
-      >
-        發送
-      </button>
+    <div v-else class="history-panel">
+      <div class="history-toolbar">
+        <button class="btn-refresh" @click="refreshHistory" :disabled="isHistoryLoading">
+          重新整理
+        </button>
+      </div>
+      <div v-if="isHistoryLoading" class="history-placeholder">載入中...</div>
+      <div v-else-if="!historyItems.length" class="history-placeholder">尚無對話記錄</div>
+      <div v-else class="history-list">
+        <div v-for="item in historyItems" :key="item.id" class="history-item">
+          <div class="history-question">
+            <strong>Q</strong>
+            <span v-html="formatMessage(item.message)"></span>
+          </div>
+          <div v-if="item.response" class="history-answer">
+            <strong>A</strong>
+            <span v-html="formatMessage(item.response)"></span>
+          </div>
+          <div class="history-meta">{{ formatTime(item.created_at) }}</div>
+          <button class="history-reuse" @click="reuseHistory(item)">引用此題</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import aiService from '@/services/aiService'
 
 const router = useRouter()
+const props = defineProps({
+  prefill: {
+    type: Object,
+    default: () => ({ text: '', stamp: 0 })
+  }
+})
 
 const messages = ref([])
 const inputMessage = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
 const messagesContainer = ref(null)
+const chatInputRef = ref(null)
+const activeTab = ref('chat')
+const historyItems = ref([])
+const isHistoryLoading = ref(false)
 
-// 監聽 messages 變化，自動滾動到底部
 watch(messages, () => {
   nextTick(() => {
     scrollToBottom()
   })
 }, { deep: true })
+
+watch(() => props.prefill?.stamp, () => {
+  if (!props.prefill) return
+  inputMessage.value = props.prefill.text || ''
+  activeTab.value = 'chat'
+  nextTick(() => {
+    if (chatInputRef.value) {
+      const length = inputMessage.value.length
+      chatInputRef.value.focus()
+      chatInputRef.value.setSelectionRange(length, length)
+    }
+  })
+})
 
 const scrollToBottom = () => {
   if (messagesContainer.value) {
@@ -88,7 +136,6 @@ const handleSend = async () => {
   inputMessage.value = ''
   errorMessage.value = ''
 
-  // 加入使用者訊息
   messages.value.push({
     role: 'user',
     content: userMessage,
@@ -99,8 +146,6 @@ const handleSend = async () => {
 
   try {
     const response = await aiService.sendMessage(userMessage)
-    
-    // 加入 AI 回應
     messages.value.push({
       role: 'assistant',
       content: response.response,
@@ -121,10 +166,7 @@ const clearChat = () => {
   }
 }
 
-const formatMessage = (text) => {
-  // 簡單的格式化：將換行轉為 <br>
-  return text.replace(/\n/g, '<br>')
-}
+const formatMessage = (text = '') => text.replace(/\n/g, '<br>')
 
 const formatTime = (date) => {
   if (!date) return ''
@@ -136,28 +178,34 @@ const goToSubscription = () => {
   router.push('/subscription')
 }
 
-// 載入歷史記錄
+const reuseHistory = (entry) => {
+  inputMessage.value = entry.message || ''
+  activeTab.value = 'chat'
+  nextTick(() => {
+    chatInputRef.value?.focus()
+  })
+}
+
+const refreshHistory = () => {
+  loadHistory()
+}
+
 const loadHistory = async () => {
+  isHistoryLoading.value = true
   try {
     const data = await aiService.getHistory(20, 0)
-    messages.value = data.results.map(item => ({
-      role: 'user',
-      content: item.message,
-      timestamp: new Date(item.created_at)
-    })).concat(
-      data.results.map(item => ({
-        role: 'assistant',
-        content: item.response,
-        timestamp: new Date(item.created_at)
-      }))
-    ).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+    historyItems.value = data.results || []
+    messages.value = historyItems.value.flatMap(item => ([
+      { role: 'user', content: item.message, timestamp: new Date(item.created_at) },
+      { role: 'assistant', content: item.response, timestamp: new Date(item.created_at) }
+    ]))
   } catch (error) {
     console.error('Failed to load chat history:', error)
+  } finally {
+    isHistoryLoading.value = false
   }
 }
 
-// 組件掛載時載入歷史記錄
-import { onMounted } from 'vue'
 onMounted(() => {
   loadHistory()
 })
@@ -168,42 +216,44 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.chat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e0e0e0;
-  background: #f8f9fa;
-  border-radius: 8px 8px 0 0;
-}
-
-.chat-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  background: #ffffff;
   color: #2c3e50;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.btn-clear {
-  padding: 6px 12px;
-  background: #f5f5f5;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  font-size: 14px;
+/* Removed .chat-header styles since we removed the header */
+
+.chat-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.chat-tabs button {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #2c3e50;
   cursor: pointer;
-  color: #666;
-  transition: all 0.2s;
+  font-weight: 500;
 }
 
-.btn-clear:hover {
-  background: #e0e0e0;
-  color: #333;
+.chat-tabs button.active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .chat-messages {
@@ -213,6 +263,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: #ffffff;
 }
 
 .message {
@@ -321,9 +372,9 @@ onMounted(() => {
   display: flex;
   gap: 12px;
   padding: 16px 20px;
-  border-top: 1px solid #e0e0e0;
-  background: #f8f9fa;
-  border-radius: 0 0 8px 8px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 0;
 }
 
 .chat-input {
@@ -336,6 +387,8 @@ onMounted(() => {
   resize: none;
   outline: none;
   transition: border-color 0.2s;
+  background: #ffffff;
+  color: #2c3e50;
 }
 
 .chat-input:focus {
@@ -345,6 +398,7 @@ onMounted(() => {
 .chat-input:disabled {
   background: #f5f5f5;
   cursor: not-allowed;
+  color: #666;
 }
 
 .btn-send {
@@ -371,22 +425,96 @@ onMounted(() => {
   transform: none;
 }
 
-/* 滾動條樣式 */
-.chat-messages::-webkit-scrollbar {
+.history-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px;
+  gap: 12px;
+  background: #ffffff;
+  color: #2c3e50;
+}
+
+.history-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-refresh {
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #2c3e50;
+  cursor: pointer;
+}
+
+.history-placeholder {
+  text-align: center;
+  color: #6b7280;
+  padding: 40px 0;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.history-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f9fafb;
+}
+
+.history-question,
+.history-answer {
+  display: flex;
+  gap: 8px;
+  line-height: 1.5;
+  color: #1f2937;
+}
+
+.history-answer {
+  margin-top: 8px;
+}
+
+.history-meta {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 8px;
+}
+
+.history-reuse {
+  margin-top: 12px;
+  padding: 6px 10px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.chat-messages::-webkit-scrollbar,
+.history-list::-webkit-scrollbar {
   width: 6px;
 }
 
-.chat-messages::-webkit-scrollbar-track {
+.chat-messages::-webkit-scrollbar-track,
+.history-list::-webkit-scrollbar-track {
   background: #f1f1f1;
 }
 
-.chat-messages::-webkit-scrollbar-thumb {
+.chat-messages::-webkit-scrollbar-thumb,
+.history-list::-webkit-scrollbar-thumb {
   background: #ccc;
   border-radius: 3px;
 }
 
-.chat-messages::-webkit-scrollbar-thumb:hover {
+.chat-messages::-webkit-scrollbar-thumb:hover,
+.history-list::-webkit-scrollbar-thumb:hover {
   background: #999;
 }
 </style>
-
