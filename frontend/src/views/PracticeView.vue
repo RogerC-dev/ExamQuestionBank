@@ -1,6 +1,8 @@
 <template>
-  <div :class="['practice-view', practiceViewClass]">
-    <div class="container">
+  <div class="split-view-container">
+    <!-- Main Content Panel -->
+    <div class="main-panel" :style="mainPanelStyle">
+      <div class="container">
       <!-- Stats Summary -->
       <div class="stats-section">
         <div class="stat-card"><div class="stat-value">{{ stats.total_bank }}</div><div class="stat-label">題庫數</div></div>
@@ -152,26 +154,34 @@
         </div>
       </section>
     </div>
+    </div>
 
-    <Teleport to="body">
-      <transition name="chat-slide">
-        <aside v-if="isChatOpen" class="chat-sidebar global-chat-sidebar" :style="chatSidebarStyle">
-          <div class="chat-sidebar-header">
-            <div>
-              <p class="chat-label">Ask AI</p>
-              <p class="chat-hint">解題、追問、記錄</p>
-            </div>
-            <button class="btn-icon" @click="closeChat" aria-label="關閉 Ask AI">×</button>
-          </div>
-          <AIChatInterface :prefill="chatPrefill" class="chat-panel-body" />
-        </aside>
-      </transition>
-    </Teleport>
+    <!-- Draggable Divider -->
+    <div
+      v-if="isChatOpen"
+      class="split-divider"
+      @mousedown="startDrag"
+      @touchstart="startDrag"
+    >
+      <div class="divider-handle"></div>
+    </div>
+
+    <!-- AI Chat Panel (Split View) -->
+    <div v-if="isChatOpen" class="chat-panel-split" :style="chatPanelStyle">
+      <div class="chat-panel-header">
+        <div class="chat-panel-title">
+          <span class="chat-icon">🤖</span>
+          <span>Ask AI</span>
+        </div>
+        <button class="btn-close" @click="closeChat" aria-label="關閉">×</button>
+      </div>
+      <AIChatInterface :prefill="chatPrefill" class="chat-panel-content" />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import examService from '@/services/examService'
 import questionService from '@/services/questionService'
@@ -253,133 +263,322 @@ const startQuiz = async (questions, type) => {
   quizMode.value = true
 }
 
-const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1440)
+const loadQuestionOptions = async (questionId) => {
+  try {
+    const res = await questionService.getQuestionOptions(questionId)
+    currentOptions.value = res.data || []
+  } catch (e) {
+    console.error('Failed to load options:', e)
+    currentOptions.value = []
+  }
+}
 
+const selectAnswer = (optionId) => {
+  selectedAnswer.value = optionId
+}
+
+const checkAnswer = async () => {
+  const selected = currentOptions.value.find(o => o.id === selectedAnswer.value)
+  isCorrect.value = selected?.is_correct || false
+  showAnswer.value = true
+
+  // Record answer
+  try {
+    await examService.recordAnswer({
+      question: currentQuestion.value.id,
+      selected_option: selectedAnswer.value,
+      is_correct: isCorrect.value
+    })
+    // Refresh wrong questions if answer was wrong
+    if (!isCorrect.value) {
+      const wrongRes = await examService.getWrongQuestions().catch(() => ({ data: [] }))
+      wrongQuestions.value = wrongRes.data || []
+    }
+  } catch (e) {
+    console.error('Failed to record answer:', e)
+  }
+}
+
+const nextQuestion = async () => {
+  if (currentIndex.value < quizQuestions.value.length - 1) {
+    currentIndex.value++
+    selectedAnswer.value = null
+    showAnswer.value = false
+    await loadQuestionOptions(quizQuestions.value[currentIndex.value].id)
+  } else {
+    exitQuiz()
+  }
+}
+
+const exitQuiz = () => {
+  quizMode.value = false
+  quizQuestions.value = []
+  currentIndex.value = 0
+  selectedAnswer.value = null
+  showAnswer.value = false
+  currentOptions.value = []
+  loadData() // Refresh stats
+}
+
+const startSingleQuiz = async (question) => {
+  await startQuiz([question], 'single')
+}
+
+const addToFlashcard = async (questionId) => {
+  try {
+    await flashcardService.addQuestionToFlashcard(questionId)
+    alert('已加入快閃卡！')
+  } catch (e) {
+    console.error('Failed to add to flashcard:', e)
+    alert('加入快閃卡失敗')
+  }
+}
+
+const addCurrentToFlashcard = () => {
+  if (currentQuestion.value?.id) {
+    addToFlashcard(currentQuestion.value.id)
+  }
+}
+
+const markReviewed = async (wrongQuestionId) => {
+  try {
+    await examService.markWrongQuestionReviewed(wrongQuestionId)
+    wrongQuestions.value = wrongQuestions.value.filter(wq => wq.id !== wrongQuestionId)
+  } catch (e) {
+    console.error('Failed to mark as reviewed:', e)
+  }
+}
+
+const removeBookmark = async (questionId) => {
+  try {
+    await examService.removeBookmark(questionId)
+    bookmarks.value = bookmarks.value.filter(bm => bm.question !== questionId)
+  } catch (e) {
+    console.error('Failed to remove bookmark:', e)
+  }
+}
+
+const composeQuestionPrompt = (question) => {
+  if (!question) return ''
+  const content = question.content || question.question_content || ''
+  const options = currentOptions.value.map(o => `${getLabel(o.order)}. ${o.content}`).join('\n')
+  const correctOpt = currentOptions.value.find(o => o.is_correct)
+  const correctAnswer = correctOpt ? `正確答案：${getLabel(correctOpt.order)}. ${correctOpt.content}` : ''
+  return `題目：${content}\n\n選項：\n${options}\n\n${correctAnswer}\n\n請解釋為什麼這個答案是正確的？`
+}
+
+const openChatFromQuestion = (question) => {
+  const content = question.question_content || question.content || ''
+  openChat(`題目：${content}\n\n請幫我解析這道題目`)
+}
+
+// Split View State
 const isChatOpen = ref(false)
 const chatPrefill = ref({ text: '', stamp: Date.now() })
-const sidebarWidth = ref(360)
-const sidebarBoundary = computed(() => Math.floor(windowWidth.value / 3))
-const chatSidebarWidth = computed(() => {
-  // On mobile, use full width or 80% max
-  if (windowWidth.value <= 768) {
-    return Math.min(windowWidth.value, 400)
-  }
-  // On tablet, use 80% max 400px
-  if (windowWidth.value <= 1024) {
-    return Math.min(Math.floor(windowWidth.value * 0.8), 400)
-  }
-  // On desktop, use configured width or 33% max
-  return Math.min(sidebarWidth.value, Math.floor(windowWidth.value * 0.33))
-})
-const shouldFloat = computed(() => {
-  // Always float on mobile and tablet - prevents squeeze
-  if (windowWidth.value <= 1024) return true
-  // On desktop, always float to prevent squeeze issues
-  return true
-  // Uncomment below if you want boundary-based floating on desktop
-  // return chatSidebarWidth.value > sidebarBoundary.value
-})
-const chatSidebarStyle = computed(() => ({ width: `${chatSidebarWidth.value}px` }))
+const splitRatio = ref(0.6) // Main panel takes 60% by default
+const isDragging = ref(false)
+const minPanelWidth = 300 // Minimum width for each panel in pixels
 
-const applyBodySplit = () => {
-  // Since we always float now, no need to squeeze the body
-  document.documentElement.style.removeProperty('--ask-ai-offset')
-  document.body.classList.remove('chat-squeezed')
+// Computed styles for split view
+const mainPanelStyle = computed(() => {
+  if (!isChatOpen.value) {
+    return { width: '100%' }
+  }
+  return { width: `calc(${splitRatio.value * 100}% - 4px)` }
+})
+
+const chatPanelStyle = computed(() => {
+  if (!isChatOpen.value) {
+    return { display: 'none' }
+  }
+  return { width: `calc(${(1 - splitRatio.value) * 100}% - 4px)` }
+})
+
+// Drag handlers for the divider
+const startDrag = (e) => {
+  isDragging.value = true
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+
+  document.addEventListener('mousemove', onDrag)
+  document.addEventListener('mouseup', stopDrag)
+  document.addEventListener('touchmove', onDrag)
+  document.addEventListener('touchend', stopDrag)
+}
+
+const onDrag = (e) => {
+  if (!isDragging.value) return
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  const containerWidth = window.innerWidth
+
+  let newRatio = clientX / containerWidth
+
+  // Enforce minimum panel widths
+  const minRatio = minPanelWidth / containerWidth
+  const maxRatio = 1 - minRatio
+
+  newRatio = Math.max(minRatio, Math.min(maxRatio, newRatio))
+  splitRatio.value = newRatio
+}
+
+const stopDrag = () => {
+  isDragging.value = false
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', stopDrag)
+  document.removeEventListener('touchmove', onDrag)
+  document.removeEventListener('touchend', stopDrag)
 }
 
 const openChat = (prefillText = '') => {
   chatPrefill.value = { text: prefillText, stamp: Date.now() }
   isChatOpen.value = true
-  applyBodySplit()
 }
 
 const closeChat = () => {
   isChatOpen.value = false
-  applyBodySplit()
 }
 
 const handleResize = () => {
-  windowWidth.value = window.innerWidth
+  // Ensure split ratio respects minimum widths on resize
+  const containerWidth = window.innerWidth
+  const minRatio = minPanelWidth / containerWidth
+  const maxRatio = 1 - minRatio
+
+  if (splitRatio.value < minRatio) splitRatio.value = minRatio
+  if (splitRatio.value > maxRatio) splitRatio.value = maxRatio
 }
-
-watch([isChatOpen, chatSidebarWidth, shouldFloat, sidebarBoundary], applyBodySplit)
-
-const practiceViewClass = computed(() => ({ 'chat-open': isChatOpen.value && !shouldFloat.value }))
 
 onMounted(() => {
   loadData()
-  applyBodySplit()
   window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
-  document.documentElement.style.removeProperty('--ask-ai-offset')
-  document.body.classList.remove('chat-squeezed')
   window.removeEventListener('resize', handleResize)
+  // Clean up any lingering drag state
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', stopDrag)
+  document.removeEventListener('touchmove', onDrag)
+  document.removeEventListener('touchend', stopDrag)
 })
 </script>
 
 <style scoped>
-/* Remove squeeze behavior since we always float now */
-:global(body.chat-squeezed) {
-  /* No squeeze needed */
+/* Split View Container - Browser-like split tab layout */
+.split-view-container {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 140px); /* Account for header and nav */
+  overflow: hidden;
+  background: #f5f7fa;
 }
 
-/* Simplified container behavior */
+/* Main Content Panel */
+.main-panel {
+  height: 100%;
+  overflow-y: auto;
+  background: #f5f7fa;
+  transition: width 0.1s ease;
+}
+
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 100%;
   padding: 20px;
-  transition: none;
 }
 
-.practice-view.chat-open .container {
-  /* No margin adjustment needed since sidebar floats */
-  margin-right: auto;
+/* Draggable Divider */
+.split-divider {
+  width: 8px;
+  background: #e5e7eb;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  position: relative;
 }
 
-.practice-view.chat-open .container {
-  margin-right: calc(var(--ask-ai-offset, 0px));
+.split-divider:hover,
+.split-divider:active {
+  background: #d1d5db;
 }
 
-.global-chat-sidebar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 420px;
+.divider-handle {
+  width: 4px;
+  height: 40px;
+  background: #9ca3af;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.split-divider:hover .divider-handle,
+.split-divider:active .divider-handle {
+  background: #6b7280;
+}
+
+/* AI Chat Split Panel */
+.chat-panel-split {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   background: #ffffff;
   border-left: 1px solid #e5e7eb;
-  box-shadow: -8px 0 24px rgba(0,0,0,0.15);
-  z-index: 2147483647;
+  overflow: hidden;
+  transition: width 0.1s ease;
 }
 
-/* Overlay for mobile to prevent squeeze */
-@media (max-width: 768px) {
-  .global-chat-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100vw !important;
-    max-width: 100vw;
-    z-index: 2147483647;
-  }
+.chat-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
-.chat-slide-enter-active,
-.chat-slide-leave-active {
-  transition: transform 0.3s ease;
+.chat-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
 }
 
-.chat-slide-enter-from,
-.chat-slide-leave-to {
-  transform: translateX(100%);
+.chat-icon {
+  font-size: 20px;
 }
 
-.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: all 0.2s;
+}
 
+.btn-close:hover {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.chat-panel-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Stats Section */
 .stats-section {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -404,6 +603,7 @@ onUnmounted(() => {
 
 .section-title { font-size: 20px; font-weight: bold; color: #2c3e50; margin-bottom: 20px; }
 
+/* Practice Mode Cards */
 .practice-modes {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -429,14 +629,23 @@ onUnmounted(() => {
 .ask-ai-card {
   background: #eef9ff;
   border: 2px solid #2563eb;
+}
+
+.ask-ai-card .mode-title,
+.ask-ai-card .mode-desc {
   color: #2563eb;
 }
 
 .ask-ai-card:hover {
   background: #2563eb;
+}
+
+.ask-ai-card:hover .mode-title,
+.ask-ai-card:hover .mode-desc {
   color: white;
 }
 
+/* Tabs */
 .tabs {
   display: flex;
   gap: 8px;
@@ -454,6 +663,7 @@ onUnmounted(() => {
 
 .tabs button.active { background: #2563eb; color: white; }
 
+/* Content Section */
 .content-section {
   background: white;
   padding: 24px;
@@ -499,8 +709,9 @@ onUnmounted(() => {
   font-size: 12px;
 }
 
-.question-actions { display: flex; gap: 8px; }
+.question-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* Buttons */
 .btn {
   padding: 8px 16px;
   border: none;
@@ -518,6 +729,10 @@ onUnmounted(() => {
 .btn-danger { background: #dc2626; }
 .btn-danger:hover { background: #b91c1c; }
 .btn-primary { background: #2563eb; }
+.btn-outline { background: transparent; border: 1px solid #2563eb; color: #2563eb; }
+.btn-outline:hover { background: #2563eb; color: white; }
+.btn-ghost { background: transparent; color: #2563eb; }
+.btn-ghost:hover { background: #eff6ff; }
 
 /* Quiz Panel */
 .quiz-panel {
@@ -534,6 +749,11 @@ onUnmounted(() => {
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid #e5e7eb;
+}
+
+.quiz-tools {
+  display: flex;
+  gap: 8px;
 }
 
 .quiz-question { margin-bottom: 20px; }
@@ -565,107 +785,62 @@ onUnmounted(() => {
 
 .quiz-actions { display: flex; gap: 12px; margin-top: 20px; }
 
-.chat-sidebar {
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  background: #ffffff;
-  color: #2c3e50;
-  height: 100vh;
-  border-left: 1px solid #e5e7eb;
-}
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .stats-section, .practice-modes {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
-.chat-sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  background: #ffffff;
-}
-
-.chat-label {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 4px 0;
-  color: #2c3e50;
-}
-
-.chat-hint {
-  font-size: 13px;
-  color: #7f8c8d;
-  margin: 0;
-}
-
-.btn-icon {
-  background: none;
-  border: none;
-  color: #7f8c8d;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s, color 0.2s;
-}
-
-.btn-icon:hover {
-  background: #f3f4f6;
-  color: #2c3e50;
-}
-
-.chat-panel-body {
-  flex: 1;
-  min-height: 0;
-}
-
-:global(.ai-chat-interface) {
-  height: 100%;
-}
-
-:global(.ai-chat-interface .chat-input-container) {
-  position: sticky;
-  bottom: 0;
+  .container {
+    padding: 16px;
+  }
 }
 
 @media (max-width: 768px) {
-  .stats-section, .practice-modes { grid-template-columns: repeat(2, 1fr); }
-  .exam-item, .question-item { flex-direction: column; align-items: flex-start; gap: 12px; }
-  
-  /* Chat sidebar responsive styles */
-  .global-chat-sidebar {
-    width: 100vw !important;
-    max-width: 100vw;
+  .split-view-container {
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 140px);
   }
-  
-  .chat-sidebar {
-    width: 100%;
-  }
-  
-  /* On mobile, container should not be squeezed */
-  .practice-view.chat-open .container {
-    margin-right: 0 !important;
+
+  .main-panel {
     width: 100% !important;
-    max-width: 100% !important;
+    height: auto;
+    min-height: 50vh;
+  }
+
+  .split-divider {
+    width: 100%;
+    height: 8px;
+    cursor: row-resize;
+  }
+
+  .divider-handle {
+    width: 40px;
+    height: 4px;
   }
   
-  /* Better responsive behavior for chat open state */
-  :global(body.chat-squeezed) {
-    width: 100vw !important;
-    max-width: 100vw !important;
-    margin-right: 0 !important;
+  .chat-panel-split {
+    width: 100% !important;
+    height: 50vh;
+    border-left: none;
+    border-top: 1px solid #e5e7eb;
   }
   
-  /* Prevent horizontal scroll on mobile */
-  html, body {
-    overflow-x: hidden;
+  .stats-section, .practice-modes {
+    grid-template-columns: repeat(2, 1fr);
   }
   
-  /* Smaller padding on mobile */
+  .exam-item, .question-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
   .container {
     padding: 16px 12px;
   }
   
-  /* Smaller stat cards on mobile */
   .stat-card {
     padding: 16px 12px;
   }
@@ -679,22 +854,16 @@ onUnmounted(() => {
   }
 }
 
-@media (max-width: 1024px) {
-  .global-chat-sidebar {
-    width: 80vw;
-    max-width: 400px;
-  }
-  
-  .container {
-    padding: 16px;
-  }
-  
-  .stats-section {
-    gap: 12px;
-  }
-  
-  .practice-modes {
-    gap: 12px;
-  }
+/* Ensure AI Chat Interface fills the panel */
+:deep(.ai-chat-interface) {
+  height: 100%;
+}
+
+:deep(.ai-chat-interface .chat-panel) {
+  height: 100%;
+}
+
+:deep(.ai-chat-interface .chat-input-container) {
+  flex-shrink: 0;
 }
 </style>

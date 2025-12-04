@@ -269,9 +269,7 @@ nav a.active {
 
 /* Main */
 main {
-  padding: 40px 0;
-  max-width: 1200px;
-  margin: 0 auto;
+  min-height: calc(100vh - 140px);
 }
 
 /* Responsive */
