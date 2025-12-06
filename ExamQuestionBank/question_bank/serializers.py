@@ -10,7 +10,7 @@ class QuestionOptionSerializer(serializers.ModelSerializer):
     """題目選項序列化器"""
     class Meta:
         model = QuestionOption
-        fields = ['id', 'content', 'is_correct']
+        fields = ['id', 'content', 'is_correct', 'order']
         read_only_fields = ['id']
 
 

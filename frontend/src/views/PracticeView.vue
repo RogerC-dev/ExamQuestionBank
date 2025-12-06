@@ -48,7 +48,7 @@
         <div class="quiz-header">
           <span>第 {{ currentIndex + 1 }} / {{ quizQuestions.length }} 題</span>
           <div class="quiz-tools">
-            <button class="btn btn-ghost" @click="openChat(composeQuestionPrompt(currentQuestion))">Ask AI</button>
+            <button v-if="showAnswer" class="btn btn-ghost" @click="openChat(composeQuestionPrompt(currentQuestion, currentOptions))">Ask AI</button>
             <button class="btn btn-secondary" @click="exitQuiz">結束練習</button>
           </div>
         </div>
@@ -358,18 +358,39 @@ const removeBookmark = async (questionId) => {
   }
 }
 
-const composeQuestionPrompt = (question) => {
+const composeQuestionPrompt = (question, options = null) => {
   if (!question) return ''
   const content = question.content || question.question_content || ''
-  const options = currentOptions.value.map(o => `${getLabel(o.order)}. ${o.content}`).join('\n')
-  const correctOpt = currentOptions.value.find(o => o.is_correct)
+  const opts = options || currentOptions.value
+  const optionsText = opts.map(o => `${getLabel(o.order)}. ${o.content}`).join('\n')
+  const correctOpt = opts.find(o => o.is_correct)
   const correctAnswer = correctOpt ? `正確答案：${getLabel(correctOpt.order)}. ${correctOpt.content}` : ''
-  return `題目：${content}\n\n選項：\n${options}\n\n${correctAnswer}\n\n請解釋為什麼這個答案是正確的？`
+  return `題目：${content}\n\n選項：\n${optionsText}\n\n${correctAnswer}\n\n請解釋為什麼這個答案是正確的？`
 }
 
-const openChatFromQuestion = (question) => {
+const openChatFromQuestion = async (question) => {
   const content = question.question_content || question.content || ''
-  openChat(`題目：${content}\n\n請幫我解析這道題目`)
+  const questionId = question.question || question.id
+
+  try {
+    // Load options for this question to provide full context to AI
+    const res = await questionService.getQuestionOptions(questionId)
+    const options = res.data || []
+
+    if (options.length > 0) {
+      // Compose full prompt with question and all options
+      const optionsText = options.map(o => `${getLabel(o.order)}. ${o.content}`).join('\n')
+      const correctOpt = options.find(o => o.is_correct)
+      const correctAnswer = correctOpt ? `\n\n正確答案：${getLabel(correctOpt.order)}. ${correctOpt.content}` : ''
+      openChat(`題目：${content}\n\n選項：\n${optionsText}${correctAnswer}\n\n請幫我解析這道題目，解釋為什麼正確答案是對的？`)
+    } else {
+      // Fallback if no options available
+      openChat(`題目：${content}\n\n請幫我解析這道題目`)
+    }
+  } catch (e) {
+    console.error('Failed to load question options for AI:', e)
+    openChat(`題目：${content}\n\n請幫我解析這道題目`)
+  }
 }
 
 // Split View State

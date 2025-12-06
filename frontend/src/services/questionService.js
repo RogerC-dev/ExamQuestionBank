@@ -82,5 +82,16 @@ export default {
    */
   deleteQuestion(questionId) {
     return api.delete(`${BASE_PREFIX}/${questionId}/`)
+  },
+
+  /**
+   * Get question options (choices) for a question
+   * Uses the detail endpoint which returns options
+   * @param {number} questionId - Question ID
+   */
+  async getQuestionOptions(questionId) {
+    const res = await api.get(`${BASE_PREFIX}/${questionId}/`)
+    // The detail endpoint returns options in the response
+    return { data: res.data.options || [] }
   }
 }
