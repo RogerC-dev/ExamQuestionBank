@@ -10,6 +10,7 @@
 
     <!-- PDF 匯入區 -->
     <PdfUploadSection
+      ref="pdfUploadSectionRef"
       @import-success="handlePdfImport"
     />
 
@@ -27,18 +28,30 @@
 
       <!-- 右側：題目列表 -->
       <div class="right-panel">
-        <QuestionList
-          :questions="allQuestions"
-          :selected-question-id="selectedQuestionId"
-          :loading="loadingQuestions"
-          v-model:total-points="autoPointsTotal"
-          :auto-distribute-loading="autoDistributeLoading"
-          :pending-edits="pendingQuestionEdits"
-          @select-question="handleSelectQuestion"
-          @add-question="handleAddQuestion"
-          @remove-question="handleRemoveQuestion"
-          @auto-distribute="autoDistributePoints"
-        />
+        <div class="right-panel-inner">
+          <div class="toolbar" style="display:flex; gap:8px; align-items:center; padding:8px 12px; border-bottom: 1px solid #eee">
+            <button class="btn toolbar-btn btn-sm btn-secondary" @click="autoDistributePoints" :disabled="autoDistributeLoading">{{ autoDistributeLoading ? '配分中...' : '自動配分' }}</button>
+            <button class="btn toolbar-btn btn-sm btn-secondary" @click="showBulkTagModal = true">批次編輯標籤</button>
+          </div>
+          <div class="question-list-wrapper">
+            <QuestionList
+              :questions="allQuestions"
+              :selected-question-id="selectedQuestionId"
+              :loading="loadingQuestions"
+              v-model:total-points="autoPointsTotal"
+              :auto-distribute-loading="autoDistributeLoading"
+              :pending-edits="pendingQuestionEdits"
+              :show-auto-distribute="false"
+              @select-question="handleSelectQuestion"
+              @add-question="handleAddQuestion"
+              @remove-question="handleRemoveQuestion"
+              @auto-distribute="autoDistributePoints"
+            />
+          </div>
+          <div class="right-actions">
+            <!-- Reserved for other actions or quick links -->
+          </div>
+        </div>
       </div>
     </div>
 
@@ -48,6 +61,7 @@
       @close="showAddModal = false"
       @add="handleAddQuestionToExam"
     />
+    <BulkTagEditor v-if="showBulkTagModal" :questions="allQuestions" :pendingQuestions="pendingQuestions" :examId="examId" @close="showBulkTagModal=false" @applied="handleBulkTagsApplied" />
   </div>
 </template>
 
@@ -58,6 +72,7 @@ import ExamForm from '../components/ExamForm.vue'
 import QuestionEditor from '../components/QuestionEditor.vue'
 import QuestionList from '../components/QuestionList.vue'
 import AddQuestionModal from '../components/AddQuestionModal.vue'
+import BulkTagEditor from '../components/BulkTagEditor.vue'
 import PdfUploadSection from '../components/PdfUploadSection.vue'
 import examService from '../services/examService'
 import questionService from '../services/questionService'
@@ -88,6 +103,7 @@ const savingQuestion = ref(false)
 
 // 新增題目彈窗
 const showAddModal = ref(false)
+const showBulkTagModal = ref(false)
 
 const pdfImportStore = usePdfImportStore()
 
@@ -262,6 +278,8 @@ const handleSaveExam = async (examData) => {
     savingExam.value = false
   }
 }
+
+// PDF import dialog trigger removed from toolbar.
 
 // 取消編輯
 const handleCancel = () => {
@@ -561,6 +579,28 @@ const handleAddQuestionToExam = async (questionId, order, points) => {
   }
 }
 
+const handleBulkTagsApplied = async ({ successCount, errors, pendingUpdates = [] }) => {
+  let msg = `已成功更新 ${successCount} 題。`
+  if (errors && errors.length) {
+    msg += `
+失敗：${errors.length} 題，詳情請查看 console。`
+    console.error('批次標籤更新錯誤：', errors)
+  }
+  alert(msg)
+  // Apply pending updates locally
+  if (pendingUpdates.length) {
+    pendingUpdates.forEach(u => {
+      if (pendingQuestions.value[u.idx]) {
+        pendingQuestions.value[u.idx].tag_ids = u.tag_ids
+      }
+    })
+  }
+  // Reload exam only if some saved questions were updated
+  if (successCount > 0) {
+    await loadExam()
+  }
+}
+
 // 從考卷移除題目
 const handleRemoveQuestion = async (examQuestionId) => {
   if (!confirm('確定要移除這個題目嗎？')) return
@@ -763,6 +803,8 @@ onMounted(async () => {
 .right-panel {
   height: 100%;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (max-width: 1200px) {
@@ -774,6 +816,35 @@ onMounted(async () => {
   .left-panel,
   .right-panel {
     height: 600px;
+    display: flex;
+    flex-direction: column;
   }
+}
+
+.question-list-wrapper {
+  flex: 1;
+  min-height: 0; /* for proper scrolling in flex container */
+}
+.question-list-wrapper { overflow:auto; }
+.question-list-wrapper > * {
+  height: 100%;
+}
+.toolbar-btn {
+  background: #f5f7fa;
+  border: 1px solid #e3e6ea;
+  color: #1f2937;
+  padding: 6px 12px;
+}
+.toolbar-btn:hover {
+  background: #eef2f7;
+}
+.toolbar-btn:disabled {
+  background: #fafafa;
+  color: #9ca3af;
+}
+.right-actions {
+  padding: 12px 0 0 0;
+  display:flex;
+  gap:8px;
 }
 </style>

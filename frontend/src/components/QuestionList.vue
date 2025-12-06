@@ -19,6 +19,7 @@
           />
         </div>
         <button
+          v-if="showAutoDistribute"
           class="btn btn-sm btn-secondary"
           :disabled="autoDistributeDisabled"
           @click="$emit('auto-distribute')"
@@ -84,6 +85,10 @@ const props = defineProps({
   autoDistributeLoading: {
     type: Boolean,
     default: false
+  },
+  showAutoDistribute: {
+    type: Boolean,
+    default: true
   },
   pendingEdits: {
     type: Object,

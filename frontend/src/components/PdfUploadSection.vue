@@ -181,6 +181,12 @@ const handleQuestionPdfUpload = async (event) => {
   }
 }
 
+// expose a method to open file picker programmatically
+const openQuestionPicker = () => {
+  questionFileInput.value?.click()
+}
+defineExpose({ openQuestionPicker })
+
 // 處理答案 PDF 上傳
 const handleAnswerPdfUpload = async (event) => {
   const file = event.target.files[0]
