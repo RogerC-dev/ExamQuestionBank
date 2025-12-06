@@ -91,6 +91,7 @@ const apply = async () => {
   let successCount = 0
   const pendingUpdates = []
 
+  const savedUpdates = []
   for (const q of targetQuestions.value) {
     try {
       if (q.isPending) {
@@ -124,12 +125,26 @@ const apply = async () => {
         } else {
           newTagIds = currentTagIds.filter(id => !tagIdsToModify.includes(id))
         }
-        await questionService.updateQuestion(q.question, { tag_ids: newTagIds })
-        successCount++
+        savedUpdates.push({ id: q.question, tag_ids: newTagIds })
       }
     } catch (err) {
       console.error('更新題目標籤失敗', q, err)
       errors.push({ id: q.question || q.id || q.order, error: err.response?.data || err.message })
+    }
+  }
+
+  // Execute bulk update for saved questions if any
+  if (savedUpdates.length > 0) {
+    try {
+      const res = await questionService.bulkUpdateQuestions(savedUpdates)
+      const results = res.data?.results || res.data
+      for (const r of results) {
+        if (r.success) successCount++
+        else errors.push({ id: r.index ?? r.id, error: r.errors })
+      }
+    } catch (err) {
+      console.error('批次更新失敗', err)
+      errors.push({ id: 'bulk-update', error: err.response?.data || err.message })
     }
   }
 

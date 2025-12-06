@@ -77,6 +77,24 @@ export default {
   },
 
   /**
+   * Bulk create multiple questions
+   * @param {Array} payload - Array of question objects
+   */
+  bulkCreateQuestions(payload) {
+    return api.post(`${BASE_PREFIX}/bulk-create/`, payload)
+  },
+
+  /**
+   * Bulk update multiple questions
+   * @param {Array} payload - Array of question objects with id
+   * @param {boolean} partial - If true, will run partial update for each question
+   */
+  bulkUpdateQuestions(payload, partial = true) {
+    const url = `${BASE_PREFIX}/bulk-update/?partial=${partial}`
+    return api.patch(url, payload)
+  },
+
+  /**
    * Delete a question
    * @param {number} questionId - Question ID
    */
