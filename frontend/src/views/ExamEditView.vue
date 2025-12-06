@@ -176,77 +176,78 @@ const handleSaveExam = async (examData) => {
     const summaryParts = []
     let shouldReload = false
 
-    // 如果有暫存的題目，批次建立並加入考卷
+      // 如果有暫存的題目，批次建立並加入考卷（改用 bulk API）
     if (pendingQuestions.value.length > 0) {
       console.log(`開始批次建立 ${pendingQuestions.value.length} 個題目...`)
+        const createPayload = []
+        const meta = [] // keep mapping of index -> order & points for later adding to exam
+        let skipCount = 0
 
-      let successCount = 0
-      let failCount = 0
-
-      for (let i = 0; i < pendingQuestions.value.length; i++) {
-        const questionData = pendingQuestions.value[i]
-
-        try {
-          // 建立題目
-                  const questionPayload = {
-                    subject: questionData.subject,
-                    category: questionData.category,
-                    question_type: questionData.question_type,
-                    difficulty: questionData.difficulty,
-                    content: questionData.content,
-                    explanation: questionData.explanation,
-                    status: 'published',
-                    options: questionData.options,
-                    tag_ids: questionData.tag_ids || []
-                  }
+        for (let i = 0; i < pendingQuestions.value.length; i++) {
+          const questionData = pendingQuestions.value[i]
+          const questionPayload = {
+            subject: questionData.subject,
+            category: questionData.category,
+            question_type: questionData.question_type || '選擇題',
+            difficulty: questionData.difficulty || 'medium',
+            content: questionData.content,
+            explanation: questionData.explanation,
+            status: 'published',
+            options: questionData.options,
+            tag_ids: questionData.tag_ids || []
+          }
 
           // basic validation: ensure required fields exist
-          if (!questionPayload.content || !questionPayload.content.trim()) {
-            console.warn(`跳過建立題目 #${i + 1}: content 為空`)
-            failCount++
-            continue
-          }
-          if (!questionPayload.subject || !questionPayload.subject.trim()) {
-            console.warn(`跳過建立題目 #${i + 1}: subject 為空`)
-            failCount++
-            continue
-          }
-          if (!questionPayload.question_type) questionPayload.question_type = '選擇題'
-          if (!questionPayload.difficulty) questionPayload.difficulty = 'medium'
-
-          let newQuestion = null
-          try {
-            const createResponse = await questionService.createQuestion(questionPayload)
-            newQuestion = createResponse.data
-          } catch (err) {
-            console.error(`建立題目 ${i + 1} 失敗:`, err)
-            // show backend validation message if present
-            const detail = err.response?.data || err.message
-            console.error('建立題目錯誤詳情：', detail)
-            failCount++
-            // add to summaryParts so user can see which one failed
-            summaryParts.push(`第 ${i + 1} 題建立失敗: ${JSON.stringify(detail)}`)
+          if (!questionPayload.content || !questionPayload.content.trim() || !questionPayload.subject || !questionPayload.subject.trim()) {
+            console.warn(`跳過建立題目 #${i + 1}: content or subject 為空`)
+            skipCount++
             continue
           }
 
-          // 將題目加入考卷，使用暫存題目中的 order（如果有的話）
-          await examService.addQuestionToExam(currentExamId, {
-            question: newQuestion.id,
-            order: questionData.order !== undefined ? questionData.order : (examQuestions.value.length + i + 1),
-            points: questionData.points
-          })
-
-          successCount++
-        } catch (error) {
-          console.error(`建立題目 ${i + 1} 失敗:`, error)
-          failCount++
+          createPayload.push(questionPayload)
+          meta.push({ index: i, order: questionData.order !== undefined ? questionData.order : (examQuestions.value.length + i + 1), points: questionData.points })
         }
-      }
 
-      // 清空暫存列表
-      pendingQuestions.value = []
-      shouldReload = true
-      summaryParts.push(`題目建立：成功 ${successCount} 題，失敗 ${failCount} 題`)
+        let successCount = 0
+        let failCount = 0
+        if (createPayload.length > 0) {
+          try {
+            const res = await questionService.bulkCreateQuestions(createPayload)
+            const results = res.data?.results || res.data
+            for (let i = 0; i < results.length; i++) {
+              const r = results[i]
+              const m = meta[i]
+              if (r.success) {
+                // Add created question to exam
+                try {
+                  await examService.addQuestionToExam(currentExamId, {
+                    question: r.id,
+                    order: m.order,
+                    points: m.points
+                  })
+                  successCount++
+                } catch (err) {
+                  console.error('加入考卷失敗', err)
+                  failCount++
+                }
+              } else {
+                failCount++
+                const detail = r.errors
+                summaryParts.push(`${r.index !== undefined ? `第 ${r.index + 1} 題`: '某題'} 建立失敗: ${JSON.stringify(detail)}`)
+              }
+            }
+          } catch (err) {
+            // fallback: if bulk create failed entirely, try single create to get more info - but for now, treat as failed
+            console.error('批次建立題目失敗', err)
+            summaryParts.push(`批次建立題目失敗: ${err.response?.data || err.message}`)
+            failCount += createPayload.length
+          }
+        }
+
+        // 清空暫存列表（已加入或嘗試加入）
+        pendingQuestions.value = []
+        shouldReload = true
+        summaryParts.push(`題目建立：成功 ${successCount} 題，失敗 ${failCount} 題，略過 ${skipCount} 題`)
     }
 
     const { questionUpdates, settingUpdates, errors: editErrors } = await applyPendingQuestionEdits(currentExamId)

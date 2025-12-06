@@ -5,6 +5,7 @@ from rest_framework import status, viewsets, filters
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from django.db import transaction
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -186,6 +187,77 @@ class QuestionViewSet(viewsets.ModelViewSet):
     def partial_update(self, request, *args, **kwargs):
         kwargs['partial'] = True
         return self.update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="批量建立題目",
+        operation_description="一次建立多題；接收一個題目物件的陣列，每個題目同 create API 欄位相同",
+        request_body=QuestionCreateUpdateSerializer(many=True),
+        responses={200: QuestionDetailSerializer(many=True)}
+    )
+    @action(detail=False, methods=['post'], url_path='bulk-create')
+    def bulk_create(self, request, *args, **kwargs):
+        if not isinstance(request.data, list):
+            return Response({'detail': 'A list of question objects is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        results = []
+        for idx, item in enumerate(request.data):
+            serializer = QuestionCreateUpdateSerializer(data=item, context={'request': request})
+            try:
+                with transaction.atomic():
+                    serializer.is_valid(raise_exception=True)
+                    q = serializer.save()
+                    results.append({'success': True, 'id': q.id, 'data': QuestionDetailSerializer(q).data})
+            except Exception as exc:
+                # Collect validation errors or other exceptions per item
+                err = exc
+                # If it's a serializer error, get its detail
+                try:
+                    msg = exc.detail
+                except Exception:
+                    msg = str(exc)
+                results.append({'success': False, 'index': idx, 'errors': msg})
+
+        return Response({'results': results}, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        operation_summary="批量更新題目",
+        operation_description="一次更新多題；接收一個題目物件的陣列，每個物件需包含 id，並可為 partial 更新",
+        request_body=QuestionCreateUpdateSerializer(many=True),
+        responses={200: QuestionDetailSerializer(many=True)}
+    )
+    @action(detail=False, methods=['patch'], url_path='bulk-update')
+    def bulk_update(self, request, *args, **kwargs):
+        if not isinstance(request.data, list):
+            return Response({'detail': 'A list of question objects is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        partial_flag = request.query_params.get('partial', 'true').lower() == 'true'
+        results = []
+        for idx, item in enumerate(request.data):
+            qid = item.get('id')
+            if not qid:
+                results.append({'success': False, 'index': idx, 'errors': 'id is required for update'})
+                continue
+
+            try:
+                instance = Question.objects.get(id=qid)
+            except Question.DoesNotExist:
+                results.append({'success': False, 'index': idx, 'errors': f'Question with id {qid} not found'})
+                continue
+
+            serializer = QuestionCreateUpdateSerializer(instance, data=item, partial=partial_flag, context={'request': request})
+            try:
+                with transaction.atomic():
+                    serializer.is_valid(raise_exception=True)
+                    q = serializer.save()
+                    results.append({'success': True, 'id': q.id, 'data': QuestionDetailSerializer(q).data})
+            except Exception as exc:
+                try:
+                    msg = exc.detail
+                except Exception:
+                    msg = str(exc)
+                results.append({'success': False, 'index': idx, 'errors': msg})
+
+        return Response({'results': results}, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_summary="刪除題目",
