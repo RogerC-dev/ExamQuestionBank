@@ -172,17 +172,46 @@ const handleSaveExam = async (examData) => {
 
         try {
           // 建立題目
-          const questionPayload = {
-            subject: questionData.subject,
-            category: questionData.category,
-            content: questionData.content,
-            explanation: questionData.explanation,
-            status: 'published',
-            options: questionData.options
-          }
+                  const questionPayload = {
+                    subject: questionData.subject,
+                    category: questionData.category,
+                    question_type: questionData.question_type,
+                    difficulty: questionData.difficulty,
+                    content: questionData.content,
+                    explanation: questionData.explanation,
+                    status: 'published',
+                    options: questionData.options,
+                    tag_ids: questionData.tag_ids || []
+                  }
 
-          const createResponse = await questionService.createQuestion(questionPayload)
-          const newQuestion = createResponse.data
+          // basic validation: ensure required fields exist
+          if (!questionPayload.content || !questionPayload.content.trim()) {
+            console.warn(`跳過建立題目 #${i + 1}: content 為空`)
+            failCount++
+            continue
+          }
+          if (!questionPayload.subject || !questionPayload.subject.trim()) {
+            console.warn(`跳過建立題目 #${i + 1}: subject 為空`)
+            failCount++
+            continue
+          }
+          if (!questionPayload.question_type) questionPayload.question_type = '選擇題'
+          if (!questionPayload.difficulty) questionPayload.difficulty = 'medium'
+
+          let newQuestion = null
+          try {
+            const createResponse = await questionService.createQuestion(questionPayload)
+            newQuestion = createResponse.data
+          } catch (err) {
+            console.error(`建立題目 ${i + 1} 失敗:`, err)
+            // show backend validation message if present
+            const detail = err.response?.data || err.message
+            console.error('建立題目錯誤詳情：', detail)
+            failCount++
+            // add to summaryParts so user can see which one failed
+            summaryParts.push(`第 ${i + 1} 題建立失敗: ${JSON.stringify(detail)}`)
+            continue
+          }
 
           // 將題目加入考卷，使用暫存題目中的 order（如果有的話）
           await examService.addQuestionToExam(currentExamId, {
@@ -204,10 +233,15 @@ const handleSaveExam = async (examData) => {
       summaryParts.push(`題目建立：成功 ${successCount} 題，失敗 ${failCount} 題`)
     }
 
-    const { questionUpdates, settingUpdates } = await applyPendingQuestionEdits(currentExamId)
-    if (questionUpdates || settingUpdates) {
+    const { questionUpdates, settingUpdates, errors: editErrors } = await applyPendingQuestionEdits(currentExamId)
+    if (questionUpdates || settingUpdates || (editErrors && editErrors.length)) {
       shouldReload = true
       summaryParts.push(`暫存更新：題目內容 ${questionUpdates} 題、配分/順序 ${settingUpdates} 題`)
+      if (editErrors && editErrors.length) {
+        editErrors.forEach(err => {
+          summaryParts.push(`更新失敗：${JSON.stringify(err)}`)
+        })
+      }
     }
 
     if (shouldReload) {
@@ -248,11 +282,13 @@ const handleSelectQuestion = async (examQuestion) => {
       id: null,
       subject: examQuestion.pendingData.subject,
       category: examQuestion.pendingData.category,
+      question_type: examQuestion.pendingData.question_type || '選擇題',
+      difficulty: examQuestion.pendingData.difficulty || 'medium',
       content: examQuestion.pendingData.content,
       explanation: examQuestion.pendingData.explanation,
       status: 'draft',
       options: examQuestion.pendingData.options || [],
-      tags: []
+      tags: examQuestion.pendingData.tag_ids || []
     }
     return
   }
@@ -338,11 +374,17 @@ const applyPendingQuestionEdits = async (currentExamId) => {
 
   let questionUpdates = 0
   let settingUpdates = 0
+  const errors = []
 
   for (const [examQuestionId, edit] of entries) {
     if (edit.questionData && edit.questionId) {
-      await questionService.updateQuestion(edit.questionId, edit.questionData)
-      questionUpdates += 1
+      try {
+        await questionService.updateQuestion(edit.questionId, edit.questionData)
+        questionUpdates += 1
+      } catch (err) {
+        console.error('更新題目失敗:', err)
+        errors.push({ id: edit.questionId, error: err.response?.data || err.message })
+      }
     }
 
     if (edit.examSettings) {
@@ -355,17 +397,22 @@ const applyPendingQuestionEdits = async (currentExamId) => {
       }
 
       if (Object.keys(payload).length > 0) {
-        await examService.updateExamQuestion(currentExamId, {
-          exam_question_id: Number(examQuestionId),
-          ...payload
-        })
-        settingUpdates += 1
+        try {
+          await examService.updateExamQuestion(currentExamId, {
+            exam_question_id: Number(examQuestionId),
+            ...payload
+          })
+          settingUpdates += 1
+        } catch (err) {
+          console.error('更新考卷題目設定失敗:', err)
+          errors.push({ exam_question_id: Number(examQuestionId), error: err.response?.data || err.message })
+        }
       }
     }
   }
 
   pendingQuestionEdits.value = {}
-  return { questionUpdates, settingUpdates }
+  return { questionUpdates, settingUpdates, errors }
 }
 
 // 儲存題目
@@ -391,6 +438,9 @@ const handleSaveQuestion = async ({ questionData, examSettings }) => {
           ...pendingQuestions.value[index],
           subject: questionData.subject,
           category: questionData.category,
+          question_type: questionData.question_type,
+          difficulty: questionData.difficulty,
+          tag_ids: questionData.tag_ids || pendingQuestions.value[index].tag_ids || [],
           content: questionData.content,
           explanation: questionData.explanation,
           options: questionData.options,
@@ -456,6 +506,9 @@ const handleAddQuestion = () => {
     content: '',
     subject: exam.value?.name || '未分類',
     category: '選擇題',
+    question_type: '選擇題',
+    difficulty: 'medium',
+    tag_ids: [],
     explanation: '',
     options: [
       { content: '', is_correct: false },

@@ -29,7 +29,7 @@ class QuestionListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
-            'id', 'subject', 'question_type', 'difficulty', 'content', 'created_at', 'created_by_username'
+            'id', 'subject', 'category', 'question_type', 'difficulty', 'status', 'content', 'created_at', 'created_by_username'
         ]
         read_only_fields = ['id', 'created_at']
 
@@ -43,7 +43,7 @@ class QuestionDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
-            'id', 'subject', 'question_type', 'difficulty', 'content', 'explanation',
+            'id', 'subject', 'category', 'question_type', 'difficulty', 'status', 'content', 'explanation',
             'created_at', 'created_by_username', 'options', 'tags'
         ]
         read_only_fields = ['id', 'created_at', 'created_by_username']
@@ -62,7 +62,7 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
-            'subject', 'question_type', 'difficulty', 'content', 'explanation', 'options', 'tag_ids'
+            'subject', 'category', 'question_type', 'difficulty', 'status', 'content', 'explanation', 'options', 'tag_ids'
         ]
         read_only_fields = ['id']
 

@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ExtractExamPDFView, ExtractAnswerPDFView, QuestionViewSet, SubjectListView
+from .views import ExtractExamPDFView, ExtractAnswerPDFView, QuestionViewSet, SubjectListView, TagViewSet
 from .ai_views import AIChatView, AIChatHistoryView, AIAnalyzeCaseView
 from .extension_views import ExtensionStatsView, SyncBookmarksView, SyncFlashcardsView
 from .essay_views import EssaySubmissionView, EssayDetailView, EssayGradingView
@@ -12,6 +12,7 @@ from .analytics_views import (
 # 建立 router 並註冊 ViewSet
 router = DefaultRouter()
 router.register(r'questions', QuestionViewSet, basename='question')
+router.register(r'tags', TagViewSet, basename='tag')
 
 urlpatterns = [
     path("subjects/", SubjectListView.as_view(), name="subjects"),

@@ -5,9 +5,9 @@
     </div>
 
     <div v-else class="editor-content">
-      <div class="editor-header">
+        <div class="editor-header">
         <h3>編輯題目</h3>
-        <button class="btn btn-sm btn-success" @click="handleSave" :disabled="saving">
+        <button class="btn btn-sm btn-success" @click="handleSave" :disabled="saving || !isFormValid">
           {{ saving ? '儲存中...' : '儲存' }}
         </button>
       </div>
@@ -25,6 +25,7 @@
               placeholder="例：民法、刑法"
               class="form-input"
             />
+            <div v-if="!formValidation.subject" style="color:#d32f2f; font-size:12px; margin-top:6px">科目為必填</div>
           </div>
   
           <!-- 題型分類 -->
@@ -39,6 +40,27 @@
               class="form-input"
             />
           </div>
+
+          <!-- 題型 -->
+          <div class="form-group">
+            <label for="question_type">題型</label>
+            <select id="question_type" v-model="formData.question_type" class="form-input">
+              <option value="選擇題">選擇題</option>
+              <option value="多選題">多選題</option>
+              <option value="是非題">是非題</option>
+              <option value="申論題">申論題</option>
+            </select>
+          </div>
+
+          <!-- 難度 -->
+          <div class="form-group">
+            <label for="difficulty">難度</label>
+            <select id="difficulty" v-model="formData.difficulty" class="form-input">
+              <option value="easy">容易</option>
+              <option value="medium">中等</option>
+              <option value="hard">困難</option>
+            </select>
+          </div>
   
           <!-- 題目內容 -->
           <div class="form-group">
@@ -51,6 +73,7 @@
               placeholder="請輸入題目內容"
               class="form-input"
             ></textarea>
+            <div v-if="!formValidation.content" style="color:#d32f2f; font-size:12px; margin-top:6px">題目內容為必填</div>
           </div>
   
           <!-- 解析 -->
@@ -72,6 +95,31 @@
               <option value="draft">草稿</option>
               <option value="published">已發布</option>
             </select>
+          </div>
+
+          <!-- 標籤 (Multiselect) -->
+          <div class="form-group">
+            <label for="tags">標籤</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <multiselect
+                v-model="selectedTags"
+                :options="tagOptions"
+                :multiple="true"
+                :close-on-select="false"
+                :clear-on-select="false"
+                :preserve-search="true"
+                :internal-search="false"
+                placeholder="選擇或新增標籤"
+                track-by="id"
+                label="name"
+                @search-change="onTagSearch"
+                style="flex:1"
+              />
+              <div style="display:flex; gap:8px; align-items:center">
+                <input id="new-tag" v-model="newTagName" class="form-input" placeholder="新增標籤" @keyup.enter="handleCreateTag" />
+                <button type="button" class="btn btn-sm btn-secondary" @click="handleCreateTag">新增</button>
+              </div>
+            </div>
           </div>
   
           <!-- 選項 -->
@@ -144,7 +192,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 
 const props = defineProps({
   question: {
@@ -166,10 +214,13 @@ const emit = defineEmits(['save', 'save-exam-settings'])
 const formData = ref({
   subject: '',
   category: '',
+  question_type: '選擇題',
+  difficulty: 'medium',
   content: '',
   explanation: '',
   status: 'draft',
-  options: []
+  options: [],
+  tag_ids: []
 })
 
 const examSettings = ref({
@@ -183,10 +234,21 @@ watch(() => props.question, (newQuestion) => {
     formData.value = {
       subject: newQuestion.subject || '',
       category: newQuestion.category || '',
+      question_type: newQuestion.question_type || '選擇題',
+      difficulty: newQuestion.difficulty || 'medium',
       content: newQuestion.content || '',
       explanation: newQuestion.explanation || '',
       status: newQuestion.status || 'draft',
-      options: newQuestion.options ? [...newQuestion.options] : []
+      options: newQuestion.options ? [...newQuestion.options] : [],
+      tag_ids: newQuestion.tag_ids ? newQuestion.tag_ids : (newQuestion.tags ? newQuestion.tags.map(t => t.id) : [])
+    }
+    // set selectedTags to match tag objects
+    if (newQuestion.tags && Array.isArray(newQuestion.tags)) {
+      selectedTags.value = newQuestion.tags
+    } else if (newQuestion.tag_ids && Array.isArray(newQuestion.tag_ids)) {
+      selectedTags.value = tagOptions.value.filter(t => newQuestion.tag_ids.includes(t.id))
+    } else {
+      selectedTags.value = []
     }
   }
 }, { immediate: true, deep: true })
@@ -212,12 +274,104 @@ const removeOption = (index) => {
   formData.value.options.splice(index, 1)
 }
 
+const isFormValid = computed(() => {
+  const content = (formData.value.content || '').toString().trim()
+  const subject = (formData.value.subject || '').toString().trim()
+  return content.length > 0 && subject.length > 0
+})
+
+const formValidation = computed(() => ({
+  content: (formData.value.content || '').toString().trim().length > 0,
+  subject: (formData.value.subject || '').toString().trim().length > 0
+}))
+
 const handleSave = () => {
   // 儲存題目基本資料
+  // Final guard: trim and ensure content not empty
+  if (!isFormValid.value) {
+    alert('請填寫題目內容與科目後再儲存。')
+    return
+  }
+
+  // Ensure tag_ids are taken from selectedTags
+  formData.value.tag_ids = selectedTags.value.map(t => t.id)
+
+  const payload = {
+    ...formData.value,
+    content: formData.value.content?.toString().trim()
+  }
+
   emit('save', {
-    questionData: formData.value,
+    questionData: payload,
     examSettings: props.examQuestion ? examSettings.value : null
   })
+}
+
+// Tag options for multi-select
+import tagService from '../services/tagService'
+import Multiselect from 'vue-multiselect'
+import 'vue-multiselect/dist/vue-multiselect.min.css'
+import { useDebounceFn } from '@vueuse/core'
+
+const tagOptions = ref([])
+const selectedTags = ref([])
+const newTagName = ref('')
+const tagSearchQuery = ref('')
+
+onMounted(async () => {
+  try {
+    const res = await tagService.getTags()
+    let items = res.data?.results || res.data
+    if (!Array.isArray(items)) items = []
+    tagOptions.value = items.filter(t => t != null)
+  } catch (err) {
+    console.error('載入標籤失敗:', err)
+  }
+    tagSearchQuery.value = ''
+})
+
+const handleCreateTag = async () => {
+  const name = newTagName.value?.trim()
+  if (!name) return
+  try {
+    const resp = await tagService.createTag({ name })
+    const createdTag = resp.data
+    if (!createdTag || !createdTag.id) {
+      throw new Error('Invalid tag returned')
+    }
+    // Add to local options if not exists
+    if (!tagOptions.value.find(t => t.id === createdTag.id)) {
+      tagOptions.value.push(createdTag)
+      // sort by name
+      tagOptions.value.sort((a, b) => a.name.localeCompare(b.name))
+    }
+    // Add to selectedTags (object) and keep formData.tag_ids in sync
+    if (!selectedTags.value.find(t => t.id === createdTag.id)) {
+      selectedTags.value.push(createdTag)
+    }
+    formData.value.tag_ids = selectedTags.value.map(t => t.id)
+    newTagName.value = ''
+  } catch (err) {
+    console.error('建立標籤失敗:', err)
+    alert('建立標籤失敗')
+  }
+}
+
+// Debounced search for tags
+const doTagSearch = useDebounceFn(async (query) => {
+  try {
+    const res = await tagService.getTags({ search: query })
+    let items = res.data?.results || res.data
+    if (!Array.isArray(items)) items = []
+    tagOptions.value = items.filter(t => t != null)
+  } catch (err) {
+    console.error('搜尋標籤失敗: ', err)
+  }
+}, 250)
+
+const onTagSearch = (query) => {
+  tagSearchQuery.value = query
+  doTagSearch(query)
 }
 </script>
 

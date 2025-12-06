@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, filters
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
@@ -9,12 +9,13 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from .services.pdf_parser import PDFParser
-from .models import Question, Subject
+from .models import Question, Subject, Tag
 from .serializers import (
     QuestionListSerializer,
     QuestionDetailSerializer,
     QuestionCreateUpdateSerializer,
     SubjectSerializer,
+    TagSerializer,
 )
 
 
@@ -193,3 +194,24 @@ class QuestionViewSet(viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
+
+
+class TagViewSet(viewsets.ModelViewSet):
+    """Tag CRUD API (mostly read + create for admin/editor)"""
+    queryset = Tag.objects.all().order_by('name')
+    serializer_class = TagSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name']
+
+    def create(self, request, *args, **kwargs):
+        # Prevent duplicate names and return existing tag when name exists
+        name = request.data.get('name')
+        if not name:
+            return Response({'detail': 'Name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        tag, created = Tag.objects.get_or_create(name=name)
+        serializer = self.get_serializer(tag)
+        if created:
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_200_OK)
