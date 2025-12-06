@@ -17,6 +17,10 @@ const aiService = {
       })
       return response.data
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(new Event('show-login'))
+        throw new Error('請先登入以使用 AI 功能')
+      }
       if (error.response?.status === 429) {
         throw new Error(error.response.data.error || '已達到每日使用限制')
       }
@@ -37,6 +41,10 @@ const aiService = {
       })
       return response.data
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(new Event('show-login'))
+        throw new Error('請先登入以查看歷史記錄')
+      }
       throw error
     }
   },
@@ -53,6 +61,10 @@ const aiService = {
       })
       return response.data
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(new Event('show-login'))
+        throw new Error('請先登入以使用案例分析功能')
+      }
       if (error.response?.status === 429) {
         throw new Error(error.response.data.error || '已達到每日使用限制')
       }

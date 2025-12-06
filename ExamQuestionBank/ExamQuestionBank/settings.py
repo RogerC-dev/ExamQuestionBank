@@ -17,8 +17,11 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from .env file
-load_dotenv(os.path.join(BASE_DIR, '.env'))
+# Load environment variables from .env file (check both BASE_DIR and parent directory)
+env_path = os.path.join(BASE_DIR, '.env')
+if not os.path.exists(env_path):
+    env_path = os.path.join(BASE_DIR.parent, '.env')
+load_dotenv(env_path)
 
 DB_NAME = os.getenv('DB_NAME', '')
 TEST_DB_NAME = os.getenv('TEST_DB_NAME', f'test_{DB_NAME}' if DB_NAME else '')
