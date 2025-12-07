@@ -7,13 +7,8 @@
           <button class="btn btn-primary" @click="addExam">新增考卷</button>
           <button class="btn btn-primary" @click="batchImport" :disabled="isImporting">
             <span v-if="isImporting" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-            <span v-if="!isImporting">批次匯入</span>
+            <span v-if="!isImporting">匯入考卷</span>
             <span v-else>匯入中...</span>
-          </button>
-          <button class="btn btn-secondary" @click="exportExams" :disabled="isExporting">
-            <span v-if="isExporting" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-            <span v-if="!isExporting">匯出考卷</span>
-            <span v-else>匯出中...</span>
           </button>
           <!-- JSON import (hidden input) -->
           <input ref="jsonImportInput" type="file" accept="application/json" style="display:none" @change="handleImportFile" />
@@ -167,6 +162,64 @@
       :error="examDetailError"
       @close="closeExamDetail"
     />
+
+    <!-- Export Progress Modal -->
+    <div v-if="isExportProgressVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">考卷匯出中</h5>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <p class="mb-2">正在匯出考卷...</p>
+              <div class="progress">
+                <div
+                  class="progress-bar progress-bar-striped progress-bar-animated"
+                  role="progressbar"
+                  :style="{ width: exportProgress + '%' }"
+                  :aria-valuenow="exportProgress"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
+                  {{ exportProgress }}%
+                </div>
+              </div>
+            </div>
+            <p class="text-muted small">{{ exportProgressText }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import Progress Modal -->
+    <div v-if="isImportProgressVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">考卷匯入中</h5>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <p class="mb-2">正在匯入考卷...</p>
+              <div class="progress">
+                <div
+                  class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                  role="progressbar"
+                  :style="{ width: importProgress + '%' }"
+                  :aria-valuenow="importProgress"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
+                  {{ importProgress }}%
+                </div>
+              </div>
+            </div>
+            <p class="text-muted small">{{ importProgressText }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -195,6 +248,14 @@ const showUploadSection = ref(false)
 const isImporting = ref(false)
 const isExporting = ref(false)
 const exportingExams = reactive({})
+const isExportProgressVisible = ref(false)
+const exportProgress = ref(0)
+const exportProgressText = ref('')
+const isImportProgressVisible = ref(false)
+const importProgress = ref(0)
+const importProgressText = ref('')
+const totalImportQuestions = ref(0)
+const completedImportQuestions = ref(0)
 // showActivityLog removed — no longer used
 
 const filteredExams = computed(() => {
@@ -409,8 +470,15 @@ const exportExams = async () => {
 const exportExam = async (examId) => {
   if (exportingExams[examId]) return
   exportingExams[examId] = true
+  isExportProgressVisible.value = true
+  exportProgress.value = 0
+  exportProgressText.value = '取得考卷資訊...'
+  
   try {
     const { data } = await examService.getExam(examId)
+    exportProgress.value = 20
+    exportProgressText.value = '讀取題目...'
+    
     const exportItem = {
       id: data.id,
       name: data.name,
@@ -420,8 +488,11 @@ const exportExam = async (examId) => {
       updated_at: data.updated_at,
       exam_questions: []
     }
+    
     if (Array.isArray(data.exam_questions)) {
-      for (const eq of data.exam_questions) {
+      const totalQuestions = data.exam_questions.length
+      for (let i = 0; i < data.exam_questions.length; i++) {
+        const eq = data.exam_questions[i]
         if (eq.question) {
           try {
             const qRes = await questionService.getQuestion(eq.question)
@@ -430,8 +501,14 @@ const exportExam = async (examId) => {
             exportItem.exam_questions.push({ order: eq.order, points: eq.points, question: { id: eq.question, content: eq.question_content } })
           }
         }
+        // Update progress: 20-80% for fetching questions
+        exportProgress.value = 20 + Math.floor((i + 1) / totalQuestions * 60)
+        exportProgressText.value = `已讀取 ${i + 1}/${totalQuestions} 題...`
       }
     }
+
+    exportProgress.value = 85
+    exportProgressText.value = '準備下載...'
 
     const blob = new Blob([JSON.stringify(exportItem, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -440,9 +517,22 @@ const exportExam = async (examId) => {
     a.download = `exam_${exportItem.id || 'export'}.json`
     a.click()
     URL.revokeObjectURL(url)
+    
+    exportProgress.value = 100
+    exportProgressText.value = '匯出完成'
+    
+    // Close modal after 1 second
+    setTimeout(() => {
+      isExportProgressVisible.value = false
+      exportProgress.value = 0
+      exportProgressText.value = ''
+    }, 1000)
   } catch (error) {
     console.error('Export failed', error)
     alert('匯出考卷失敗')
+    isExportProgressVisible.value = false
+    exportProgress.value = 0
+    exportProgressText.value = ''
   }
   finally {
     exportingExams[examId] = false
@@ -458,30 +548,83 @@ const handleUpload = () => {
 const handleImportFile = async (event) => {
   if (isImporting.value) return
   isImporting.value = true
+  isImportProgressVisible.value = true
+  importProgress.value = 0
+  importProgressText.value = '解析檔案中...'
+  totalImportQuestions.value = 0
+  completedImportQuestions.value = 0
+  
   const file = event.target.files && event.target.files[0]
   if (!file) {
     isImporting.value = false
+    isImportProgressVisible.value = false
     return
   }
   try {
     const text = await file.text()
     const parsed = JSON.parse(text)
+    importProgress.value = 10
+    importProgressText.value = '準備匯入...'
+    
     // allow both array (multiple exams) or single object
     const items = Array.isArray(parsed) ? parsed : [parsed]
-    const summaries = []
-    for (const it of items) {
-      const result = await importExamFromJson(it)
-      summaries.push(result)
+    
+    // First pass: count total questions
+    let totalQuestions = 0
+    for (const item of items) {
+      if (Array.isArray(item.exam_questions)) {
+        totalQuestions += item.exam_questions.length
+      }
     }
+    totalImportQuestions.value = totalQuestions
+    completedImportQuestions.value = 0
+    
+    const summaries = []
+    
+    for (let i = 0; i < items.length; i++) {
+      const onQuestionProgress = (completed, total) => {
+        completedImportQuestions.value = completed
+        const percentage = totalQuestions > 0 ? Math.floor((completedImportQuestions.value / totalQuestions) * 80) : 0
+        importProgress.value = 10 + percentage
+        importProgressText.value = `已匯入 ${completedImportQuestions.value}/${totalQuestions} 題...`
+      }
+      
+      const result = await importExamFromJson(items[i], onQuestionProgress)
+      summaries.push(result)
+      // Update progress: 10-90% for processing exams
+      importProgress.value = 10 + Math.floor((i + 1) / items.length * 80)
+      importProgressText.value = `已完成 ${i + 1}/${items.length} 張考卷，共 ${completedImportQuestions.value}/${totalQuestions} 題`
+    }
+    
+    importProgress.value = 95
+    importProgressText.value = '整理資料中...'
+    
     // summarize results
     const successCount = summaries.filter(s => s && s.newExamId).length
     const createdQuestionTotal = summaries.reduce((acc, s) => acc + (s.createdQuestionCount || 0), 0)
     const totalFailedAdds = summaries.reduce((acc, s) => acc + (s.failedAdds?.length || 0), 0)
-    alert(`匯入完成：建立 ${successCount} 張考卷，新增題目 ${createdQuestionTotal} 題，加入考卷失敗 ${totalFailedAdds} 筆`) 
-    // refresh listing
-    fetchExams()
+    
+    importProgress.value = 100
+    importProgressText.value = '匯入完成'
+    
+    // Close modal after 1 second
+    setTimeout(() => {
+      isImportProgressVisible.value = false
+      importProgress.value = 0
+      importProgressText.value = ''
+      totalImportQuestions.value = 0
+      completedImportQuestions.value = 0
+      alert(`匯入完成：建立 ${successCount} 張考卷，新增題目 ${createdQuestionTotal} 題，加入考卷失敗 ${totalFailedAdds} 筆`)
+      // refresh listing
+      fetchExams()
+    }, 1000)
   } catch (error) {
     console.error('Import failed', error)
+    isImportProgressVisible.value = false
+    importProgress.value = 0
+    importProgressText.value = ''
+    totalImportQuestions.value = 0
+    completedImportQuestions.value = 0
     alert('匯入失敗：' + (error.message || '格式錯誤'))
   } finally {
     // reset file input
@@ -490,7 +633,7 @@ const handleImportFile = async (event) => {
   }
 }
 
-const importExamFromJson = async (payload) => {
+const importExamFromJson = async (payload, onProgressUpdate) => {
   if (!payload || !payload.name) {
     throw new Error('JSON 格式錯誤，缺少 exam.name')
   }
@@ -521,17 +664,39 @@ const importExamFromJson = async (payload) => {
             // if we have embedded content fallback, try to create later
             if (eq.question && (eq.question.content || eq.question.options)) {
               const q = eq.question
+              // Clean up options: remove id field and ensure proper order
+              const cleanedOptions = (q.options || []).map((opt, idx) => {
+                // Ensure order is unique and sequential
+                const order = Array.isArray(q.options) && q.options.every(o => o.order === 0 || o.order === undefined) 
+                  ? idx 
+                  : (typeof opt.order === 'number' && opt.order !== undefined ? opt.order : idx)
+                return {
+                  content: opt.content || '',
+                  is_correct: opt.is_correct === true,
+                  order: order
+                }
+              })
               const qPayload = {
                 subject: q.subject || '',
-                category: q.category || '',
                 question_type: q.question_type || '選擇題',
                 difficulty: q.difficulty || 'medium',
                 content: q.content || q.question_content || '',
-                explanation: q.explanation || q.explain || '',
-                status: q.status || 'published',
-                options: q.options || [],
-                tag_ids: q.tag_ids || q.tags || []
+                options: cleanedOptions
               }
+              // Only add optional fields if they have meaningful values
+              if (q.explanation || q.explain) {
+                qPayload.explanation = q.explanation || q.explain
+              }
+              if (q.category && q.category.trim()) {
+                qPayload.category = q.category
+              }
+              if (q.tag_ids && q.tag_ids.length > 0) {
+                qPayload.tag_ids = q.tag_ids.filter(id => id)
+              }
+              if (q.status && q.status !== 'draft') {
+                qPayload.status = q.status
+              }
+              console.log('Fallback qPayload:', qPayload)
               toCreate.push({ qPayload, order: eq.order, points: eq.points })
             }
           }
@@ -542,21 +707,45 @@ const importExamFromJson = async (payload) => {
         // has embedded question object with full data
         // prepare create payload for question service
         const q = eq.question
+        // Clean up options: remove id field and ensure proper order
+        const cleanedOptions = (q.options || []).map((opt, idx) => {
+          // Ensure order is unique and sequential
+          const order = Array.isArray(q.options) && q.options.every(o => o.order === 0 || o.order === undefined) 
+            ? idx 
+            : (typeof opt.order === 'number' && opt.order !== undefined ? opt.order : idx)
+          return {
+            content: opt.content || '',
+            is_correct: opt.is_correct === true,
+            order: order
+          }
+        })
         const qPayload = {
           subject: q.subject || '',
-          category: q.category || '',
           question_type: q.question_type || '選擇題',
           difficulty: q.difficulty || 'medium',
           content: q.content || q.question_content || '',
-          explanation: q.explanation || q.explain || '',
-          status: q.status || 'published',
-          options: q.options || [],
-          tag_ids: q.tag_ids || q.tags || []
+          options: cleanedOptions
+        }
+        // Only add optional fields if they have meaningful values
+        if (q.explanation || q.explain) {
+          qPayload.explanation = q.explanation || q.explain
+        }
+        if (q.category && q.category.trim()) {
+          qPayload.category = q.category
+        }
+        if (q.tag_ids && q.tag_ids.length > 0) {
+          qPayload.tag_ids = q.tag_ids.filter(id => id)
+        }
+        if (q.status && q.status !== 'draft') {
+          qPayload.status = q.status
         }
         toCreate.push({ qPayload, order: eq.order, points: eq.points })
       }
     }
   }
+
+  const totalQuestions = toCreate.length + toUseExisting.length
+  console.log(`importExamFromJson: totalQuestions=${totalQuestions}, toCreate=${toCreate.length}, toUseExisting=${toUseExisting.length}`)
 
   // create questions in bulk
   const createdQuestionIds = []
@@ -565,14 +754,20 @@ const importExamFromJson = async (payload) => {
     try {
         const createRes = await questionService.bulkCreateQuestions(payloadForBulk)
         const results = createRes.data?.results || createRes.data || []
+        console.log(`bulkCreateQuestions results:`, results)
         const failedIndices = []
         for (let i = 0; i < results.length; i++) {
           const r = results[i]
           if (r && r.success && r.id) {
             createdQuestionIds.push({ id: r.id, order: toCreate[i].order, points: toCreate[i].points })
+            console.log(`Created question ${i}: id=${r.id}`)
+            if (onProgressUpdate) {
+              onProgressUpdate(createdQuestionIds.length + toUseExisting.length, totalQuestions)
+            }
           } else {
             // collect failed indices for retry
             failedIndices.push(i)
+            console.log(`Failed to create question ${i}:`, r)
           }
         }
         // retry failures one by one with stripped tag_ids to avoid missing tag errors
@@ -585,27 +780,42 @@ const importExamFromJson = async (payload) => {
             const singleRes = await questionService.createQuestion(attemptPayload)
             if (singleRes?.data?.id) {
               createdQuestionIds.push({ id: singleRes.data.id, order: original.order, points: original.points })
+              console.log(`Retry created question ${idx}: id=${singleRes.data.id}`)
+              if (onProgressUpdate) {
+                onProgressUpdate(createdQuestionIds.length + toUseExisting.length, totalQuestions)
+              }
             }
           } catch (retryErr) {
             console.error('Retry create question failed (stripped tags), skipping index', idx, retryErr)
           }
         }
       } catch (err) {
+      console.error('bulkCreateQuestions failed, falling back to single create', err)
       // fallback to single create
       for (let i = 0; i < toCreate.length; i++) {
         try {
           const createRes = await questionService.createQuestion(toCreate[i].qPayload)
           createdQuestionIds.push({ id: createRes.data.id, order: toCreate[i].order, points: toCreate[i].points })
+          console.log(`Single created question ${i}: id=${createRes.data.id}`)
+          if (onProgressUpdate) {
+            onProgressUpdate(createdQuestionIds.length + toUseExisting.length, totalQuestions)
+          }
         } catch (err2) {
-          console.error('Failed to create question, skipping', err2)
-          // try fallback without tags
+          console.error('Failed to create question, attempting fallback without tags', err2)
+          // try fallback without tags and category
           try {
             const fallback = { ...toCreate[i].qPayload }
             if (fallback.tag_ids) delete fallback.tag_ids
+            if (fallback.category) delete fallback.category
+            console.log(`Fallback payload:`, fallback)
             const fallbackRes = await questionService.createQuestion(fallback)
             createdQuestionIds.push({ id: fallbackRes.data.id, order: toCreate[i].order, points: toCreate[i].points })
+            console.log(`Fallback created question ${i}: id=${fallbackRes.data.id}`)
+            if (onProgressUpdate) {
+              onProgressUpdate(createdQuestionIds.length + toUseExisting.length, totalQuestions)
+            }
           } catch (fallbackErr) {
-            console.error('Fallback create failed too', fallbackErr)
+            console.error('Fallback create failed too', fallbackErr, 'Payload was:', toCreate[i].qPayload)
           }
         }
       }
@@ -616,17 +826,30 @@ const importExamFromJson = async (payload) => {
   const adds = []
   for (const ex of toUseExisting) adds.push(ex)
   for (const c of createdQuestionIds) adds.push({ question: c.id, order: c.order, points: c.points })
+  console.log(`Attempting to add ${adds.length} questions to exam ${newExamId}`)
   const failedAdds = []
-  for (const add of adds) {
+  let successfulAdds = 0
+  for (let i = 0; i < adds.length; i++) {
+    const add = adds[i]
     try {
-      await examService.addQuestionToExam(newExamId, add)
+      const res = await examService.addQuestionToExam(newExamId, add)
+      successfulAdds++
+      console.log(`Added question ${i} (id=${add.question}) to exam, successful=${successfulAdds}`)
+      if (onProgressUpdate) {
+        onProgressUpdate(successfulAdds, totalQuestions)
+      }
     } catch (err) {
       console.error('Failed to add question to exam', err)
       // if failure due to duplicate order, try without order
       try {
         if (typeof add.order !== 'undefined') {
           const addNoOrder = { question: add.question, points: add.points }
-          await examService.addQuestionToExam(newExamId, addNoOrder)
+          const res = await examService.addQuestionToExam(newExamId, addNoOrder)
+          successfulAdds++
+          console.log(`Added question ${i} (id=${add.question}) to exam without order, successful=${successfulAdds}`)
+          if (onProgressUpdate) {
+            onProgressUpdate(successfulAdds, totalQuestions)
+          }
           continue
         }
       } catch (err2) {
@@ -635,6 +858,7 @@ const importExamFromJson = async (payload) => {
       failedAdds.push({ add, error: err })
     }
   }
+  console.log(`importExamFromJson finished: newExamId=${newExamId}, createdQuestions=${createdQuestionIds.length}, successfulAdds=${successfulAdds}, failedAdds=${failedAdds.length}`)
 
   return { newExamId, createdQuestionCount: createdQuestionIds.length, failedAdds }
 }
@@ -891,7 +1115,7 @@ td {
   padding: 16px;
   border-bottom: 1px solid #f0f0f0;
   font-size: 14px;
-  overflow: hidden;
+  overflow: visible;
   text-overflow: ellipsis;
 }
 
