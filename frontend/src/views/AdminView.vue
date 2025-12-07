@@ -5,8 +5,16 @@
         <h2 class="section-title">題庫管理後台</h2>
         <div class="admin-actions">
           <button class="btn btn-primary" @click="addExam">新增考卷</button>
-          <button class="btn btn-primary" @click="batchImport">批次匯入</button>
-          <button class="btn btn-secondary" @click="exportExams">匯出考卷</button>
+          <button class="btn btn-primary" @click="batchImport" :disabled="isImporting">
+            <span v-if="isImporting" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            <span v-if="!isImporting">批次匯入</span>
+            <span v-else>匯入中...</span>
+          </button>
+          <button class="btn btn-secondary" @click="exportExams" :disabled="isExporting">
+            <span v-if="isExporting" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            <span v-if="!isExporting">匯出考卷</span>
+            <span v-else>匯出中...</span>
+          </button>
           <!-- JSON import (hidden input) -->
           <input ref="jsonImportInput" type="file" accept="application/json" style="display:none" @change="handleImportFile" />
         </div>
@@ -16,12 +24,12 @@
         <input
           v-model="searchTerm"
           type="text"
-          class="filter-input"
+          class="form-control"
           placeholder="搜尋考卷名稱或說明"
           @keyup.enter="applyFilters"
         />
 
-        <select v-model="ordering" class="filter-select" @change="applyFilters">
+        <select v-model="ordering" class="form-select" @change="applyFilters">
           <option v-for="option in orderingOptions" :key="option.value" :value="option.value">
             {{ option.label }}
           </option>
@@ -33,13 +41,14 @@
 
       <!-- Upload Area -->
       <div v-if="showUploadSection" class="upload-area" @click="handleUpload">
-        <div class="upload-icon">📁</div>
+        <div class="upload-icon">[檔案]</div>
         <div class="upload-text">拖放檔案至此或點擊上傳</div>
         <div class="upload-hint">支援格式: JSON, CSV, PDF</div>
       </div>
 
-      <div v-if="errorMessage" class="alert alert-error">
+      <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
         {{ errorMessage }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
 
       <!-- PDF 匯入模組 -->
@@ -47,14 +56,14 @@
 
       <!-- Exam Table -->
       <div class="exam-table">
-        <table>
+        <table class="table table-striped table-hover">
           <thead>
             <tr>
               <th>考卷 ID</th>
               <th>考卷名稱</th>
               <th>考試說明</th>
               <th>題數</th>
-              <th>時間限制 (分鐘)</th>
+              <th>時間限制 (分)</th>
               <th>建立時間</th>
               <th>更新時間</th>
               <th>操作</th>
@@ -76,32 +85,77 @@
               <td>{{ exam.createdAt }}</td>
               <td>{{ exam.updatedAt }}</td>
               <td>
-                <button class="icon-btn" @click="editExam(exam.id)">✏️</button>
-                <button class="icon-btn" @click="viewExam(exam.id)">👁️</button>
-                <button class="icon-btn" @click="exportExam(exam.id)">📤</button>
-                <button
-                  class="icon-btn"
-                  :disabled="deletingExamId === exam.id"
-                  :aria-busy="deletingExamId === exam.id"
-                  @click="deleteExam(exam.id)"
-                >
-                  🗑️
-                </button>
+                <div class="dropdown">
+                  <button
+                    class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                    type="button"
+                    :id="`dropdownExam${exam.id}`"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    操作
+                  </button>
+                  <ul class="dropdown-menu" :aria-labelledby="`dropdownExam${exam.id}`">
+                    <li>
+                      <a class="dropdown-item" href="#" @click.prevent="editExam(exam.id)">
+                        編輯
+                      </a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="#" @click.prevent="viewExam(exam.id)">
+                        檢視
+                      </a>
+                    </li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li>
+                      <a
+                        class="dropdown-item"
+                        href="#"
+                        :class="{ disabled: exportingExams[exam.id] }"
+                        @click.prevent="exportExam(exam.id)"
+                      >
+                        <span v-if="exportingExams[exam.id]" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span v-if="!exportingExams[exam.id]">匯出</span>
+                        <span v-else>匯出中...</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        class="dropdown-item text-danger"
+                        href="#"
+                        :class="{ disabled: deletingExamId === exam.id }"
+                        @click.prevent="deleteExam(exam.id)"
+                      >
+                        <span v-if="deletingExamId === exam.id" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span v-if="!deletingExamId || deletingExamId !== exam.id">刪除</span>
+                        <span v-else>刪除中...</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div class="pagination-controls" v-if="paginationState.hasPrev || paginationState.hasNext">
-        <button class="btn btn-secondary" :disabled="!paginationState.hasPrev || isLoading" @click="goToPreviousPage">
-          上一頁
-        </button>
-        <span class="page-indicator">第 {{ currentPage }} 頁</span>
-        <button class="btn btn-secondary" :disabled="!paginationState.hasNext || isLoading" @click="goToNextPage">
-          下一頁
-        </button>
-      </div>
+      <nav v-if="paginationState.hasPrev || paginationState.hasNext" class="d-flex justify-content-end align-items-center gap-3">
+        <ul class="pagination mb-0">
+          <li class="page-item" :class="{ disabled: !paginationState.hasPrev || isLoading }">
+            <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToPreviousPage">
+              上一頁
+            </button>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">第 {{ currentPage }} 頁</span>
+          </li>
+          <li class="page-item" :class="{ disabled: !paginationState.hasNext || isLoading }">
+            <button class="page-link" :disabled="!paginationState.hasNext || isLoading" @click="goToNextPage">
+              下一頁
+            </button>
+          </li>
+        </ul>
+      </nav>
 
       <!-- Activity Log removed -->
     </div>
@@ -117,7 +171,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import PdfUploadSection from '@/components/PdfUploadSection.vue'
 import questionService from '@/services/questionService'
@@ -138,6 +192,9 @@ const isExamDetailLoading = ref(false)
 const examDetailError = ref('')
 const deletingExamId = ref(null)
 const showUploadSection = ref(false)
+const isImporting = ref(false)
+const isExporting = ref(false)
+const exportingExams = reactive({})
 // showActivityLog removed — no longer used
 
 const filteredExams = computed(() => {
@@ -283,6 +340,7 @@ const addExam = () => {
 
 const jsonImportInput = ref(null)
 const batchImport = () => {
+  if (isImporting.value) return
   // trigger hidden file input for JSON import using vue ref
   if (jsonImportInput.value) {
     jsonImportInput.value.click()
@@ -290,6 +348,8 @@ const batchImport = () => {
 }
 
 const exportExams = async () => {
+  if (isExporting.value) return
+  isExporting.value = true
   // Export all currently listed exams as JSON (fetch full details)
   try {
     const fetches = exams.value.map((e) => examService.getExam(e.id).catch(() => null))
@@ -338,6 +398,8 @@ const exportExams = async () => {
   } catch (error) {
     console.error('Export failed', error)
     alert('匯出失敗，請檢查系統日誌')
+  } finally {
+    isExporting.value = false
   }
 }
 
@@ -345,6 +407,8 @@ const exportExams = async () => {
  * Export single exam (for export button next to each exam)
  */
 const exportExam = async (examId) => {
+  if (exportingExams[examId]) return
+  exportingExams[examId] = true
   try {
     const { data } = await examService.getExam(examId)
     const exportItem = {
@@ -380,6 +444,9 @@ const exportExam = async (examId) => {
     console.error('Export failed', error)
     alert('匯出考卷失敗')
   }
+  finally {
+    exportingExams[examId] = false
+  }
 }
 
 // viewLogs removed — button removed
@@ -389,8 +456,13 @@ const handleUpload = () => {
 }
 
 const handleImportFile = async (event) => {
+  if (isImporting.value) return
+  isImporting.value = true
   const file = event.target.files && event.target.files[0]
-  if (!file) return
+  if (!file) {
+    isImporting.value = false
+    return
+  }
   try {
     const text = await file.text()
     const parsed = JSON.parse(text)
@@ -414,6 +486,7 @@ const handleImportFile = async (event) => {
   } finally {
     // reset file input
     event.target.value = ''
+    isImporting.value = false
   }
 }
 
@@ -804,10 +877,22 @@ th {
   border-bottom: 2px solid #e0e0e0;
 }
 
+/* 設定各欄位寬度 */
+th:nth-child(1), td:nth-child(1) { width: 8%; }        /* 考卷 ID */
+th:nth-child(2), td:nth-child(2) { width: 15%; }       /* 考卷名稱 */
+th:nth-child(3), td:nth-child(3) { width: 25%; }       /* 考試說明 */
+th:nth-child(4), td:nth-child(4) { width: 8%; }        /* 題數 */
+th:nth-child(5), td:nth-child(5) { width: 12%; }       /* 時間限制 */
+th:nth-child(6), td:nth-child(6) { width: 15%; }       /* 建立時間 */
+th:nth-child(7), td:nth-child(7) { width: 15%; }       /* 更新時間 */
+th:nth-child(8), td:nth-child(8) { width: 2%; }        /* 操作 */
+
 td {
   padding: 16px;
   border-bottom: 1px solid #f0f0f0;
   font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 tr:hover {
