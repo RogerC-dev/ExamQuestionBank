@@ -7,7 +7,8 @@
           <button class="btn btn-primary" @click="addExam">新增考卷</button>
           <button class="btn btn-primary" @click="batchImport">批次匯入</button>
           <button class="btn btn-secondary" @click="exportExams">匯出考卷</button>
-          <button class="btn btn-secondary" @click="viewLogs">查看日誌</button>
+          <!-- JSON import (hidden input) -->
+          <input ref="jsonImportInput" type="file" accept="application/json" style="display:none" @change="handleImportFile" />
         </div>
       </div>
 
@@ -77,6 +78,7 @@
               <td>
                 <button class="icon-btn" @click="editExam(exam.id)">✏️</button>
                 <button class="icon-btn" @click="viewExam(exam.id)">👁️</button>
+                <button class="icon-btn" @click="exportExam(exam.id)">📤</button>
                 <button
                   class="icon-btn"
                   :disabled="deletingExamId === exam.id"
@@ -101,17 +103,7 @@
         </button>
       </div>
 
-      <!-- Activity Log -->
-      <div v-if="showActivityLog" class="activity-log">
-        <h3 class="section-title">操作紀錄</h3>
-        <div v-for="activity in activities" :key="activity.id" class="activity-item">
-          <div class="activity-icon">{{ activity.icon }}</div>
-          <div class="activity-content">
-            <div class="activity-title">{{ activity.title }}</div>
-            <div class="activity-meta">{{ activity.meta }}</div>
-          </div>
-        </div>
-      </div>
+      <!-- Activity Log removed -->
     </div>
 
     <ExamDetailModal
@@ -128,6 +120,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import PdfUploadSection from '@/components/PdfUploadSection.vue'
+import questionService from '@/services/questionService'
 import ExamDetailModal from '@/components/ExamDetailModal.vue'
 import { usePdfImportStore } from '@/stores/pdfImport'
 import examService from '@/services/examService'
@@ -145,7 +138,7 @@ const isExamDetailLoading = ref(false)
 const examDetailError = ref('')
 const deletingExamId = ref(null)
 const showUploadSection = ref(false)
-const showActivityLog = ref(false)
+// showActivityLog removed — no longer used
 
 const filteredExams = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
@@ -281,40 +274,296 @@ const goToNextPage = () => {
   fetchExams()
 }
 
-const activities = ref([
-  {
-    id: 1,
-    icon: '✏️',
-    title: '考卷 #301 已更新',
-    meta: '管理員 admin@example.com | 2024.03.20 14:30'
-  },
-  {
-    id: 2,
-    icon: '📤',
-    title: '批次匯入 3 份考卷成功',
-    meta: '管理員 admin@example.com | 2024.03.20 10:15'
-  }
-])
+// activities array removed — activity log UI removed
 
 const addExam = () => {
   pdfImportStore.clearPayload()
   router.push('/admin/exams/new')
 }
 
+const jsonImportInput = ref(null)
 const batchImport = () => {
-  alert('批次匯入')
+  // trigger hidden file input for JSON import using vue ref
+  if (jsonImportInput.value) {
+    jsonImportInput.value.click()
+  }
 }
 
-const exportExams = () => {
-  alert('匯出考卷')
+const exportExams = async () => {
+  // Export all currently listed exams as JSON (fetch full details)
+  try {
+    const fetches = exams.value.map((e) => examService.getExam(e.id).catch(() => null))
+    const responses = await Promise.all(fetches)
+    const exportData = []
+    for (const res of responses) {
+      if (!res || !res.data) continue
+      const item = res.data
+      // fetch full question data for each question
+      const detailedQuestions = []
+      if (Array.isArray(item.exam_questions)) {
+        for (const eq of item.exam_questions) {
+          const qId = eq.question
+          if (qId) {
+            try {
+              const qRes = await questionService.getQuestion(qId)
+              detailedQuestions.push({
+                order: eq.order,
+                points: eq.points,
+                question: qRes.data
+              })
+            } catch (err) {
+              // fallback: include minimal info
+              detailedQuestions.push({ order: eq.order, points: eq.points, question: { id: qId, content: eq.question_content } })
+            }
+          }
+        }
+      }
+      exportData.push({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        time_limit: item.time_limit,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        exam_questions: detailedQuestions
+      })
+    }
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `exams_export_${new Date().toISOString().slice(0, 19).replaceAll(':', '-')}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Export failed', error)
+    alert('匯出失敗，請檢查系統日誌')
+  }
 }
 
-const viewLogs = () => {
-  alert('查看日誌')
+/**
+ * Export single exam (for export button next to each exam)
+ */
+const exportExam = async (examId) => {
+  try {
+    const { data } = await examService.getExam(examId)
+    const exportItem = {
+      id: data.id,
+      name: data.name,
+      description: data.description,
+      time_limit: data.time_limit,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      exam_questions: []
+    }
+    if (Array.isArray(data.exam_questions)) {
+      for (const eq of data.exam_questions) {
+        if (eq.question) {
+          try {
+            const qRes = await questionService.getQuestion(eq.question)
+            exportItem.exam_questions.push({ order: eq.order, points: eq.points, question: qRes.data })
+          } catch (err) {
+            exportItem.exam_questions.push({ order: eq.order, points: eq.points, question: { id: eq.question, content: eq.question_content } })
+          }
+        }
+      }
+    }
+
+    const blob = new Blob([JSON.stringify(exportItem, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `exam_${exportItem.id || 'export'}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Export failed', error)
+    alert('匯出考卷失敗')
+  }
 }
+
+// viewLogs removed — button removed
 
 const handleUpload = () => {
   alert('📁 檔案上傳功能 - 實際需實作檔案選擇')
+}
+
+const handleImportFile = async (event) => {
+  const file = event.target.files && event.target.files[0]
+  if (!file) return
+  try {
+    const text = await file.text()
+    const parsed = JSON.parse(text)
+    // allow both array (multiple exams) or single object
+    const items = Array.isArray(parsed) ? parsed : [parsed]
+    const summaries = []
+    for (const it of items) {
+      const result = await importExamFromJson(it)
+      summaries.push(result)
+    }
+    // summarize results
+    const successCount = summaries.filter(s => s && s.newExamId).length
+    const createdQuestionTotal = summaries.reduce((acc, s) => acc + (s.createdQuestionCount || 0), 0)
+    const totalFailedAdds = summaries.reduce((acc, s) => acc + (s.failedAdds?.length || 0), 0)
+    alert(`匯入完成：建立 ${successCount} 張考卷，新增題目 ${createdQuestionTotal} 題，加入考卷失敗 ${totalFailedAdds} 筆`) 
+    // refresh listing
+    fetchExams()
+  } catch (error) {
+    console.error('Import failed', error)
+    alert('匯入失敗：' + (error.message || '格式錯誤'))
+  } finally {
+    // reset file input
+    event.target.value = ''
+  }
+}
+
+const importExamFromJson = async (payload) => {
+  if (!payload || !payload.name) {
+    throw new Error('JSON 格式錯誤，缺少 exam.name')
+  }
+  // create exam
+  const examData = {
+    name: payload.name,
+    description: payload.description || '',
+    time_limit: payload.time_limit || null
+  }
+  const res = await examService.createExam(examData)
+  const newExamId = res.data?.id
+  if (!newExamId) throw new Error('建立考卷失敗')
+
+  // prepare questions
+  const toCreate = []
+  const toUseExisting = []
+  if (Array.isArray(payload.exam_questions)) {
+      for (const eq of payload.exam_questions) {
+      if (eq.question && eq.question.id && (!eq.question.content && !eq.question.options)) {
+        // reference to existing question
+        // Verify existence of question id before adding
+        try {
+          const exists = await questionService.getQuestion(eq.question.id).catch(() => null)
+          if (exists && exists.data) {
+            toUseExisting.push({ question: eq.question.id, order: eq.order, points: eq.points })
+          } else {
+            console.warn('Referenced question id not found; skipping', eq.question.id)
+            // if we have embedded content fallback, try to create later
+            if (eq.question && (eq.question.content || eq.question.options)) {
+              const q = eq.question
+              const qPayload = {
+                subject: q.subject || '',
+                category: q.category || '',
+                question_type: q.question_type || '選擇題',
+                difficulty: q.difficulty || 'medium',
+                content: q.content || q.question_content || '',
+                explanation: q.explanation || q.explain || '',
+                status: q.status || 'published',
+                options: q.options || [],
+                tag_ids: q.tag_ids || q.tags || []
+              }
+              toCreate.push({ qPayload, order: eq.order, points: eq.points })
+            }
+          }
+        } catch (err) {
+          console.error('Failed to verify referenced question id', err)
+        }
+      } else if (eq.question) {
+        // has embedded question object with full data
+        // prepare create payload for question service
+        const q = eq.question
+        const qPayload = {
+          subject: q.subject || '',
+          category: q.category || '',
+          question_type: q.question_type || '選擇題',
+          difficulty: q.difficulty || 'medium',
+          content: q.content || q.question_content || '',
+          explanation: q.explanation || q.explain || '',
+          status: q.status || 'published',
+          options: q.options || [],
+          tag_ids: q.tag_ids || q.tags || []
+        }
+        toCreate.push({ qPayload, order: eq.order, points: eq.points })
+      }
+    }
+  }
+
+  // create questions in bulk
+  const createdQuestionIds = []
+  if (toCreate.length > 0) {
+    const payloadForBulk = toCreate.map(t => t.qPayload)
+    try {
+        const createRes = await questionService.bulkCreateQuestions(payloadForBulk)
+        const results = createRes.data?.results || createRes.data || []
+        const failedIndices = []
+        for (let i = 0; i < results.length; i++) {
+          const r = results[i]
+          if (r && r.success && r.id) {
+            createdQuestionIds.push({ id: r.id, order: toCreate[i].order, points: toCreate[i].points })
+          } else {
+            // collect failed indices for retry
+            failedIndices.push(i)
+          }
+        }
+        // retry failures one by one with stripped tag_ids to avoid missing tag errors
+        for (const idx of failedIndices) {
+          const original = toCreate[idx]
+          const attemptPayload = { ...original.qPayload }
+          // remove tag_ids if present
+          if (attemptPayload.tag_ids) delete attemptPayload.tag_ids
+          try {
+            const singleRes = await questionService.createQuestion(attemptPayload)
+            if (singleRes?.data?.id) {
+              createdQuestionIds.push({ id: singleRes.data.id, order: original.order, points: original.points })
+            }
+          } catch (retryErr) {
+            console.error('Retry create question failed (stripped tags), skipping index', idx, retryErr)
+          }
+        }
+      } catch (err) {
+      // fallback to single create
+      for (let i = 0; i < toCreate.length; i++) {
+        try {
+          const createRes = await questionService.createQuestion(toCreate[i].qPayload)
+          createdQuestionIds.push({ id: createRes.data.id, order: toCreate[i].order, points: toCreate[i].points })
+        } catch (err2) {
+          console.error('Failed to create question, skipping', err2)
+          // try fallback without tags
+          try {
+            const fallback = { ...toCreate[i].qPayload }
+            if (fallback.tag_ids) delete fallback.tag_ids
+            const fallbackRes = await questionService.createQuestion(fallback)
+            createdQuestionIds.push({ id: fallbackRes.data.id, order: toCreate[i].order, points: toCreate[i].points })
+          } catch (fallbackErr) {
+            console.error('Fallback create failed too', fallbackErr)
+          }
+        }
+      }
+    }
+  }
+
+  // add existing and created questions to exam
+  const adds = []
+  for (const ex of toUseExisting) adds.push(ex)
+  for (const c of createdQuestionIds) adds.push({ question: c.id, order: c.order, points: c.points })
+  const failedAdds = []
+  for (const add of adds) {
+    try {
+      await examService.addQuestionToExam(newExamId, add)
+    } catch (err) {
+      console.error('Failed to add question to exam', err)
+      // if failure due to duplicate order, try without order
+      try {
+        if (typeof add.order !== 'undefined') {
+          const addNoOrder = { question: add.question, points: add.points }
+          await examService.addQuestionToExam(newExamId, addNoOrder)
+          continue
+        }
+      } catch (err2) {
+        console.error('Failed to add without order fallback', err2)
+      }
+      failedAdds.push({ add, error: err })
+    }
+  }
+
+  return { newExamId, createdQuestionCount: createdQuestionIds.length, failedAdds }
 }
 
 const router = useRouter()
