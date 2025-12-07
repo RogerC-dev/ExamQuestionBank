@@ -7,25 +7,6 @@
       </div>
 
       <div class="header-actions">
-        <div class="total-points-control">
-          <label for="totalPointsInput">滿分</label>
-          <input
-            id="totalPointsInput"
-            type="number"
-            min="1"
-            step="1"
-            :value="totalPoints"
-            @input="$emit('update:total-points', Number($event.target.value))"
-          />
-        </div>
-        <button
-          v-if="showAutoDistribute"
-          class="btn btn-sm btn-secondary"
-          :disabled="autoDistributeDisabled"
-          @click="$emit('auto-distribute')"
-        >
-          {{ autoDistributeLoading ? '配分中...' : '自動配分' }}
-        </button>
         <button class="btn btn-sm btn-primary" @click="$emit('add-question')">
           + 新增題目
         </button>

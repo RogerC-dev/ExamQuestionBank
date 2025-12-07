@@ -1,54 +1,56 @@
 <template>
-  <div class="exam-form">
-    <h2>{{ isEditMode ? '編輯考卷' : '新增考卷' }}</h2>
+  <div class="card mb-4">
+    <div class="card-body">
+      <h2 class="card-title mb-4">{{ isEditMode ? '編輯考卷' : '新增考卷' }}</h2>
 
-    <form @submit.prevent="handleSubmit">
-      <div class="form-group">
-        <label for="name">考卷名稱 *</label>
-        <input
-          id="name"
-          v-model="formData.name"
-          type="text"
-          required
-          placeholder="請輸入考卷名稱"
-          class="form-input"
-        />
-      </div>
+      <form @submit.prevent="handleSubmit">
+        <div class="mb-3">
+          <label for="name" class="form-label">考卷名稱 *</label>
+          <input
+            id="name"
+            v-model="formData.name"
+            type="text"
+            required
+            placeholder="請輸入考卷名稱"
+            class="form-control"
+          />
+        </div>
 
-      <div class="form-group">
-        <label for="description">考試說明</label>
-        <textarea
-          id="description"
-          v-model="formData.description"
-          rows="3"
-          placeholder="請輸入考試說明"
-          class="form-input"
-        ></textarea>
-      </div>
+        <div class="mb-3">
+          <label for="description" class="form-label">考試說明</label>
+          <textarea
+            id="description"
+            v-model="formData.description"
+            rows="3"
+            placeholder="請輸入考試說明"
+            class="form-control"
+          ></textarea>
+        </div>
 
-      <div class="form-group">
-        <label for="time_limit">考試時間限制（分鐘）</label>
-        <input
-          id="time_limit"
-          v-model.number="formData.time_limit"
-          type="number"
-          min="1"
-          placeholder="請輸入時間限制"
-          class="form-input"
-        />
-      </div>
+        <div class="mb-3">
+          <label for="time_limit" class="form-label">考試時間限制（分鐘）</label>
+          <input
+            id="time_limit"
+            v-model.number="formData.time_limit"
+            type="number"
+            min="1"
+            placeholder="請輸入時間限制"
+            class="form-control"
+          />
+        </div>
 
-      <div v-if="formError" class="form-error">{{ formError }}</div>
+        <div v-if="formError" class="alert alert-danger mb-3" role="alert">{{ formError }}</div>
 
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary" :disabled="saving">
-          {{ saving ? '儲存中...' : '儲存' }}
-        </button>
-        <button type="button" class="btn btn-secondary" @click="handleCancel">
-          取消
-        </button>
-      </div>
-    </form>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary" :disabled="saving">
+            {{ saving ? '儲存中...' : '儲存' }}
+          </button>
+          <button type="button" class="btn btn-secondary" @click="handleCancel">
+            取消
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -127,93 +129,5 @@ watch(() => props.exam, (newExam) => {
 </script>
 
 <style scoped>
-.exam-form {
-  background: white;
-  padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 24px;
-}
-
-.exam-form h2 {
-  margin: 0 0 20px 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #555;
-}
-
-.form-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  transition: border-color 0.3s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #4CAF50;
-}
-
-textarea.form-input {
-  resize: vertical;
-  font-family: inherit;
-}
-
-.form-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: #4CAF50;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #45a049;
-}
-
-.btn-secondary {
-  background: #f5f5f5;
-  color: #333;
-}
-
-.btn-secondary:hover {
-  background: #e0e0e0;
-}
-
-.form-error {
-  color: #d93025;
-  margin: 8px 0;
-  font-size: 13px;
-}
+/* 使用 Bootstrap 樣式，不需要自定義樣式 */
 </style>

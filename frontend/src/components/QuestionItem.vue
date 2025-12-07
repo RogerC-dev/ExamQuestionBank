@@ -191,7 +191,9 @@ defineEmits(['select', 'remove'])
   border-radius: 50%;
   cursor: pointer;
   font-size: 18px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s;
   opacity: 0;
 }

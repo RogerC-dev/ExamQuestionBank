@@ -29,9 +29,9 @@
       <!-- 右側：題目列表 -->
       <div class="right-panel">
         <div class="right-panel-inner">
-          <div class="toolbar" style="display:flex; gap:8px; align-items:center; padding:8px 12px; border-bottom: 1px solid #eee">
-            <button class="btn toolbar-btn btn-sm btn-secondary" @click="autoDistributePoints" :disabled="autoDistributeLoading">{{ autoDistributeLoading ? '配分中...' : '自動配分' }}</button>
-            <button class="btn toolbar-btn btn-sm btn-secondary" @click="showBulkTagModal = true">批次編輯標籤</button>
+          <div class="d-flex gap-2 align-items-center ps-3 pe-3 pt-2 pb-2 border-bottom">
+            <button class="btn btn-sm btn-secondary" @click="isAutoDistributeModalVisible = true" :disabled="autoDistributeLoading">自動配分</button>
+            <button class="btn btn-sm btn-secondary" @click="showBulkTagModal = true">批次編輯標籤</button>
           </div>
           <div class="question-list-wrapper">
             <QuestionList
@@ -62,6 +62,92 @@
       @add="handleAddQuestionToExam"
     />
     <BulkTagEditor v-if="showBulkTagModal" :questions="allQuestions" :pendingQuestions="pendingQuestions" :examId="examId" @close="showBulkTagModal=false" @applied="handleBulkTagsApplied" />
+
+    <!-- 儲存進度 Modal -->
+    <div v-if="isSavingProgressVisible" class="modal d-block" style="background: rgba(0, 0, 0, 0.5)">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">儲存進度</h5>
+          </div>
+          <div class="modal-body">
+            <p class="mb-2">{{ savingProgressMessage }}</p>
+            <p v-if="savingTotalSteps > 0" class="text-muted small mb-3">
+              {{ savingCurrentStep }}/{{ savingTotalSteps }}
+            </p>
+            <div class="progress">
+              <div
+                class="progress-bar progress-bar-striped progress-bar-animated"
+                role="progressbar"
+                :style="{ width: savingProgressPercent + '%' }"
+                :aria-valuenow="savingProgressPercent"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              >
+                {{ savingProgressPercent }}%
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 自動配分 Modal -->
+    <div v-if="isAutoDistributeModalVisible" class="modal d-block" style="background: rgba(0, 0, 0, 0.5)">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">自動配分試算</h5>
+            <button type="button" class="btn-close" @click="isAutoDistributeModalVisible = false"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="autoDistributePointsInput" class="form-label">滿分</label>
+              <input
+                id="autoDistributePointsInput"
+                v-model.number="autoPointsTotal"
+                type="number"
+                min="1"
+                step="0.01"
+                class="form-control"
+                @input="calculateAutoDistribute"
+              />
+            </div>
+            <div v-if="autoDistributeQuotaList.length > 0" class="card bg-light">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-6">
+                    <p class="text-muted mb-1">題數</p>
+                    <p class="fs-5 fw-bold">{{ autoDistributeQuotaList.length }} 題</p>
+                  </div>
+                  <div class="col-6">
+                    <p class="text-muted mb-1">平均配分</p>
+                    <p class="fs-5 fw-bold">{{ (autoPointsTotal / autoDistributeQuotaList.length).toFixed(2) }} 分</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p v-if="autoDistributeMessage" class="text-muted small mt-3 mb-0">{{ autoDistributeMessage }}</p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="isAutoDistributeModalVisible = false"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              @click="applyAutoDistribute"
+            >
+              確認配分
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -101,9 +187,22 @@ const loadingQuestions = ref(false)
 const savingExam = ref(false)
 const savingQuestion = ref(false)
 
+// 儲存進度 Modal
+const isSavingProgressVisible = ref(false)
+const savingProgressMessage = ref('準備儲存...')
+const savingProgressPercent = ref(0)
+const savingCurrentStep = ref(0)
+const savingTotalSteps = ref(0)
+const savingStepType = ref('') // 'exam', 'questions', 'updates'
+
 // 新增題目彈窗
 const showAddModal = ref(false)
 const showBulkTagModal = ref(false)
+
+// 自動配分 Modal
+const isAutoDistributeModalVisible = ref(false)
+const autoDistributeQuotaList = ref([])
+const autoDistributeMessage = ref('')
 
 const pdfImportStore = usePdfImportStore()
 
@@ -157,8 +256,15 @@ const loadExam = async () => {
 // 儲存考卷
 const handleSaveExam = async (examData) => {
   savingExam.value = true
+  isSavingProgressVisible.value = true
+  savingProgressMessage.value = '準備儲存...'
+  savingProgressPercent.value = 0
+
   try {
     let currentExamId = examId.value
+
+    savingProgressMessage.value = '儲存考卷資訊...'
+    savingProgressPercent.value = 10
 
     if (currentExamId) {
       // 更新現有考卷
@@ -176,83 +282,100 @@ const handleSaveExam = async (examData) => {
     const summaryParts = []
     let shouldReload = false
 
-      // 如果有暫存的題目，批次建立並加入考卷（改用 bulk API）
+    // 如果有暫存的題目，批次建立並加入考卷（改用 bulk API）
     if (pendingQuestions.value.length > 0) {
+      savingProgressMessage.value = `建立題目中`
+      savingProgressPercent.value = 20
+      savingStepType.value = 'questions'
+      savingTotalSteps.value = pendingQuestions.value.length
+      savingCurrentStep.value = 0
+
       console.log(`開始批次建立 ${pendingQuestions.value.length} 個題目...`)
-        const createPayload = []
-        const meta = [] // keep mapping of index -> order & points for later adding to exam
-        let skipCount = 0
+      const createPayload = []
+      const meta = [] // keep mapping of index -> order & points for later adding to exam
+      let skipCount = 0
 
-        for (let i = 0; i < pendingQuestions.value.length; i++) {
-          const questionData = pendingQuestions.value[i]
-          const questionPayload = {
-            subject: questionData.subject,
-            category: questionData.category,
-            question_type: questionData.question_type || '選擇題',
-            difficulty: questionData.difficulty || 'medium',
-            content: questionData.content,
-            explanation: questionData.explanation,
-            status: 'published',
-            options: questionData.options,
-            tag_ids: questionData.tag_ids || []
-          }
-
-          // basic validation: ensure required fields exist
-          if (!questionPayload.content || !questionPayload.content.trim() || !questionPayload.subject || !questionPayload.subject.trim()) {
-            console.warn(`跳過建立題目 #${i + 1}: content or subject 為空`)
-            skipCount++
-            continue
-          }
-
-          createPayload.push(questionPayload)
-          meta.push({ index: i, order: questionData.order !== undefined ? questionData.order : (examQuestions.value.length + i + 1), points: questionData.points })
+      for (let i = 0; i < pendingQuestions.value.length; i++) {
+        const questionData = pendingQuestions.value[i]
+        const questionPayload = {
+          subject: questionData.subject,
+          category: questionData.category,
+          question_type: questionData.question_type || '選擇題',
+          difficulty: questionData.difficulty || 'medium',
+          content: questionData.content,
+          explanation: questionData.explanation,
+          status: 'published',
+          options: questionData.options,
+          tag_ids: questionData.tag_ids || []
         }
 
-        let successCount = 0
-        let failCount = 0
-        if (createPayload.length > 0) {
-          try {
-            const res = await questionService.bulkCreateQuestions(createPayload)
-            const results = res.data?.results || res.data
-            for (let i = 0; i < results.length; i++) {
-              const r = results[i]
-              const m = meta[i]
-              if (r.success) {
-                // Add created question to exam
-                try {
-                  await examService.addQuestionToExam(currentExamId, {
-                    question: r.id,
-                    order: m.order,
-                    points: m.points
-                  })
-                  successCount++
-                } catch (err) {
-                  console.error('加入考卷失敗', err)
-                  failCount++
-                }
-              } else {
+        // basic validation: ensure required fields exist
+        if (!questionPayload.content || !questionPayload.content.trim() || !questionPayload.subject || !questionPayload.subject.trim()) {
+          console.warn(`跳過建立題目 #${i + 1}: content or subject 為空`)
+          skipCount++
+          continue
+        }
+
+        createPayload.push(questionPayload)
+        meta.push({ index: i, order: questionData.order !== undefined ? questionData.order : (examQuestions.value.length + i + 1), points: questionData.points })
+      }
+
+      let successCount = 0
+      let failCount = 0
+      if (createPayload.length > 0) {
+        try {
+          const res = await questionService.bulkCreateQuestions(createPayload)
+          const results = res.data?.results || res.data
+          for (let i = 0; i < results.length; i++) {
+            const r = results[i]
+            const m = meta[i]
+            
+            // 更新進度
+            savingCurrentStep.value = i + 1
+            savingProgressMessage.value = `建立題目中 (${i + 1}/${results.length}題)`
+            savingProgressPercent.value = 20 + Math.floor((i / results.length) * 30)
+
+            if (r.success) {
+              // Add created question to exam
+              try {
+                await examService.addQuestionToExam(currentExamId, {
+                  question: r.id,
+                  order: m.order,
+                  points: m.points
+                })
+                successCount++
+              } catch (err) {
+                console.error('加入考卷失敗', err)
                 failCount++
-                const detail = r.errors
-                summaryParts.push(`${r.index !== undefined ? `第 ${r.index + 1} 題`: '某題'} 建立失敗: ${JSON.stringify(detail)}`)
               }
+            } else {
+              failCount++
+              const detail = r.errors
+              summaryParts.push(`${r.index !== undefined ? `第 ${r.index + 1} 題`: '某題'} 建立失敗: ${JSON.stringify(detail)}`)
             }
-          } catch (err) {
-            // fallback: if bulk create failed entirely, try single create to get more info - but for now, treat as failed
-            console.error('批次建立題目失敗', err)
-            summaryParts.push(`批次建立題目失敗: ${err.response?.data || err.message}`)
-            failCount += createPayload.length
           }
+        } catch (err) {
+          // fallback: if bulk create failed entirely, try single create to get more info - but for now, treat as failed
+          console.error('批次建立題目失敗', err)
+          summaryParts.push(`批次建立題目失敗: ${err.response?.data || err.message}`)
+          failCount += createPayload.length
         }
+      }
 
-        // 清空暫存列表（已加入或嘗試加入）
-        pendingQuestions.value = []
-        shouldReload = true
-        summaryParts.push(`題目建立：成功 ${successCount} 題，失敗 ${failCount} 題，略過 ${skipCount} 題`)
+      // 清空暫存列表（已加入或嘗試加入）
+      pendingQuestions.value = []
+      shouldReload = true
+      summaryParts.push(`題目建立：成功 ${successCount} 題，失敗 ${failCount} 題，略過 ${skipCount} 題`)
     }
+
+    savingProgressMessage.value = '更新題目設定中'
+    savingProgressPercent.value = 50
+    savingStepType.value = 'updates'
 
     const { questionUpdates, settingUpdates, errors: editErrors } = await applyPendingQuestionEdits(currentExamId)
     if (questionUpdates || settingUpdates || (editErrors && editErrors.length)) {
       shouldReload = true
+      savingProgressPercent.value = 75
       summaryParts.push(`暫存更新：題目內容 ${questionUpdates} 題、配分/順序 ${settingUpdates} 題`)
       if (editErrors && editErrors.length) {
         editErrors.forEach(err => {
@@ -262,18 +385,35 @@ const handleSaveExam = async (examData) => {
     }
 
     if (shouldReload) {
+      savingProgressMessage.value = '重新載入資料...'
+      savingProgressPercent.value = 85
       await loadExam()
     }
+
+    savingProgressMessage.value = '完成！'
+    savingProgressPercent.value = 100
 
     const baseMessage = summaryParts.length
       ? `考卷儲存成功！\n${summaryParts.join('\n')}`
       : '考卷儲存成功'
 
-    alert(baseMessage)
+    // 1 秒後關閉 Modal
+    setTimeout(() => {
+      isSavingProgressVisible.value = false
+      savingProgressPercent.value = 0
+      savingProgressMessage.value = '準備儲存...'
+      savingCurrentStep.value = 0
+      savingTotalSteps.value = 0
+      savingStepType.value = ''
+      alert(baseMessage)
+    }, 1000)
   } catch (error) {
     console.error('儲存考卷失敗:', error)
     console.error('錯誤詳情:', error.response?.data)
     console.error('發送的資料:', examData)
+    isSavingProgressVisible.value = false
+    savingProgressPercent.value = 0
+    savingProgressMessage.value = '準備儲存...'
     alert('儲存考卷失敗：' + JSON.stringify(error.response?.data || error.message))
   } finally {
     savingExam.value = false
@@ -395,7 +535,14 @@ const applyPendingQuestionEdits = async (currentExamId) => {
   let settingUpdates = 0
   const errors = []
 
-  for (const [examQuestionId, edit] of entries) {
+  for (let idx = 0; idx < entries.length; idx++) {
+    const [examQuestionId, edit] = entries[idx]
+    
+    // 更新進度
+    savingCurrentStep.value = idx + 1
+    savingProgressMessage.value = `更新題目設定中 (${idx + 1}/${entries.length}題)`
+    savingProgressPercent.value = 50 + Math.floor((idx / entries.length) * 25)
+
     if (edit.questionData && edit.questionId) {
       try {
         await questionService.updateQuestion(edit.questionId, edit.questionData)
@@ -648,7 +795,11 @@ const handleRemoveQuestion = async (examQuestionId) => {
   }
 }
 
-const autoDistributePoints = async () => {
+const startAutoDistribute = async () => {
+  calculateAutoDistribute()
+}
+
+const calculateAutoDistribute = () => {
   const questions = [...allQuestions.value].sort((a, b) => {
     const orderA = Number.isFinite(Number(a.order)) ? Number(a.order) : Number.MAX_SAFE_INTEGER
     const orderB = Number.isFinite(Number(b.order)) ? Number(b.order) : Number.MAX_SAFE_INTEGER
@@ -659,36 +810,63 @@ const autoDistributePoints = async () => {
   })
 
   if (!questions.length) {
-    alert('目前尚無題目可配分')
+    autoDistributeMessage.value = '目前尚無題目可配分'
+    autoDistributeQuotaList.value = []
     return
   }
 
   const total = Number(autoPointsTotal.value)
   if (!Number.isFinite(total) || total <= 0) {
-    alert('請輸入大於 0 的滿分')
+    autoDistributeMessage.value = '請輸入大於 0 的滿分'
+    autoDistributeQuotaList.value = []
+    return
+  }
+
+  const totalCents = Math.round(total * 100)
+  const count = questions.length
+  const base = Math.floor(totalCents / count)
+  let remainder = totalCents - base * count
+
+  autoDistributeQuotaList.value = questions.map((question) => {
+    let cents = base
+    if (remainder > 0) {
+      cents += 1
+      remainder -= 1
+    }
+    const points = cents / 100
+
+    return {
+      id: question.id,
+      content: question.question_content || question.pendingData?.content || '（暫存題目）',
+      points: points
+    }
+  })
+
+  autoDistributeMessage.value = `將自動均勻分配 ${total} 分至 ${count} 題`
+}
+
+const applyAutoDistribute = async () => {
+  if (autoDistributeQuotaList.value.length === 0) {
+    alert('請先計算配分試算')
     return
   }
 
   autoDistributeLoading.value = true
 
   try {
-    const totalCents = Math.round(total * 100)
-    if (totalCents <= 0) {
-      alert('請輸入至少 0.01 分的滿分')
-      return
-    }
-
-    const count = questions.length
-    const base = Math.floor(totalCents / count)
-    let remainder = totalCents - base * count
-
-    questions.forEach((question) => {
-      let cents = base
-      if (remainder > 0) {
-        cents += 1
-        remainder -= 1
+    const questions = [...allQuestions.value].sort((a, b) => {
+      const orderA = Number.isFinite(Number(a.order)) ? Number(a.order) : Number.MAX_SAFE_INTEGER
+      const orderB = Number.isFinite(Number(b.order)) ? Number(b.order) : Number.MAX_SAFE_INTEGER
+      if (orderA === orderB) {
+        return String(a.id).localeCompare(String(b.id))
       }
-      const points = cents / 100
+      return orderA - orderB
+    })
+
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i]
+      const quotaItem = autoDistributeQuotaList.value[i]
+      const points = quotaItem.points
 
       if (question.isPending) {
         const pendingIndex = parseInt(String(question.id).replace('pending-', ''), 10)
@@ -715,14 +893,24 @@ const autoDistributePoints = async () => {
           }
         }
       }
-    })
-    alert(`已依滿分 ${total} 分自動配分，共 ${questions.length} 題。\n請記得儲存考卷以套用變更。`)
+    }
+
+    isAutoDistributeModalVisible.value = false
+    autoDistributeQuotaList.value = []
+    autoDistributeMessage.value = ''
+    alert(`已配分完成！請記得儲存考卷以套用變更。`)
   } catch (error) {
-    console.error('自動配分失敗:', error)
-    alert(error.response?.data?.detail || '自動配分失敗，請稍後再試。')
+    console.error('應用配分失敗:', error)
+    alert('應用配分失敗，請稍後再試。')
   } finally {
     autoDistributeLoading.value = false
   }
+}
+
+const autoDistributePoints = async () => {
+  // 打開配分試算 Modal
+  isAutoDistributeModalVisible.value = true
+  calculateAutoDistribute()
 }
 
 // 處理 PDF 匯入
@@ -808,6 +996,13 @@ onMounted(async () => {
   flex-direction: column;
 }
 
+.right-panel-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
 @media (max-width: 1200px) {
   .content-container {
     grid-template-columns: 1fr;
@@ -825,23 +1020,10 @@ onMounted(async () => {
 .question-list-wrapper {
   flex: 1;
   min-height: 0; /* for proper scrolling in flex container */
+  overflow: auto;
 }
-.question-list-wrapper { overflow:auto; }
 .question-list-wrapper > * {
   height: 100%;
-}
-.toolbar-btn {
-  background: #f5f7fa;
-  border: 1px solid #e3e6ea;
-  color: #1f2937;
-  padding: 6px 12px;
-}
-.toolbar-btn:hover {
-  background: #eef2f7;
-}
-.toolbar-btn:disabled {
-  background: #fafafa;
-  color: #9ca3af;
 }
 .right-actions {
   padding: 12px 0 0 0;
