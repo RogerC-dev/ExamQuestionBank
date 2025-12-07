@@ -66,31 +66,32 @@ defineEmits(['select', 'remove'])
   gap: 12px;
   padding: 12px;
   margin-bottom: 8px;
-  border: 1px solid #eee;
-  border-radius: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
+  background: var(--surface);
 }
 
 .question-item:hover {
-  border-color: #4CAF50;
-  background: #f9f9f9;
+  border-color: rgba(47, 95, 144, 0.35);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
 .question-item.active {
-  border-color: #4CAF50;
-  background: #e8f5e9;
+  border-color: var(--primary);
+  background: #eef3f9;
 }
 
 .question-item.pending {
-  border-color: #ff9800;
+  border-color: #d89b32;
   border-style: dashed;
-  background: #fff3e0;
+  background: #fff7eb;
 }
 
 .question-item.pending.active {
-  background: #ffe0b2;
+  background: #fdeed9;
 }
 
 .question-number {
@@ -100,15 +101,15 @@ defineEmits(['select', 'remove'])
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #4CAF50;
+  background: var(--primary);
   color: white;
-  border-radius: 50%;
-  font-weight: 600;
-  font-size: 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
 }
 
 .question-number.pending {
-  background: #ff9800;
+  background: #d89b32;
 }
 
 .pending-badge {
@@ -116,31 +117,30 @@ defineEmits(['select', 'remove'])
   position: absolute;
   bottom: 10px;
   right: 10px;
-  margin-left: 8px;
-  padding: 2px 8px;
-  background: #ff9800;
+  padding: 3px 8px;
+  background: #d89b32;
   color: white;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 11px;
   font-weight: 600;
 }
 
 .pending-badge.neutral {
-  background: #6366f1;
+  background: var(--primary);
 }
 
 .question-item.has-pending-edit:not(.pending) {
-  border-color: #6366f1;
+  border-color: var(--primary);
   border-style: dashed;
-  background: #eef2ff;
+  background: #eef3f9;
 }
 
 .question-item.has-pending-edit:not(.pending).active {
-  background: #e0e7ff;
+  background: #e5edf7;
 }
 
 .question-number.has-pending-edit {
-  background: #6366f1;
+  background: var(--primary);
 }
 
 .question-content {
@@ -150,7 +150,7 @@ defineEmits(['select', 'remove'])
 
 .question-text {
   font-size: 14px;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -168,17 +168,17 @@ defineEmits(['select', 'remove'])
 
 .badge {
   display: inline-block;
-  padding: 2px 8px;
-  background: #e3f2fd;
-  color: #1976d2;
+  padding: 3px 8px;
+  background: var(--primary-soft);
+  color: var(--primary);
   border-radius: 12px;
   font-size: 12px;
 }
 
 .points {
   font-size: 12px;
-  color: #666;
-  font-weight: 500;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .btn-delete {
@@ -186,7 +186,7 @@ defineEmits(['select', 'remove'])
   width: 24px;
   height: 24px;
   border: none;
-  background: #f44336;
+  background: #c0392b;
   color: white;
   border-radius: 50%;
   cursor: pointer;
@@ -201,7 +201,7 @@ defineEmits(['select', 'remove'])
 }
 
 .btn-delete:hover {
-  background: #d32f2f;
-  transform: scale(1.1);
+  background: #a83226;
+  transform: scale(1.05);
 }
 </style>

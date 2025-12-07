@@ -10,31 +10,58 @@
       <template v-else>
         <div class="analytics-grid">
           <div class="analytics-card">
-            <h3>練習進度</h3>
-            <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: progressPercent + '%' }">{{ progressPercent }}%</div>
+            <div class="card-header">
+              <h3>正確率趨勢</h3>
+              <p class="card-subtitle">同一考卷重複測驗僅保留最新一次，並顯示與前一次的變化</p>
             </div>
-            <p class="progress-text">已作答 {{ stats.total_answered }} / {{ stats.total_bank }} 題</p>
-          </div>
-          <div class="analytics-card">
-            <h3>正確率趨勢</h3>
-            <div v-if="stats.accuracy_trend.length > 0" class="trend-chart">
+            <div v-if="processedTrend.length" class="trend-chart">
               <div class="trend-bars">
-                <div v-for="(item, index) in stats.accuracy_trend" :key="index" class="trend-bar-wrapper" :title="`${item.exam_name}: ${item.accuracy}%`">
-                  <div class="trend-bar" :style="{ height: item.accuracy + '%' }"></div>
-                  <span class="trend-label">{{ item.accuracy }}%</span>
+                <div
+                  v-for="item in processedTrend"
+                  :key="item.key"
+                  class="trend-bar-wrapper"
+                  :class="{'glow-pulse': glowTarget === item.key}"
+                  :title="trendTitle(item)"
+                  @click="drillToPractice(item)"
+                >
+                  <div class="trend-bar" :style="{ height: Math.max(6, item.accuracy) + '%' }"></div>
+                  <div class="trend-meta">
+                    <span class="trend-name">{{ item.exam_name || '未命名考卷' }}</span>
+                    <span class="trend-value">
+                      {{ item.accuracy }}%
+                      <span v-if="item.delta !== null" :class="['delta', {up: item.delta > 0, down: item.delta < 0}]">
+                        ({{ item.delta > 0 ? '+' : '' }}{{ item.delta }}%)
+                      </span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
             <div v-else class="empty-chart"><p>尚無測驗記錄</p></div>
           </div>
-        </div>
 
-        <div class="stats-summary">
-          <div class="stat-item"><span class="stat-value">{{ stats.exam_count }}</span><span class="stat-label">測驗次數</span></div>
-          <div class="stat-item"><span class="stat-value">{{ stats.average_score }}</span><span class="stat-label">平均分數</span></div>
-          <div class="stat-item"><span class="stat-value">{{ stats.accuracy }}%</span><span class="stat-label">總正確率</span></div>
-          <div class="stat-item"><span class="stat-value">{{ stats.correct_answered }}</span><span class="stat-label">答對題數</span></div>
+          <div class="analytics-card">
+            <div class="card-header">
+              <h3>常錯考卷 / 題目</h3>
+              <p class="card-subtitle">點擊即可回到練習頁並聚焦該考卷/題目</p>
+            </div>
+            <div v-if="topWrongItems.length" class="hot-list">
+              <div
+                v-for="item in topWrongItems"
+                :key="item.key"
+                class="hot-item"
+                :class="{'glow-pulse': glowTarget === item.key}"
+                @click="drillToPractice(item)"
+              >
+                <div class="hot-title">{{ item.label }}</div>
+                <div class="hot-meta">
+                  <span>{{ item.tag }}</span>
+                  <span class="hot-count">錯 {{ item.count }} 次</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="empty-results"><p>目前沒有常錯統計，先去練習幾回吧！</p></div>
+          </div>
         </div>
 
         <div class="analytics-card">
@@ -64,18 +91,53 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import examService from '@/services/examService'
 
 const loading = ref(true)
 const stats = ref({
   total_answered: 0, correct_answered: 0, total_bank: 0, exam_count: 0,
-  average_score: 0, accuracy: 0, accuracy_trend: []
+  average_score: 0, accuracy: 0, accuracy_trend: [], top_wrong: []
 })
 const recentResults = ref([])
+const glowTarget = ref(null)
+const router = useRouter()
 
 const progressPercent = computed(() => {
   if (stats.value.total_bank === 0) return 0
   return Math.min(100, Math.round((stats.value.total_answered / stats.value.total_bank) * 100))
+})
+
+const processedTrend = computed(() => {
+  const trend = stats.value.accuracy_trend || []
+  const map = new Map()
+  trend.forEach((entry) => {
+    const key = entry.exam_id || entry.exam_name || entry.id || entry.index
+    if (!map.has(key)) {
+      map.set(key, { ...entry, key, previous: null })
+    } else {
+      const current = map.get(key)
+      if (current.previous === null) current.previous = current.accuracy
+      current.accuracy = entry.accuracy
+      map.set(key, current)
+    }
+  })
+  return Array.from(map.values()).map(item => ({
+    ...item,
+    delta: item.previous === null ? null : Math.round((item.accuracy - item.previous) * 10) / 10
+  }))
+})
+
+const topWrongItems = computed(() => {
+  const list = stats.value.top_wrong || []
+  return list.map((item, idx) => ({
+    key: item.exam_id || item.question_id || idx,
+    exam_id: item.exam_id,
+    question_id: item.question_id,
+    label: item.exam_name || item.question_content || '未命名',
+    tag: item.question_subject || '考卷',
+    count: item.wrong_count ?? item.count ?? 0
+  }))
 })
 
 const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('zh-TW')
@@ -96,6 +158,25 @@ const loadData = async () => {
   }
 }
 
+const trendTitle = (item) => {
+  if (item.delta === null) return `${item.exam_name || '考卷'}：${item.accuracy}%`
+  return `${item.exam_name || '考卷'}：${item.accuracy}%（${item.delta > 0 ? '提升' : '下降'} ${Math.abs(item.delta)}%）`
+}
+
+const triggerGlow = (key) => {
+  glowTarget.value = key
+  setTimeout(() => { if (glowTarget.value === key) glowTarget.value = null }, 900)
+}
+
+const drillToPractice = (item) => {
+  triggerGlow(item.key)
+  if (item.exam_id) {
+    router.push({ name: 'ExamPreview', params: { id: item.exam_id } })
+    return
+  }
+  router.push({ path: '/practice', query: { focus: item.question_id || item.key } })
+}
+
 onMounted(loadData)
 </script>
 
@@ -107,7 +188,7 @@ onMounted(loadData)
 
 .analytics-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 24px;
   margin-bottom: 24px;
 }
@@ -115,39 +196,34 @@ onMounted(loadData)
 .analytics-card {
   background: white;
   padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(15,23,42,0.06);
+  border: 1px solid #e6e8ed;
 }
 
-.analytics-card h3 { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: #2c3e50; }
+.card-header h3 { font-size: 18px; font-weight: 800; margin-bottom: 6px; color: #1f2933; }
+.card-subtitle { margin: 0 0 12px; color: #667185; font-size: 13px; }
+.analytics-card h3 { font-size: 18px; font-weight: 800; margin-bottom: 12px; color: #1f2933; }
 
-.progress-bar { background: #e0e0e0; height: 24px; border-radius: 12px; overflow: hidden; }
-.progress-fill {
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 12px;
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
-  min-width: 40px;
-}
-.progress-text { font-size: 14px; color: #666; margin-top: 12px; }
-
-.trend-chart { height: 150px; display: flex; align-items: flex-end; }
-.trend-bars { display: flex; gap: 8px; width: 100%; height: 100%; align-items: flex-end; }
-.trend-bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
-.trend-bar { width: 100%; max-width: 40px; background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%); border-radius: 4px 4px 0 0; min-height: 4px; }
-.trend-label { font-size: 11px; color: #666; margin-top: 4px; }
+.trend-chart { min-height: 200px; }
+.trend-bars { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+.trend-bar-wrapper { padding: 12px; border: 1px solid #e6e8ed; border-radius: 12px; background: #f9fafc; cursor: pointer; transition: box-shadow 0.2s, border-color 0.2s; }
+.trend-bar-wrapper:hover { border-color: rgba(47,95,144,0.35); box-shadow: 0 12px 26px rgba(15,23,42,0.08); }
+.trend-bar { width: 100%; height: 110px; border-radius: 10px; background: linear-gradient(180deg, #3b82f6 0%, #c7ddff 100%); position: relative; overflow: hidden; }
+.trend-meta { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.trend-name { font-size: 14px; color: #1f2933; font-weight: 700; }
+.trend-value { font-size: 13px; color: #4b5563; }
+.delta { margin-left: 6px; font-weight: 700; }
+.delta.up { color: #15803d; }
+.delta.down { color: #b91c1c; }
 .empty-chart { height: 150px; display: flex; align-items: center; justify-content: center; color: #999; }
 
-.stats-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-.stat-item { background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-.stat-item .stat-value { display: block; font-size: 32px; font-weight: bold; color: #2563eb; }
-.stat-item .stat-label { display: block; font-size: 14px; color: #666; margin-top: 4px; }
+.hot-list { display: flex; flex-direction: column; gap: 10px; }
+.hot-item { padding: 14px; border: 1px solid #e6e8ed; border-radius: 12px; background: #fdfefe; cursor: pointer; transition: box-shadow 0.2s, border-color 0.2s; }
+.hot-item:hover { border-color: rgba(47,95,144,0.35); box-shadow: 0 10px 22px rgba(15,23,42,0.08); }
+.hot-title { font-weight: 700; color: #1f2933; margin-bottom: 4px; }
+.hot-meta { display: flex; justify-content: space-between; color: #4b5563; font-size: 13px; }
+.hot-count { font-weight: 700; color: #b91c1c; }
 
 .results-list { display: flex; flex-direction: column; gap: 12px; }
 .result-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #f8f9fa; border-radius: 8px; }
@@ -164,7 +240,18 @@ onMounted(loadData)
 .btn-primary { background: #2563eb; color: white; }
 .btn-primary:hover { background: #1d4ed8; }
 
+.glow-pulse {
+  position: relative;
+  animation: glow 0.9s ease-out;
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 0 0 rgba(37,99,235,0.35); }
+  100% { box-shadow: 0 0 0 12px rgba(37,99,235,0); }
+}
+
 @media (max-width: 768px) {
-  .analytics-grid, .stats-summary { grid-template-columns: 1fr; }
+  .analytics-grid { grid-template-columns: 1fr; }
+  .analytics-card.wide { grid-column: span 1; }
 }
 </style>
