@@ -1,126 +1,141 @@
 <template>
-  <div class="pdf-upload-section">
-    <h3>匯入試卷 PDF</h3>
-    <div class="upload-buttons">
-      <!-- 匯入考卷 PDF -->
-      <div class="upload-item">
-        <label class="upload-label">
-          <input
-            type="file"
-            accept=".pdf"
-            @change="handleQuestionPdfUpload"
-            ref="questionFileInput"
-            style="display: none"
-          />
-          <button
-            type="button"
-            class="btn btn-primary"
-            @click="$refs.questionFileInput.click()"
-            :disabled="uploadingQuestions"
-          >
-            {{ uploadingQuestions ? '匯入中...' : '📄 匯入考卷 PDF' }}
-          </button>
-        </label>
-        <span v-if="questionFileName" class="file-name">{{ questionFileName }}</span>
-      </div>
-
-      <!-- 匯入答案 PDF -->
-      <div class="upload-item">
-        <label class="upload-label">
-          <input
-            type="file"
-            accept=".pdf"
-            @change="handleAnswerPdfUpload"
-            ref="answerFileInput"
-            style="display: none"
-          />
-          <button
-            type="button"
-            class="btn btn-secondary"
-            @click="$refs.answerFileInput.click()"
-            :disabled="uploadingAnswers"
-          >
-            {{ uploadingAnswers ? '匯入中...' : '✓ 匯入答案 PDF' }}
-          </button>
-        </label>
-        <span v-if="answerFileName" class="file-name">{{ answerFileName }}</span>
-      </div>
-    </div>
-
-    <!-- 匯入結果顯示 -->
-    <div v-if="importResult" class="import-result">
-      <div class="result-header">
-        <h4>匯入結果</h4>
-        <button class="btn btn-sm btn-close" @click="clearResult">×</button>
-      </div>
-
-      <div class="result-info">
-        <div class="info-item">
-          <span class="label">科目：</span>
-          <span class="value">{{ importResult.subject || '-' }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">分類：</span>
-          <span class="value">{{ importResult.category || '-' }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">難度：</span>
-          <span class="value">{{ importResult.level || '-' }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">時間限制：</span>
-          <span class="value">{{ importResult.time_length ? `${importResult.time_length} 分鐘` : '-' }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">題目數量：</span>
-          <span class="value">{{ importResult.count || 0 }} 題</span>
-        </div>
-        <div v-if="answersData" class="info-item">
-          <span class="label">答案狀態：</span>
-          <span class="value success">✓ 已匯入 ({{ answersData.count || 0 }} 個答案)</span>
-        </div>
-      </div>
-
-      <!-- 答案修改提醒 -->
-      <div v-if="answersData && answersData.notes" class="notes-alert">
-        <div class="alert-header">
-          <span class="alert-icon">⚠️</span>
-          <strong>答案修改提醒</strong>
-        </div>
-        <div class="alert-content">
-          {{ answersData.notes }}
-        </div>
-        <div v-if="hasModifiedAnswers" class="modified-answers-list">
-          <p><strong>有答案修改的題目：</strong></p>
-          <div class="modified-items">
-            <span
-              v-for="(answer, index) in answersData.answers"
-              :key="index"
-              v-show="answer === '*'"
-              class="modified-badge"
+  <div class="card mb-4 ms-3 me-3">
+    <div class="card-body">
+      <h5 class="card-title mb-4">匯入試卷 PDF</h5>
+      
+      <!-- 上傳按鈕 -->
+      <div class="d-flex gap-3 flex-wrap mb-4">
+        <div>
+          <label class="d-block mb-2">
+            <input
+              type="file"
+              accept=".pdf"
+              @change="handleQuestionPdfUpload"
+              ref="questionFileInput"
+              style="display: none"
+            />
+            <button
+              type="button"
+              class="btn btn-success"
+              @click="$refs.questionFileInput.click()"
+              :disabled="uploadingQuestions"
             >
-              第 {{ index + 1 }} 題
-            </span>
+              <span v-if="uploadingQuestions" class="spinner-border spinner-border-sm me-2"></span>
+              {{ uploadingQuestions ? '匯入中...' : '匯入考卷 PDF' }}
+            </button>
+          </label>
+          <small v-if="questionFileName" class="text-muted d-block">{{ questionFileName }}</small>
+        </div>
+
+        <div>
+          <label class="d-block mb-2">
+            <input
+              type="file"
+              accept=".pdf"
+              @change="handleAnswerPdfUpload"
+              ref="answerFileInput"
+              style="display: none"
+            />
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="$refs.answerFileInput.click()"
+              :disabled="uploadingAnswers"
+            >
+              <span v-if="uploadingAnswers" class="spinner-border spinner-border-sm me-2"></span>
+              {{ uploadingAnswers ? '匯入中...' : '匯入答案 PDF' }}
+            </button>
+          </label>
+          <small v-if="answerFileName" class="text-muted d-block">{{ answerFileName }}</small>
+        </div>
+      </div>
+
+      <!-- 匯入結果顯示 -->
+      <div v-if="importResult" class="card bg-light border-0">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">匯入結果</h6>
+          <button type="button" class="btn-close" @click="clearResult"></button>
+        </div>
+
+        <div class="card-body">
+          <!-- 匯入資訊 -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="mb-2">
+                <small class="text-muted fw-bold">科目</small>
+                <div>{{ importResult.subject || '-' }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-2">
+                <small class="text-muted fw-bold">分類</small>
+                <div>{{ importResult.category || '-' }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-2">
+                <small class="text-muted fw-bold">難度</small>
+                <div>{{ importResult.level || '-' }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-2">
+                <small class="text-muted fw-bold">時間限制</small>
+                <div>{{ importResult.time_length ? `${importResult.time_length} 分鐘` : '-' }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-2">
+                <small class="text-muted fw-bold">題目數量</small>
+                <div>{{ importResult.count || 0 }} 題</div>
+              </div>
+            </div>
+            <div v-if="answersData" class="col-md-6">
+              <div class="mb-2">
+                <small class="text-muted fw-bold">答案狀態</small>
+                <div class="text-success fw-bold">✓ 已匯入 ({{ answersData.count || 0 }} 個答案)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 答案修改提醒 -->
+          <div v-if="answersData && answersData.notes" class="alert alert-warning mb-4" role="alert">
+            <strong>答案修改提醒</strong>
+            <p class="mb-2">{{ answersData.notes }}</p>
+            <div v-if="hasModifiedAnswers">
+              <small class="fw-bold d-block mb-2">有答案修改的題目：</small>
+              <div class="d-flex flex-wrap gap-2">
+                <span
+                  v-for="(answer, index) in answersData.answers"
+                  :key="index"
+                  v-show="answer === '*'"
+                  class="badge bg-warning text-dark"
+                >
+                  第 {{ index + 1 }} 題
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 操作按鈕 -->
+          <div class="d-flex gap-2">
+            <button
+              class="btn btn-primary"
+              @click="handleImportConfirm"
+            >
+              確認使用此資料
+            </button>
+            <button class="btn btn-secondary" @click="clearResult">
+              取消
+            </button>
           </div>
         </div>
       </div>
 
-      <div class="result-actions">
-        <button
-          class="btn btn-success"
-          @click="handleImportConfirm"
-        >
-          確認使用此資料
-        </button>
-        <button class="btn btn-secondary" @click="clearResult">
-          取消
-        </button>
+      <!-- 錯誤訊息 -->
+      <div v-if="errorMessage" class="alert alert-danger mt-3 mb-0" role="alert">
+        {{ errorMessage }}
       </div>
-    </div>
-
-    <!-- 錯誤訊息 -->
-    <div v-if="errorMessage" class="error-message">
-      {{ errorMessage }}
     </div>
   </div>
 </template>
@@ -274,226 +289,10 @@ const clearResult = () => {
 </script>
 
 <style scoped>
-.pdf-upload-section {
-  background: white;
-  padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 24px;
-}
-
-.pdf-upload-section h3 {
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-}
-
-.upload-buttons {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.upload-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.upload-label {
-  display: inline-block;
-}
-
-.file-name {
-  font-size: 13px;
-  color: #666;
-  margin-top: 4px;
-}
-
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  color: white;
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
-}
-
-.btn-secondary {
-  background: #f5f5f5;
-  color: #333;
-  border: 1px solid #ddd;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #e0e0e0;
-}
-
-.btn-success {
-  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
-  color: white;
-  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
-}
-
-.btn-success:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
-}
-
-.btn-sm {
-  padding: 4px 8px;
-  font-size: 18px;
-}
-
-.btn-close {
-  background: transparent;
-  color: #999;
-  border: none;
-  line-height: 1;
-}
-
-.btn-close:hover {
-  color: #333;
-}
-
-.import-result {
-  margin-top: 20px;
-  padding: 20px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.result-header h4 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-}
-
-.result-info {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.info-item {
-  display: flex;
-  gap: 8px;
-}
-
-.info-item .label {
-  font-weight: 500;
-  color: #666;
-}
-
-.info-item .value {
-  color: #333;
-}
-
-.result-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.value.success {
-  color: #4CAF50;
-  font-weight: 600;
-}
-
-.notes-alert {
-  margin-top: 16px;
-  padding: 16px;
-  background: #fff3e0;
-  border-radius: 8px;
-  border-left: 4px solid #ff9800;
-}
-
-.alert-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.alert-icon {
-  font-size: 18px;
-}
-
-.alert-header strong {
-  color: #e65100;
-  font-size: 15px;
-}
-
-.alert-content {
-  color: #e65100;
-  font-size: 14px;
-  line-height: 1.5;
-  margin-bottom: 12px;
-}
-
-.modified-answers-list {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #ffe0b2;
-}
-
-.modified-answers-list p {
-  margin: 0 0 8px 0;
-  font-size: 14px;
-  color: #e65100;
-}
-
-.modified-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.modified-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  background: #ff9800;
-  color: white;
-  border-radius: 16px;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.error-message {
-  margin-top: 12px;
-  padding: 12px 16px;
-  background: #ffebee;
-  color: #c62828;
-  border-radius: 6px;
-  font-size: 14px;
-  border-left: 4px solid #c62828;
+/* Bootstrap 已提供大部分樣式，這裡只需要微調 */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.2em;
 }
 </style>

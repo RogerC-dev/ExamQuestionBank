@@ -32,6 +32,7 @@
           <div class="d-flex gap-2 align-items-center ps-3 pe-3 pt-2 pb-2 border-bottom">
             <button class="btn btn-sm btn-secondary" @click="isAutoDistributeModalVisible = true" :disabled="autoDistributeLoading">自動配分</button>
             <button class="btn btn-sm btn-secondary" @click="showBulkTagModal = true">批次編輯標籤</button>
+            <button class="btn btn-sm btn-secondary" @click="showBulkSubjectModal = true">批次編輯科目</button>
           </div>
           <div class="question-list-wrapper">
             <QuestionList
@@ -62,6 +63,7 @@
       @add="handleAddQuestionToExam"
     />
     <BulkTagEditor v-if="showBulkTagModal" :questions="allQuestions" :pendingQuestions="pendingQuestions" :examId="examId" @close="showBulkTagModal=false" @applied="handleBulkTagsApplied" />
+    <BulkSubjectEditor v-if="showBulkSubjectModal" :questions="allQuestions" :pendingQuestions="pendingQuestions" :examId="examId" @close="showBulkSubjectModal=false" @applied="handleBulkSubjectApplied" />
 
     <!-- 儲存進度 Modal -->
     <div v-if="isSavingProgressVisible" class="modal d-block" style="background: rgba(0, 0, 0, 0.5)">
@@ -159,6 +161,7 @@ import QuestionEditor from '../components/QuestionEditor.vue'
 import QuestionList from '../components/QuestionList.vue'
 import AddQuestionModal from '../components/AddQuestionModal.vue'
 import BulkTagEditor from '../components/BulkTagEditor.vue'
+import BulkSubjectEditor from '../components/BulkSubjectEditor.vue'
 import PdfUploadSection from '../components/PdfUploadSection.vue'
 import examService from '../services/examService'
 import questionService from '../services/questionService'
@@ -198,6 +201,7 @@ const savingStepType = ref('') // 'exam', 'questions', 'updates'
 // 新增題目彈窗
 const showAddModal = ref(false)
 const showBulkTagModal = ref(false)
+const showBulkSubjectModal = ref(false)
 
 // 自動配分 Modal
 const isAutoDistributeModalVisible = ref(false)
@@ -740,6 +744,28 @@ const handleBulkTagsApplied = async ({ successCount, errors, pendingUpdates = []
     pendingUpdates.forEach(u => {
       if (pendingQuestions.value[u.idx]) {
         pendingQuestions.value[u.idx].tag_ids = u.tag_ids
+      }
+    })
+  }
+  // Reload exam only if some saved questions were updated
+  if (successCount > 0) {
+    await loadExam()
+  }
+}
+
+const handleBulkSubjectApplied = async ({ successCount, errors, pendingUpdates = [] }) => {
+  let msg = `已成功更新 ${successCount} 題。`
+  if (errors && errors.length) {
+    msg += `
+失敗：${errors.length} 題，詳情請查看 console。`
+    console.error('批次科目更新錯誤：', errors)
+  }
+  alert(msg)
+  // Apply pending updates locally
+  if (pendingUpdates.length) {
+    pendingUpdates.forEach(u => {
+      if (pendingQuestions.value[u.idx]) {
+        pendingQuestions.value[u.idx].subject = u.subject
       }
     })
   }
