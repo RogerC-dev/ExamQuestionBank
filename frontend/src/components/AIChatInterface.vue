@@ -235,18 +235,19 @@ onMounted(() => {
 .chat-tabs button {
   flex: 1;
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #f3f4f6;
-  color: #2c3e50;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-secondary);
   cursor: pointer;
   font-weight: 500;
+  transition: all 0.2s;
 }
 
 .chat-tabs button.active {
-  background: #2563eb;
-  color: white;
-  border-color: #2563eb;
+  background: var(--surface-muted);
+  color: var(--primary);
+  font-weight: 600;
 }
 
 .chat-panel {
@@ -259,11 +260,11 @@ onMounted(() => {
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  background: #ffffff;
+  gap: 20px;
+  background: var(--bg-page);
 }
 
 .message {
@@ -281,20 +282,24 @@ onMounted(() => {
 }
 
 .message-content {
-  padding: 12px 16px;
-  border-radius: 12px;
+  padding: 14px 18px;
+  border-radius: 18px;
   position: relative;
+  font-size: 15px;
+  line-height: 1.6;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .message.user .message-content {
-  background: #667eea;
-  color: white;
+  background: var(--primary);
+  color: #fff;
   border-bottom-right-radius: 4px;
 }
 
 .message.assistant .message-content {
-  background: #f0f0f0;
-  color: #333;
+  background: #fff;
+  color: var(--text-primary);
+  border: 1px solid var(--border);
   border-bottom-left-radius: 4px;
 }
 
@@ -316,11 +321,12 @@ onMounted(() => {
 }
 
 .typing span {
-  width: 8px;
-  height: 8px;
-  background: #999;
+  width: 6px;
+  height: 6px;
+  background: var(--text-secondary);
   border-radius: 50%;
   animation: typing 1.4s infinite;
+  opacity: 0.5;
 }
 
 .typing span:nth-child(2) {
@@ -355,7 +361,7 @@ onMounted(() => {
 
 .btn-upgrade {
   padding: 6px 12px;
-  background: #667eea;
+  background: var(--primary);
   color: white;
   border: none;
   border-radius: 4px;
@@ -365,7 +371,7 @@ onMounted(() => {
 }
 
 .btn-upgrade:hover {
-  background: #5568d3;
+  background: var(--primary-hover);
 }
 
 .chat-input-container {
@@ -379,20 +385,22 @@ onMounted(() => {
 
 .chat-input {
   flex: 1;
-  padding: 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 15px;
   font-family: inherit;
   resize: none;
   outline: none;
-  transition: border-color 0.2s;
-  background: #ffffff;
-  color: #2c3e50;
+  transition: all 0.2s;
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
 }
 
 .chat-input:focus {
-  border-color: #667eea;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
 .chat-input:disabled {
@@ -403,10 +411,10 @@ onMounted(() => {
 
 .btn-send {
   padding: 12px 24px;
-  background: #667eea;
+  background: var(--primary);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -415,7 +423,7 @@ onMounted(() => {
 }
 
 .btn-send:hover:not(:disabled) {
-  background: #5568d3;
+  background: var(--primary-hover);
   transform: translateY(-1px);
 }
 
@@ -431,8 +439,8 @@ onMounted(() => {
   flex-direction: column;
   padding: 16px 20px;
   gap: 12px;
-  background: #ffffff;
-  color: #2c3e50;
+  background: var(--bg-page);
+  color: var(--text-primary);
 }
 
 .history-toolbar {
@@ -463,10 +471,10 @@ onMounted(() => {
 }
 
 .history-item {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px;
-  background: #f9fafb;
+  background: var(--surface);
 }
 
 .history-question,
@@ -491,7 +499,7 @@ onMounted(() => {
   margin-top: 12px;
   padding: 6px 10px;
   border: none;
-  background: #2563eb;
+  background: var(--primary);
   color: #fff;
   border-radius: 6px;
   cursor: pointer;

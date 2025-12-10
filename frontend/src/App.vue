@@ -132,31 +132,41 @@ onMounted(() => {
 
 <style scoped>
 :global(:root) {
-  --bg-soft: #f6f7f9;
-  --surface: #ffffff;
-  --surface-muted: #f0f2f5;
-  --primary: #2f5f90;
-  --primary-soft: #e6eef7;
-  --text-primary: #1f2933;
-  --text-secondary: #4b5563;
-  --border: #dce1e7;
-  --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-  --radius: 12px;
+  /* Palette: Professional Slate & Steel */
+  --bg-page: #F8FAFC;      /* Slate 50 - Cool Light Base */
+  --surface: #FFFFFF;
+  --surface-muted: #E2E8F0; /* Slate 200 - Cool Grey */
+  
+  /* Primary: Professional Slate Blue */
+  --primary: #476996;      /* Calm, authoritative Blue */
+  --primary-hover: #35527a;
+  --primary-soft: #EEF2FF; /* Indigo 50 - Very light cool blue */
+  
+  /* Text */
+  --text-primary: #1E293B; /* Slate 800 - Deep, readable contrast */
+  --text-secondary: #64748B; /* Slate 500 - Professional Grey */
+  
+  /* Borders & Shadows */
+  --border: #CBD5E1;       /* Slate 300 */
+  --shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06);
+  --shadow-hover: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
+  --radius: 12px;          /* Slightly less rounded for professional look */
 }
 
 .app-container {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f7f9fc 0%, #fdfefe 100%);
+  background: var(--bg-page);
   color: var(--text-primary);
   font-family: "Inter", "Noto Sans TC", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Header */
 header {
   background: var(--surface);
-  padding: 22px 0;
+  padding: 18px 0;
   border-bottom: 1px solid var(--border);
-  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.04);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
 }
 
 .header-content {
@@ -174,11 +184,11 @@ header {
 }
 
 header h1 {
-  font-size: 26px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 8px;
-  letter-spacing: 0.01em;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
 }
 
 header p {
@@ -207,7 +217,7 @@ header p {
 
 .username {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
@@ -237,8 +247,9 @@ header p {
 }
 
 .btn-login:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 26px rgba(47, 95, 144, 0.18);
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
 }
 
 .btn-logout {
@@ -279,26 +290,25 @@ nav a {
   font-size: 15px;
   font-weight: 600;
   border-bottom: 2px solid transparent;
-  border-radius: 10px 10px 0 0;
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
 nav a:hover {
   color: var(--primary);
-  background: var(--primary-soft);
+  background: transparent;
 }
 
 nav a.active {
   color: var(--primary);
   border-bottom-color: var(--primary);
-  background: var(--primary-soft);
+  background: transparent;
 }
 
 /* Main */
 main {
   min-height: calc(100vh - 140px);
-  background: linear-gradient(180deg, #f7f8fb 0%, #fdfefe 100%);
+  background: var(--bg-page);
 }
 
 /* Responsive */

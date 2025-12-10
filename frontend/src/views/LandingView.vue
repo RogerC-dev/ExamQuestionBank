@@ -195,17 +195,15 @@ const handleSubscribe = () => {
 <style scoped>
 .landing-view {
   width: 100%;
-  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  background: var(--bg-page);
   color: var(--text-primary);
 }
 
 /* Hero Section */
 .hero-section {
-  background: radial-gradient(circle at 20% 20%, rgba(47, 95, 144, 0.08), transparent 40%),
-    radial-gradient(circle at 80% 0%, rgba(47, 95, 144, 0.06), transparent 38%),
-    linear-gradient(180deg, #f6f8fb 0%, #ffffff 90%);
+  background: var(--bg-page);
   color: var(--text-primary);
-  padding: 110px 24px 90px;
+  padding: 120px 24px 80px;
   text-align: center;
 }
 
@@ -216,10 +214,11 @@ const handleSubscribe = () => {
 
 .hero-title {
   font-size: 42px;
-  font-weight: 800;
-  margin-bottom: 14px;
-  line-height: 1.18;
-  letter-spacing: 0.01em;
+  font-weight: 700;
+  margin-bottom: 16px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .hero-subtitle {
@@ -256,13 +255,15 @@ const handleSubscribe = () => {
 
 .btn-primary {
   background: var(--primary);
-  color: #f7f9fc;
-  box-shadow: var(--shadow);
+  color: #fff;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 26px rgba(47, 95, 144, 0.18);
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .btn-secondary {
@@ -325,18 +326,18 @@ const handleSubscribe = () => {
 
 .feature-card {
   text-align: left;
-  padding: 26px 22px;
-  border-radius: 14px;
-  background: #f7f9fb;
-  border: 1px solid var(--border);
-  transition: all 0.2s ease;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+  padding: 32px 24px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
 }
 
 .feature-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
-  border-color: rgba(47, 95, 144, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  background: #fff;
 }
 
 .feature-icon {
@@ -416,9 +417,9 @@ const handleSubscribe = () => {
 
 .extension-demo {
   background: var(--surface);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: 32px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow);
   min-height: 280px;
   display: flex;
   align-items: center;
@@ -452,17 +453,17 @@ const handleSubscribe = () => {
 .benefit-card {
   text-align: left;
   padding: 24px 22px;
-  border-radius: 14px;
-  background: #f7f9fb;
+  border-radius: var(--radius);
+  background: var(--surface);
   border: 1px solid var(--border);
   transition: all 0.2s ease;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  box-shadow: none;
 }
 
 .benefit-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
-  border-color: rgba(47, 95, 144, 0.22);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: var(--primary);
 }
 
 .benefit-icon {
@@ -494,7 +495,7 @@ const handleSubscribe = () => {
 /* Pricing Section */
 .pricing-section {
   padding: 70px 0;
-  background: #f8fafc;
+  background: var(--surface-muted);
 }
 
 .pricing-grid {
@@ -507,7 +508,7 @@ const handleSubscribe = () => {
 
 .pricing-card {
   background: var(--surface);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: 32px 26px;
   text-align: center;
   border: 1px solid var(--border);
@@ -517,9 +518,10 @@ const handleSubscribe = () => {
 }
 
 .pricing-card.featured {
-  border-color: rgba(47, 95, 144, 0.35);
-  box-shadow: 0 16px 34px rgba(47, 95, 144, 0.16);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-hover);
   transform: translateY(-4px);
+  background: #fff;
 }
 
 .badge {
@@ -589,7 +591,7 @@ const handleSubscribe = () => {
 /* Stats Section */
 .stats-section {
   padding: 54px 0;
-  background: linear-gradient(180deg, #f7f9fb 0%, #ffffff 100%);
+  background: var(--bg-page);
   color: var(--text-primary);
   border-top: 1px solid var(--border);
 }
@@ -603,10 +605,8 @@ const handleSubscribe = () => {
 
 .stat-item {
   padding: 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  background: transparent;
+  border: none;
 }
 
 .stat-number {
