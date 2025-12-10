@@ -78,7 +78,6 @@
       <section v-if="activeTab === 'exams' && !quizMode" class="content-section">
         <div class="section-header">
           <h3>歷屆考卷</h3>
-          <button class="btn btn-primary" @click="router.push('/admin/exams')">管理考卷</button>
         </div>
         <div v-if="loadingExams" class="loading">載入中...</div>
         <div v-else-if="!historicalExams.length" class="empty">目前尚無考卷</div>
