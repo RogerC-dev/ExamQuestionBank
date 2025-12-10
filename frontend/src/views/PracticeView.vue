@@ -157,8 +157,8 @@
       <div class="divider-handle"></div>
     </div>
 
-    <!-- AI Chat Panel (Split View) -->
-    <div v-if="isChatOpen" class="chat-panel-split" :style="chatPanelStyle">
+    <!-- AI Chat Panel (Split View / Mobile Overlay) -->
+    <div v-if="isChatOpen" class="chat-panel-split" :class="{ 'mobile-open': isChatOpen }" :style="chatPanelStyle">
       <div class="chat-panel-header">
         <div class="chat-panel-title">
           <span class="chat-icon">AI</span>
@@ -168,6 +168,9 @@
       </div>
       <AIChatInterface :prefill="chatPrefill" class="chat-panel-content" />
     </div>
+
+    <!-- Mobile Overlay Background -->
+    <div v-if="isChatOpen" class="mobile-overlay" @click="closeChat"></div>
   </div>
 </template>
 
@@ -822,37 +825,67 @@ onUnmounted(() => {
   }
 }
 
+/* Mobile Overlay for AI Chat */
+.mobile-overlay {
+  display: none;
+}
+
 /* Mobile 手機 */
 @media (max-width: 768px) {
   .split-view-container {
-    flex-direction: column;
-    height: auto;
+    flex-direction: row;
+    height: 100%;
     min-height: calc(100vh - 140px);
+    position: relative;
   }
 
   .main-panel {
     width: 100% !important;
-    height: auto;
-    min-height: 50vh;
+    height: 100%;
   }
 
   .split-divider {
-    width: 100%;
-    height: 8px;
-    cursor: row-resize;
-  }
-
-  .divider-handle {
-    width: 40px;
-    height: 4px;
+    display: none;
   }
   
   .chat-panel-split {
-    width: 100% !important;
-    height: 50vh;
-    min-height: 400px;
-    border-left: none;
-    border-top: 1px solid var(--border);
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    width: 85% !important;
+    max-width: 400px;
+    height: 100vh !important;
+    border-left: 1px solid var(--border);
+    border-top: none;
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  }
+  
+  .chat-panel-split.mobile-open {
+    transform: translateX(0);
+  }
+  
+  .mobile-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 999;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
   
   .chat-panel-header {
@@ -1091,8 +1124,8 @@ onUnmounted(() => {
   }
   
   .chat-panel-split {
-    height: 60vh;
-    min-height: 350px;
+    width: 90% !important;
+    max-width: none;
   }
   
   .chat-panel-header {
