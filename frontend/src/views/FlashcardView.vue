@@ -306,9 +306,9 @@ onMounted(() => { loadStats(); loadFlashcards() })
 .stat-card.primary { background: var(--primary); color: white; border: none; }
 .stat-card.primary:hover { background: var(--primary-hover); }
 .stat-icon { font-size: 32px; display: flex; align-items: center; justify-content: center; }
-.stat-info { text-align: center; }
+.stat-info { text-align: center; width: 100%; }
 .stat-value { display: block; font-size: 28px; font-weight: 700; color: inherit; }
-.stat-label { font-size: 13px; opacity: 0.8; margin-top: 4px; color: inherit; }
+.stat-label { font-size: 13px; opacity: 0.8; margin-top: 4px; color: inherit; display: block; }
 .btn-start {
   margin-top: 8px;
   padding: 10px 20px;
@@ -320,28 +320,31 @@ onMounted(() => { loadStats(); loadFlashcards() })
   font-weight: 600;
   font-size: 13px;
   transition: all 0.2s;
+  width: 100%;
+  max-width: 200px;
 }
 .btn-start:hover { background: white; color: var(--primary); }
 
 
 /* Card List */
 .card-list-section { background: var(--surface); padding: 20px; border-radius: 12px; box-shadow: 0 12px 28px rgba(15,23,42,0.05); border: 1px solid var(--border); }
-.list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
 .list-header h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); }
 .list-header select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-primary); font-size: 14px; cursor: pointer; }
 .loading, .empty { text-align: center; padding: 40px; color: var(--text-secondary); }
 .empty .hint { font-size: 13px; margin-top: 8px; color: var(--text-secondary); }
 
 .card-list { display: flex; flex-direction: column; gap: 12px; }
-.list-card { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #f7f9fb; border-radius: 12px; border: 1px solid var(--border); transition: all 0.2s; }
+.list-card { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #f7f9fb; border-radius: 12px; border: 1px solid var(--border); transition: all 0.2s; gap: 12px; }
 .list-card:hover { background: #f0f4f8; }
-.list-card-subject { font-size: 12px; color: var(--primary); font-weight: 600; }
-.list-card-question { margin: 8px 0; color: var(--text-primary); font-size: 15px; line-height: 1.5; }
-.list-card-meta { display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary); }
+.list-card-content { flex: 1; min-width: 0; }
+.list-card-subject { font-size: 12px; color: var(--primary); font-weight: 600; display: block; }
+.list-card-question { margin: 8px 0; color: var(--text-primary); font-size: 15px; line-height: 1.5; word-break: break-word; }
+.list-card-meta { display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
 .status-learning { color: #f59e0b; font-weight: 600; }
 .status-reviewing { color: #3b82f6; font-weight: 600; }
 .status-mastered { color: #10b981; font-weight: 600; }
-.btn-delete { background: none; border: none; font-size: 18px; cursor: pointer; opacity: 0.5; transition: opacity 0.2s; color: var(--text-primary); }
+.btn-delete { background: none; border: none; font-size: 18px; cursor: pointer; opacity: 0.5; transition: opacity 0.2s; color: var(--text-primary); padding: 8px; flex-shrink: 0; }
 .btn-delete:hover { opacity: 1; }
 
 /* ========== REVIEW MODE ========== */
@@ -357,10 +360,12 @@ onMounted(() => { loadStats(); loadFlashcards() })
   border-radius: 12px;
   box-shadow: 0 12px 28px rgba(15,23,42,0.05);
   border: 1px solid var(--border);
+  flex-wrap: wrap;
 }
-.progress-bar { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.review-header > span { white-space: nowrap; }
+.progress-bar { flex: 1; min-width: 200px; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
 .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-hover)); transition: width 0.3s; }
-.btn-exit { padding: 8px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; color: var(--text-primary); font-weight: 600; font-size: 14px; transition: all 0.2s; }
+.btn-exit { padding: 8px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; color: var(--text-primary); font-weight: 600; font-size: 14px; transition: all 0.2s; white-space: nowrap; }
 .btn-exit:hover { background: #f0f4f8; }
 
 /* Flashcard */
@@ -385,6 +390,7 @@ onMounted(() => { loadStats(); loadFlashcards() })
   display: flex;
   flex-direction: column;
   box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  overflow-y: auto;
 }
 
 .card-front {
@@ -411,7 +417,7 @@ onMounted(() => { loadStats(); loadFlashcards() })
 .card-back .card-badge { background: var(--primary-soft); color: var(--primary); }
 
 .card-content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-.card-question { font-size: 22px; line-height: 1.6; text-align: center; }
+.card-question { font-size: 22px; line-height: 1.6; text-align: center; word-break: break-word; }
 .card-hint { text-align: center; font-size: 14px; opacity: 0.7; }
 
 /* Answer Options */
@@ -426,9 +432,10 @@ onMounted(() => { loadStats(); loadFlashcards() })
   border-radius: 10px;
   font-size: 15px;
   line-height: 1.5;
+  word-break: break-word;
 }
 .answer-option.correct { background: #ecf8f1; border: 2px solid #10b981; }
-.option-marker { font-weight: bold; color: #10b981; min-width: 20px; }
+.option-marker { font-weight: bold; color: #10b981; min-width: 20px; flex-shrink: 0; }
 .no-options { text-align: center; color: var(--text-secondary); }
 
 /* Rating Section */
@@ -462,11 +469,140 @@ onMounted(() => { loadStats(); loadFlashcards() })
 
 .rating-btn:hover:not(:disabled) { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
+/* ========== RESPONSIVE DESIGN ========== */
+
+/* Tablet 平板 */
+@media (max-width: 1024px) {
+  .container { padding: 16px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .stat-card { padding: 16px; }
+  .stat-icon { font-size: 28px; }
+  .stat-value { font-size: 24px; }
+  .rating-buttons { gap: 10px; }
+  .rating-btn { min-width: 90px; padding: 14px 16px; }
+}
+
+/* Mobile 手機 */
 @media (max-width: 768px) {
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .flashcard { height: 350px; }
-  .card-question { font-size: 18px; }
-  .rating-buttons { gap: 8px; }
-  .rating-btn { min-width: 80px; padding: 12px 14px; }
+  .container { padding: 12px; }
+  
+  /* Header */
+  .page-header h2 { font-size: 22px; }
+  .page-header { margin-bottom: 20px; }
+  
+  /* Stats Grid - 單欄顯示 */
+  .stats-grid { 
+    grid-template-columns: 1fr; 
+    gap: 12px; 
+    margin-bottom: 20px; 
+  }
+  .stat-card {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 16px;
+  }
+  .stat-card.primary {
+    flex-direction: column;
+  }
+  .stat-icon { font-size: 24px; }
+  .stat-info { text-align: left; }
+  .stat-card.primary .stat-info { text-align: center; }
+  .stat-value { font-size: 22px; }
+  .stat-label { font-size: 12px; }
+  .btn-start { width: 100%; max-width: none; }
+  
+  /* Card List */
+  .card-list-section { padding: 16px; }
+  .list-header { flex-direction: column; align-items: stretch; }
+  .list-header h3 { font-size: 15px; }
+  .list-header select { width: 100%; }
+  
+  .list-card { 
+    flex-direction: column; 
+    align-items: flex-start; 
+    padding: 14px; 
+  }
+  .list-card-question { font-size: 14px; }
+  .list-card-meta { 
+    gap: 12px; 
+    font-size: 11px; 
+    width: 100%; 
+  }
+  .btn-delete { 
+    position: absolute; 
+    top: 10px; 
+    right: 10px; 
+  }
+  .list-card { position: relative; padding-right: 40px; }
+  
+  /* Review Mode */
+  .review-header { 
+    padding: 12px; 
+    gap: 10px; 
+    font-size: 14px; 
+  }
+  .progress-bar { min-width: 100%; order: 3; }
+  .btn-exit { 
+    padding: 6px 12px; 
+    font-size: 13px; 
+  }
+  
+  /* Flashcard */
+  .flashcard { height: 320px; }
+  .card-face { padding: 20px; }
+  .card-badge { font-size: 11px; padding: 5px 12px; }
+  .card-question { font-size: 16px; }
+  .card-hint { font-size: 12px; }
+  
+  /* Answer Options */
+  .answer-option { 
+    padding: 10px 14px; 
+    font-size: 14px; 
+    gap: 8px; 
+  }
+  
+  /* Rating Section */
+  .rating-prompt { font-size: 16px; margin-bottom: 16px; }
+  .rating-buttons { 
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .rating-btn { 
+    width: 100%;
+    min-width: auto;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 12px 16px;
+  }
+  .rating-icon { font-size: 24px; }
+  .rating-text { font-size: 14px; }
+  .rating-interval { font-size: 12px; }
+}
+
+/* Small Mobile 小螢幕手機 */
+@media (max-width: 480px) {
+  .container { padding: 8px; }
+  .page-header h2 { font-size: 20px; }
+  .flashcard { height: 280px; }
+  .card-face { padding: 16px; }
+  .card-question { font-size: 15px; }
+  .stat-value { font-size: 20px; }
+  .list-card-question { font-size: 13px; }
+  .rating-btn { padding: 10px 14px; }
+  .card-list-section { padding: 12px; }
+}
+
+/* Landscape Mobile 橫向手機 */
+@media (max-width: 768px) and (orientation: landscape) {
+  .flashcard { height: 250px; }
+  .rating-buttons { 
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .rating-btn { 
+    flex: 1;
+    min-width: calc(50% - 4px);
+  }
 }
 </style>

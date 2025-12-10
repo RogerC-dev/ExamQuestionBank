@@ -785,7 +785,9 @@ onUnmounted(() => {
 
 .quiz-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
 
-/* Responsive Design */
+/* ========== RESPONSIVE DESIGN ========== */
+
+/* Tablet 平板 */
 @media (max-width: 1024px) {
   .stats-section, .practice-modes {
     grid-template-columns: repeat(2, 1fr);
@@ -794,8 +796,33 @@ onUnmounted(() => {
   .container {
     padding: 16px;
   }
+  
+  .chat-panel-split {
+    min-width: 350px;
+  }
+  
+  .mode-card {
+    padding: 18px 14px;
+  }
+  
+  .mode-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+  
+  .quiz-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .quiz-tools {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 
+/* Mobile 手機 */
 @media (max-width: 768px) {
   .split-view-container {
     flex-direction: column;
@@ -823,22 +850,287 @@ onUnmounted(() => {
   .chat-panel-split {
     width: 100% !important;
     height: 50vh;
+    min-height: 400px;
     border-left: none;
     border-top: 1px solid var(--border);
   }
   
-  .stats-section, .practice-modes {
-    grid-template-columns: repeat(2, 1fr);
+  .chat-panel-header {
+    padding: 12px 14px;
   }
   
-  .exam-item, .question-item {
+  .chat-panel-title {
+    font-size: 14px;
+  }
+  
+  .chat-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+  
+  .btn-close {
+    font-size: 18px;
+  }
+  
+  .container {
+    padding: 14px 10px;
+  }
+  
+  .section-title {
+    font-size: 16px;
+    margin-bottom: 14px;
+  }
+  
+  .stats-section, .practice-modes {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .mode-card {
+    padding: 16px 12px;
+  }
+  
+  .mode-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+    margin-bottom: 8px;
+  }
+  
+  .mode-title {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  
+  .mode-desc {
+    font-size: 11px;
+  }
+  
+  .tabs {
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  
+  .tabs button {
+    padding: 8px 12px;
+    font-size: 13px;
+    flex: 1;
+  }
+  
+  .content-section {
+    padding: 16px;
+  }
+  
+  .section-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
   
+  .section-header h3 {
+    font-size: 15px;
+  }
+  
+  .section-actions {
+    width: 100%;
+  }
+  
+  .section-actions .btn {
+    width: 100%;
+  }
+  
+  .exam-item, .question-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+  }
+  
+  .question-info {
+    width: 100%;
+  }
+  
+  .question-text {
+    font-size: 14px;
+    margin: 4px 0;
+  }
+  
+  .question-subject {
+    font-size: 12px;
+  }
+  
+  .wrong-badge {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+  
+  .question-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .question-actions .btn-sm {
+    flex: 1;
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+  
+  /* Quiz Panel */
+  .quiz-panel {
+    padding: 16px;
+  }
+  
+  .quiz-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+  }
+  
+  .quiz-tools {
+    width: 100%;
+    gap: 6px;
+  }
+  
+  .quiz-tools .btn {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  
+  .question-content {
+    font-size: 15px;
+    margin-bottom: 14px;
+  }
+  
+  .quiz-options {
+    gap: 8px;
+  }
+  
+  .option-item {
+    padding: 12px;
+    font-size: 14px;
+  }
+  
+  .option-label {
+    min-width: 20px;
+  }
+  
+  .answer-feedback {
+    margin-top: 12px;
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .quiz-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .quiz-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Small Mobile 小螢幕手機 */
+@media (max-width: 480px) {
   .container {
-    padding: 16px 12px;
+    padding: 10px 8px;
+  }
+  
+  .section-title {
+    font-size: 15px;
+  }
+  
+  .practice-modes {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .mode-card {
+    padding: 14px 12px;
+  }
+  
+  .tabs button {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+  
+  .content-section {
+    padding: 12px;
+  }
+  
+  .exam-item, .question-item {
+    padding: 10px;
+  }
+  
+  .question-text {
+    font-size: 13px;
+  }
+  
+  .question-actions {
+    flex-direction: column;
+  }
+  
+  .question-actions .btn-sm {
+    width: 100%;
+  }
+  
+  .quiz-panel {
+    padding: 12px;
+  }
+  
+  .question-content {
+    font-size: 14px;
+  }
+  
+  .option-item {
+    padding: 10px;
+    font-size: 13px;
+  }
+  
+  .chat-panel-split {
+    height: 60vh;
+    min-height: 350px;
+  }
+  
+  .chat-panel-header {
+    padding: 10px 12px;
+  }
+}
+
+/* Landscape Mobile 橫向手機 */
+@media (max-width: 768px) and (orientation: landscape) {
+  .split-view-container {
+    flex-direction: row;
+  }
+  
+  .main-panel {
+    width: 50% !important;
+    height: 100%;
+  }
+  
+  .split-divider {
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+  }
+  
+  .divider-handle {
+    width: 4px;
+    height: 40px;
+  }
+  
+  .chat-panel-split {
+    width: 50% !important;
+    height: 100%;
+    border-left: 1px solid var(--border);
+    border-top: none;
+  }
+  
+  .practice-modes {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 

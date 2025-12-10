@@ -525,4 +525,208 @@ onMounted(() => {
 .history-list::-webkit-scrollbar-thumb:hover {
   background: #999;
 }
+
+/* ========== RESPONSIVE DESIGN ========== */
+
+/* Tablet 平板 */
+@media (max-width: 1024px) {
+  .chat-messages {
+    padding: 20px;
+  }
+  .message {
+    max-width: 85%;
+  }
+  .chat-input-container {
+    padding: 14px 16px;
+  }
+  .history-panel {
+    padding: 14px 16px;
+  }
+}
+
+/* Mobile 手機 */
+@media (max-width: 768px) {
+  .chat-tabs {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+  
+  .chat-tabs button {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  
+  .chat-messages {
+    padding: 16px 12px;
+    gap: 16px;
+  }
+  
+  .message {
+    max-width: 90%;
+  }
+  
+  .message-content {
+    padding: 12px 16px;
+    font-size: 14px;
+    border-radius: 16px;
+  }
+  
+  .message.user .message-content {
+    border-bottom-right-radius: 4px;
+  }
+  
+  .message.assistant .message-content {
+    border-bottom-left-radius: 4px;
+  }
+  
+  .message-time {
+    font-size: 10px;
+  }
+  
+  .error-message {
+    padding: 10px 12px;
+    font-size: 13px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .btn-upgrade {
+    width: 100%;
+    padding: 8px 12px;
+  }
+  
+  .chat-input-container {
+    padding: 12px;
+    gap: 8px;
+    flex-direction: column;
+  }
+  
+  .chat-input {
+    padding: 12px;
+    font-size: 14px;
+    min-height: 80px;
+  }
+  
+  .btn-send {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 15px;
+  }
+  
+  .history-panel {
+    padding: 12px;
+  }
+  
+  .history-toolbar {
+    justify-content: center;
+  }
+  
+  .btn-refresh {
+    width: 100%;
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+  
+  .history-item {
+    padding: 12px;
+  }
+  
+  .history-question,
+  .history-answer {
+    font-size: 14px;
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .history-question strong,
+  .history-answer strong {
+    font-size: 12px;
+    color: var(--primary);
+  }
+  
+  .history-meta {
+    font-size: 11px;
+  }
+  
+  .history-reuse {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .chat-messages::-webkit-scrollbar,
+  .history-list::-webkit-scrollbar {
+    width: 4px;
+  }
+}
+
+/* Small Mobile 小螢幕手機 */
+@media (max-width: 480px) {
+  .chat-tabs {
+    padding: 8px 10px;
+  }
+  
+  .chat-tabs button {
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+  
+  .chat-messages {
+    padding: 12px 8px;
+  }
+  
+  .message {
+    max-width: 95%;
+  }
+  
+  .message-content {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  
+  .chat-input-container {
+    padding: 10px;
+  }
+  
+  .chat-input {
+    padding: 10px;
+    font-size: 13px;
+    min-height: 70px;
+  }
+  
+  .btn-send {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  
+  .history-panel {
+    padding: 10px 8px;
+  }
+  
+  .history-item {
+    padding: 10px;
+  }
+  
+  .history-question,
+  .history-answer {
+    font-size: 13px;
+  }
+}
+
+/* Landscape Mobile 橫向手機 */
+@media (max-width: 768px) and (orientation: landscape) {
+  .chat-input-container {
+    flex-direction: row;
+  }
+  
+  .chat-input {
+    min-height: 60px;
+  }
+  
+  .btn-send {
+    width: auto;
+    min-width: 80px;
+  }
+}
 </style>

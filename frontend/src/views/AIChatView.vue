@@ -28,11 +28,46 @@ import AIChatInterface from '@/components/AIChatInterface.vue'
   height: 700px;
   display: flex;
   flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-@media (max-width: 768px) {
+/* Tablet 平板 */
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 16px;
+  }
   .chat-container {
-    height: calc(100vh - 250px);
+    height: 650px;
+  }
+}
+
+/* Mobile 手機 */
+@media (max-width: 768px) {
+  .ai-chat-view {
+    padding: 12px 0;
+  }
+  .container {
+    padding: 0 8px;
+  }
+  .chat-container {
+    height: calc(100vh - 200px);
+    border-radius: 8px;
+  }
+}
+
+/* Small Mobile 小螢幕手機 */
+@media (max-width: 480px) {
+  .ai-chat-view {
+    padding: 8px 0;
+  }
+  .container {
+    padding: 0;
+  }
+  .chat-container {
+    height: calc(100vh - 180px);
+    border-radius: 0;
   }
 }
 </style>
