@@ -47,6 +47,9 @@
 | `/questions/{id}/` | PUT/PATCH | 更新題目 | 登入 | 需傳相同 serializer。
 | `/questions/{id}/` | DELETE | 刪除題目 | 登入 | - |
 
+| `/questions/bulk-create/` | POST | 批量建立題目（接收題目物件陣列） | 登入 | Body: array of `QuestionCreateUpdateSerializer`；回傳個別結果 `[{success, id?, data?, errors?}]`。|
+| `/questions/bulk-update/` | PATCH | 批量更新題目（接收題目物件陣列，需包含 id） | 登入 | Body: array of objects with `id` and 欲更新欄位；Query: `?partial=true/false`，回傳個別結果 `[{success, id?, data?, errors?}]`。|
+
 ### PDF 匯入
 | Path | Method | 說明 | 權限 | 備註 |
 | --- | --- | --- | --- | --- |
