@@ -8,7 +8,7 @@
           <div class="progress-bar">
             <div class="progress-fill" :style="{ width: ((currentIndex + 1) / reviewCards.length * 100) + '%' }"></div>
           </div>
-          <button class="btn-exit" @click="exitReview">✕ 結束</button>
+          <button class="btn-exit" @click="exitReview"><i class="bi bi-x-lg me-2"></i>結束</button>
         </div>
 
         <div class="card-container">
@@ -41,27 +41,27 @@
           <p class="rating-prompt">你記得這題嗎？</p>
           <div class="rating-buttons">
             <button class="rating-btn again" @click="rateCard(1)" :disabled="isRating">
-              <span class="rating-icon">😫</span>
+              <span class="rating-icon"><i class="bi bi-emoji-frown"></i></span>
               <span class="rating-text">完全忘記</span>
               <span class="rating-interval">1天後</span>
             </button>
             <button class="rating-btn hard" @click="rateCard(2)" :disabled="isRating">
-              <span class="rating-icon">😓</span>
+              <span class="rating-icon"><i class="bi bi-emoji-neutral"></i></span>
               <span class="rating-text">很難想起</span>
               <span class="rating-interval">1天後</span>
             </button>
             <button class="rating-btn good" @click="rateCard(3)" :disabled="isRating">
-              <span class="rating-icon">🤔</span>
+              <span class="rating-icon"><i class="bi bi-emoji-expressionless"></i></span>
               <span class="rating-text">想了一下</span>
               <span class="rating-interval">{{ currentCard?.interval || 1 }}天後</span>
             </button>
             <button class="rating-btn easy" @click="rateCard(4)" :disabled="isRating">
-              <span class="rating-icon">😊</span>
+              <span class="rating-icon"><i class="bi bi-emoji-smile"></i></span>
               <span class="rating-text">還記得</span>
               <span class="rating-interval">{{ Math.round((currentCard?.interval || 1) * 1.5) }}天後</span>
             </button>
             <button class="rating-btn perfect" @click="rateCard(5)" :disabled="isRating">
-              <span class="rating-icon">🎯</span>
+              <span class="rating-icon"><i class="bi bi-emoji-laughing"></i></span>
               <span class="rating-text">非常熟悉</span>
               <span class="rating-interval">{{ Math.round((currentCard?.interval || 1) * 2) }}天後</span>
             </button>
@@ -72,8 +72,7 @@
       <!-- Dashboard Mode -->
       <template v-else>
         <header class="page-header">
-          <h2>🃏 快閃卡複習</h2>
-          <p>SM-2 間隔重複演算法，越熟悉的卡片間隔越長</p>
+          <h2><i class="bi bi-collection me-2"></i>快閃卡複習</h2>
         </header>
 
         <div v-if="errorMessage" class="alert error">{{ errorMessage }}</div>
@@ -82,7 +81,7 @@
         <!-- Stats -->
         <div class="stats-grid">
           <div class="stat-card primary">
-            <div class="stat-icon">📚</div>
+            <div class="stat-icon"><i class="bi bi-book"></i></div>
             <div class="stat-info">
               <span class="stat-value">{{ stats.due_cards }}</span>
               <span class="stat-label">今日待複習</span>
@@ -92,35 +91,26 @@
             </button>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">🎯</div>
+            <div class="stat-icon"><i class="bi bi-bullseye"></i></div>
             <div class="stat-info">
               <span class="stat-value">{{ stats.total_cards }}</span>
               <span class="stat-label">總卡片數</span>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">🔥</div>
+            <div class="stat-icon"><i class="bi bi-fire"></i></div>
             <div class="stat-info">
               <span class="stat-value">{{ stats.review_streak }}</span>
               <span class="stat-label">連續天數</span>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">✅</div>
+            <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
             <div class="stat-info">
               <span class="stat-value">{{ stats.completion_percent }}%</span>
               <span class="stat-label">完成率</span>
             </div>
           </div>
-        </div>
-
-        <!-- Quick Add -->
-        <div class="quick-add">
-          <h3>新增快閃卡</h3>
-          <form @submit.prevent="handleCreate" class="add-form">
-            <input v-model="questionIdInput" type="number" placeholder="輸入題目 ID" min="1" />
-            <button type="submit" :disabled="isCreating">{{ isCreating ? '新增中...' : '新增' }}</button>
-          </form>
         </div>
 
         <!-- Card List -->
@@ -151,7 +141,7 @@
                 </div>
               </div>
               <button class="btn-delete" @click="handleDelete(card.id)" :disabled="deletingCardId === card.id">
-                🗑️
+                <i class="bi bi-trash"></i>
               </button>
             </div>
           </div>
@@ -171,9 +161,7 @@ const stats = ref({ total_cards: 0, due_cards: 0, completion_percent: 0, review_
 const flashcards = ref([])
 const dueFlashcards = ref([])
 const statusFilter = ref('all')
-const questionIdInput = ref('')
 const isListLoading = ref(false)
-const isCreating = ref(false)
 const deletingCardId = ref(null)
 const errorMessage = ref('')
 const successMessage = ref('')
@@ -272,19 +260,6 @@ const exitReview = () => {
 }
 
 // CRUD
-const handleCreate = async () => {
-  if (!questionIdInput.value) return
-  isCreating.value = true
-  try {
-    await flashcardService.createFlashcard({ question: parseInt(questionIdInput.value) })
-    questionIdInput.value = ''
-    showSuccess('已新增快閃卡')
-    loadStats()
-    loadFlashcards()
-  } catch (e) { showError(e.message) }
-  finally { isCreating.value = false }
-}
-
 const handleDelete = async (id) => {
   deletingCardId.value = id
   try {
@@ -304,31 +279,36 @@ onMounted(() => { loadStats(); loadFlashcards() })
 
 /* Page Header */
 .page-header { text-align: center; margin-bottom: 30px; }
-.page-header h2 { font-size: 28px; margin-bottom: 8px; }
-.page-header p { color: #666; }
+.page-header h2 { font-size: 28px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; }
+.page-header p { color: var(--text-secondary); font-size: 14px; }
 
 /* Alerts */
-.alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
-.alert.error { background: #fee2e2; color: #991b1b; }
-.alert.success { background: #d1fae5; color: #065f46; }
+.alert { padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; }
+.alert.error { background: #fdf1f1; color: #9a1b1b; border: 1px solid #f3d6d6; }
+.alert.success { background: #ecf8f1; color: #1f6a3b; border: 1px solid #cef3e8; }
 
 /* Stats Grid */
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 30px; }
 .stat-card {
-  background: white;
+  background: var(--surface);
   padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(15,23,42,0.05);
+  border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  transition: all 0.2s;
+  color: var(--primary);
 }
-.stat-card.primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-.stat-icon { font-size: 32px; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(15,23,42,0.08); }
+.stat-card.primary { background: var(--primary); color: white; border: none; }
+.stat-card.primary:hover { background: var(--primary-hover); }
+.stat-icon { font-size: 32px; display: flex; align-items: center; justify-content: center; }
 .stat-info { text-align: center; }
-.stat-value { display: block; font-size: 28px; font-weight: bold; }
-.stat-label { font-size: 13px; opacity: 0.8; }
+.stat-value { display: block; font-size: 28px; font-weight: 700; color: inherit; }
+.stat-label { font-size: 13px; opacity: 0.8; margin-top: 4px; color: inherit; }
 .btn-start {
   margin-top: 8px;
   padding: 10px 20px;
@@ -338,35 +318,30 @@ onMounted(() => { loadStats(); loadFlashcards() })
   border-radius: 25px;
   cursor: pointer;
   font-weight: 600;
+  font-size: 13px;
   transition: all 0.2s;
 }
-.btn-start:hover { background: white; color: #667eea; }
+.btn-start:hover { background: white; color: var(--primary); }
 
-/* Quick Add */
-.quick-add { background: white; padding: 20px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.quick-add h3 { margin-bottom: 12px; font-size: 16px; }
-.add-form { display: flex; gap: 12px; }
-.add-form input { flex: 1; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 15px; }
-.add-form button { padding: 12px 24px; background: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
-.add-form button:disabled { opacity: 0.6; }
 
 /* Card List */
-.card-list-section { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.card-list-section { background: var(--surface); padding: 20px; border-radius: 12px; box-shadow: 0 12px 28px rgba(15,23,42,0.05); border: 1px solid var(--border); }
 .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.list-header h3 { font-size: 16px; }
-.list-header select { padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; }
-.loading, .empty { text-align: center; padding: 40px; color: #666; }
-.empty .hint { font-size: 13px; margin-top: 8px; }
+.list-header h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.list-header select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-primary); font-size: 14px; cursor: pointer; }
+.loading, .empty { text-align: center; padding: 40px; color: var(--text-secondary); }
+.empty .hint { font-size: 13px; margin-top: 8px; color: var(--text-secondary); }
 
 .card-list { display: flex; flex-direction: column; gap: 12px; }
-.list-card { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #f8fafc; border-radius: 12px; }
-.list-card-subject { font-size: 12px; color: #2563eb; font-weight: 600; }
-.list-card-question { margin: 8px 0; color: #1f2937; font-size: 15px; line-height: 1.5; }
-.list-card-meta { display: flex; gap: 16px; font-size: 12px; color: #666; }
-.status-learning { color: #f59e0b; }
-.status-reviewing { color: #3b82f6; }
-.status-mastered { color: #10b981; }
-.btn-delete { background: none; border: none; font-size: 18px; cursor: pointer; opacity: 0.5; }
+.list-card { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #f7f9fb; border-radius: 12px; border: 1px solid var(--border); transition: all 0.2s; }
+.list-card:hover { background: #f0f4f8; }
+.list-card-subject { font-size: 12px; color: var(--primary); font-weight: 600; }
+.list-card-question { margin: 8px 0; color: var(--text-primary); font-size: 15px; line-height: 1.5; }
+.list-card-meta { display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary); }
+.status-learning { color: #f59e0b; font-weight: 600; }
+.status-reviewing { color: #3b82f6; font-weight: 600; }
+.status-mastered { color: #10b981; font-weight: 600; }
+.btn-delete { background: none; border: none; font-size: 18px; cursor: pointer; opacity: 0.5; transition: opacity 0.2s; color: var(--text-primary); }
 .btn-delete:hover { opacity: 1; }
 
 /* ========== REVIEW MODE ========== */
@@ -378,12 +353,15 @@ onMounted(() => { loadStats(); loadFlashcards() })
   gap: 16px;
   margin-bottom: 30px;
   padding: 16px;
-  background: white;
+  background: var(--surface);
   border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(15,23,42,0.05);
+  border: 1px solid var(--border);
 }
-.progress-bar { flex: 1; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
-.progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.3s; }
-.btn-exit { padding: 8px 16px; background: #f3f4f6; border: none; border-radius: 8px; cursor: pointer; }
+.progress-bar { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-hover)); transition: width 0.3s; }
+.btn-exit { padding: 8px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; color: var(--text-primary); font-weight: 600; font-size: 14px; transition: all 0.2s; }
+.btn-exit:hover { background: #f0f4f8; }
 
 /* Flashcard */
 .card-container { perspective: 1000px; margin-bottom: 30px; }
@@ -402,7 +380,7 @@ onMounted(() => { loadStats(); loadFlashcards() })
   width: 100%;
   height: 100%;
   backface-visibility: hidden;
-  border-radius: 24px;
+  border-radius: 12px;
   padding: 32px;
   display: flex;
   flex-direction: column;
@@ -410,14 +388,14 @@ onMounted(() => { loadStats(); loadFlashcards() })
 }
 
 .card-front {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
   color: white;
 }
 
 .card-back {
-  background: white;
+  background: var(--surface);
   transform: rotateY(180deg);
-  border: 3px solid #e5e7eb;
+  border: 1px solid var(--border);
 }
 
 .card-badge {
@@ -430,7 +408,7 @@ onMounted(() => { loadStats(); loadFlashcards() })
   margin-bottom: 20px;
   align-self: flex-start;
 }
-.card-back .card-badge { background: #f3f4f6; color: #374151; }
+.card-back .card-badge { background: var(--primary-soft); color: var(--primary); }
 
 .card-content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .card-question { font-size: 22px; line-height: 1.6; text-align: center; }
@@ -443,18 +421,19 @@ onMounted(() => { loadStats(); loadFlashcards() })
   align-items: flex-start;
   gap: 12px;
   padding: 14px 18px;
-  background: #f8fafc;
-  border-radius: 12px;
+  background: #f7f9fb;
+  border: 1px solid var(--border);
+  border-radius: 10px;
   font-size: 15px;
   line-height: 1.5;
 }
-.answer-option.correct { background: #d1fae5; border: 2px solid #10b981; }
+.answer-option.correct { background: #ecf8f1; border: 2px solid #10b981; }
 .option-marker { font-weight: bold; color: #10b981; min-width: 20px; }
-.no-options { text-align: center; color: #666; }
+.no-options { text-align: center; color: var(--text-secondary); }
 
 /* Rating Section */
 .rating-section { text-align: center; }
-.rating-prompt { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #374151; }
+.rating-prompt { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--text-primary); }
 .rating-buttons { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
 
 .rating-btn {
@@ -463,22 +442,23 @@ onMounted(() => { loadStats(); loadFlashcards() })
   align-items: center;
   gap: 6px;
   padding: 16px 20px;
-  border: none;
-  border-radius: 16px;
+  border: 1px solid transparent;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
   min-width: 100px;
+  font-weight: 600;
 }
 .rating-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .rating-icon { font-size: 28px; }
 .rating-text { font-size: 13px; font-weight: 600; }
 .rating-interval { font-size: 11px; opacity: 0.7; }
 
-.rating-btn.again { background: #fee2e2; color: #991b1b; }
-.rating-btn.hard { background: #fef3c7; color: #92400e; }
-.rating-btn.good { background: #e0f2fe; color: #0369a1; }
-.rating-btn.easy { background: #d1fae5; color: #065f46; }
-.rating-btn.perfect { background: #ede9fe; color: #5b21b6; }
+.rating-btn.again { background: #fdf1f1; color: #9a1b1b; border: 1px solid #f3d6d6; }
+.rating-btn.hard { background: #fef9e7; color: #92400e; border: 1px solid #fbe8c3; }
+.rating-btn.good { background: #eff5fc; color: #0369a1; border: 1px solid #dce7f4; }
+.rating-btn.easy { background: #ecf8f1; color: #1f6a3b; border: 1px solid #cef3e8; }
+.rating-btn.perfect { background: #f4f1fb; color: #5b21b6; border: 1px solid #e8dff8; }
 
 .rating-btn:hover:not(:disabled) { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 

@@ -5,6 +5,7 @@ import App from './App.vue'
 import * as BootstrapVueNext from 'bootstrap-vue-next'
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue-next/dist/bootstrap-vue-next.css'
+import 'bootstrap-icons/font/bootstrap-icons.css'
 import 'bootstrap'
 
 const app = createApp(App)
