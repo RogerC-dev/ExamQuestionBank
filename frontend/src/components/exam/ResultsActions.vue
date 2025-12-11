@@ -223,14 +223,7 @@ export default {
       try {
         const flashcardPromises = this.wrongQuestionDetails.map(detail => {
           return flashcardService.createFlashcard({
-            question: detail.question,
-            answer: detail.correctAnswer,
-            user_answer: detail.userAnswer,
-            explanation: `The correct answer is "${detail.correctAnswer}". You answered "${detail.userAnswer}".`,
-            source_exam: this.results.examId,
-            source_exam_name: this.examName || 'Exam',
-            difficulty: this.calculateDifficulty(detail),
-            tags: this.generateTags(detail)
+            question: detail.questionId
           })
         })
 
@@ -263,33 +256,6 @@ export default {
 
     handleReturnToList() {
       this.$emit('return-to-list')
-    },
-
-    calculateDifficulty(detail) {
-      // Simple difficulty calculation based on question characteristics
-      // This could be enhanced with more sophisticated logic
-      const question = detail.question.toLowerCase()
-      if (detail.question.length > 200) return 'hard'
-      if (question.includes('analyze') || question.includes('evaluate')) return 'hard'
-      if (question.includes('compare') || question.includes('explain')) return 'medium'
-      return 'easy'
-    },
-
-    generateTags(detail) {
-      const tags = []
-      
-      // Add exam-based tag
-      if (this.examName) {
-        tags.push(this.examName.toLowerCase().replace(/\s+/g, '-'))
-      }
-      
-      // Add wrong-answer tag
-      tags.push('wrong-answer')
-      
-      // Add difficulty-based tag
-      tags.push(this.calculateDifficulty(detail))
-      
-      return tags
     },
 
     showSuccessMessage(message) {

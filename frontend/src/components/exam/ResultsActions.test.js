@@ -140,12 +140,8 @@ describe('ResultsActions', () => {
   })
 
   it('handles create flashcards action', async () => {
-    const mockFlashcards = [
-      { id: 1, question: 'What is 3+3?', answer: '6' },
-      { id: 2, question: 'What is 4+4?', answer: '8' },
-      { id: 3, question: 'What is 6+6?', answer: '12' }
-    ]
-    flashcardService.createFlashcard.mockResolvedValue(mockFlashcards[0])
+    const mockFlashcard = { id: 1, question: 'q2' }
+    flashcardService.createFlashcard.mockResolvedValue(mockFlashcard)
 
     const wrapper = mount(ResultsActions, {
       props: { results: mockResults }
@@ -155,6 +151,10 @@ describe('ResultsActions', () => {
     await flashcardButton.trigger('click')
 
     expect(flashcardService.createFlashcard).toHaveBeenCalledTimes(3)
+    // Verify it's called with question ID, not question content
+    expect(flashcardService.createFlashcard).toHaveBeenCalledWith({ question: 'q2' })
+    expect(flashcardService.createFlashcard).toHaveBeenCalledWith({ question: 'q3' })
+    expect(flashcardService.createFlashcard).toHaveBeenCalledWith({ question: 'q5' })
     
     // Wait for async operation
     await wrapper.vm.$nextTick()
@@ -265,36 +265,6 @@ describe('ResultsActions', () => {
     expect(wrapper.find('.success-message').exists()).toBe(false)
 
     vi.useRealTimers()
-  })
-
-  it('calculates difficulty correctly', () => {
-    const wrapper = mount(ResultsActions, {
-      props: { results: mockResults }
-    })
-
-    // Test different difficulty calculations
-    expect(wrapper.vm.calculateDifficulty({ question: 'Simple question?' })).toBe('easy')
-    expect(wrapper.vm.calculateDifficulty({ question: 'Analyze the following complex scenario...' })).toBe('hard')
-    expect(wrapper.vm.calculateDifficulty({ question: 'Compare these two approaches...' })).toBe('medium')
-    
-    // Long question should be hard
-    const longQuestion = 'A'.repeat(250)
-    expect(wrapper.vm.calculateDifficulty({ question: longQuestion })).toBe('hard')
-  })
-
-  it('generates appropriate tags for flashcards', () => {
-    const wrapper = mount(ResultsActions, {
-      props: { 
-        results: mockResults,
-        examName: 'Math Quiz'
-      }
-    })
-
-    const tags = wrapper.vm.generateTags({ question: 'Simple question?' })
-    
-    expect(tags).toContain('math-quiz')
-    expect(tags).toContain('wrong-answer')
-    expect(tags).toContain('easy')
   })
 
   it('handles accessibility attributes correctly', () => {
