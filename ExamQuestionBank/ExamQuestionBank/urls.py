@@ -12,7 +12,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
-from users.views import CustomTokenObtainPairView
+from users.views import CustomTokenObtainPairView, UserRegisterView, CurrentUserView
 
 
 schema_view = get_schema_view(
@@ -45,6 +45,8 @@ urlpatterns = [
     # JWT Authentication
     path('api/v1/auth/login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/v1/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/v1/auth/register/', UserRegisterView.as_view(), name='user_register'),
+    path('api/v1/auth/me/', CurrentUserView.as_view(), name='current_user'),
 
    # Question Bank URLs
     path("api/v1/question_bank/", include("question_bank.urls")),

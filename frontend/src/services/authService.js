@@ -2,6 +2,27 @@ import api from './api'
 
 const authService = {
   /**
+   * 使用者註冊
+   * @param {Object} userData - {username, email, password, password_confirm}
+   * @returns {Promise} 註冊結果，包含 user 資訊和 tokens
+   */
+  async register(userData) {
+    const response = await api.post('/auth/register/', userData)
+    const { access, refresh, user } = response.data
+
+    // 儲存 tokens
+    localStorage.setItem('access_token', access)
+    localStorage.setItem('refresh_token', refresh)
+
+    // 儲存使用者資訊
+    localStorage.setItem('user_id', user.id)
+    localStorage.setItem('username', user.username)
+    localStorage.setItem('user_role', user.is_staff || user.is_admin ? 'admin' : 'user')
+
+    return response
+  },
+
+  /**
    * 登入
    * @param {Object} credentials - {username, password}
    * @returns {Promise} 登入結果，包含 access 和 refresh token

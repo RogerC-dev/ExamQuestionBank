@@ -13,7 +13,7 @@ const tabs = [
   { name: '快閃卡', path: '/flashcard', key: 'flashcard' },
   { name: 'AI 助手', path: '/ai-chat', key: 'ai-chat' },
   { name: '學習追蹤', path: '/analytics', key: 'analytics' },
-  { name: '題庫管理', path: '/admin', key: 'admin' }
+  { name: '題庫管理', path: '/admin', key: 'admin', adminOnly: true }
 ]
 
 const activeTab = ref(route.path === '/' ? 'landing' : route.path.split('/')[1] || 'practice')
@@ -32,6 +32,16 @@ const isAuthenticated = computed(() => {
 const currentUser = computed(() => {
   loginStateVersion.value // 依賴此值來觸發重新計算
   return authService.getCurrentUser()
+})
+
+// 根據使用者角色篩選可見的 tabs
+const visibleTabs = computed(() => {
+  return tabs.filter(tab => {
+    if (tab.adminOnly) {
+      return currentUser.value?.isAdmin
+    }
+    return true
+  })
 })
 
 const switchTab = (path, key) => {
@@ -105,7 +115,7 @@ onMounted(() => {
     <nav>
       <div class="nav-container">
         <a
-          v-for="tab in tabs"
+          v-for="tab in visibleTabs"
           :key="tab.key"
           href="#"
           :class="{ active: activeTab === tab.key }"
