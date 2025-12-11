@@ -77,7 +77,7 @@
           <div class="extension-demo">
             <div class="demo-placeholder">
               <p>擴充功能示範</p>
-              <p class="demo-note">（可放置 GIF 或截圖）</p>
+              <p class="demo-note"><img src="../assets/demo.png" alt="ext-demo" width="600px"></p>
             </div>
           </div>
         </div>

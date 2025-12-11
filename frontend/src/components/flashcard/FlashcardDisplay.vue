@@ -15,13 +15,13 @@
         <div class="card-content">
           <div v-if="options.length" class="answer-options">
             <div 
-              v-for="opt in options" 
+              v-for="[index, opt] in options.entries()" 
               :key="opt.id" 
               class="answer-option" 
               :class="{ correct: opt.is_correct }"
             >
               <span class="option-marker">{{ opt.is_correct ? '✓' : '' }}</span>
-              <span>{{ getLabel(opt.order) }}. {{ opt.content }}</span>
+              <span>{{ getLabel(opt.order+index) }}. {{ opt.content }}</span>
             </div>
           </div>
           <p v-else class="no-options">無選項資料</p>
@@ -49,7 +49,7 @@ defineEmits<{
 }>()
 
 const getLabel = (order: number): string => {
-  return String.fromCharCode(64 + (order || 1))
+  return String.fromCharCode(65 + (order))
 }
 </script>
 
