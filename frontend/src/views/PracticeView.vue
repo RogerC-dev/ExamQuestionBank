@@ -54,7 +54,7 @@
                 class="tag-multiselect"
               />
             </div>
-            <button class="btn btn-primary" @click="searchQuestions" :disabled="isSearching">
+            <button class="btn btn-primary" @click="searchQuestions(1)" :disabled="isSearching">
               <span v-if="isSearching">搜尋中...</span>
               <span v-else>搜尋</span>
             </button>
@@ -65,13 +65,14 @@
         <!-- Search Results -->
         <div v-if="showSearchResults" class="search-results">
           <div class="results-header">
-            <span>搜尋結果：{{ searchResults.length }} 題</span>
+            <span>搜尋結果：{{ searchTotalCount }} 題</span>
             <button v-if="searchResults.length" class="btn btn-sm btn-primary" @click="startQuiz(searchResults, 'search')">
-              全部練習
+              練習本頁
             </button>
             <button class="btn btn-sm btn-secondary" @click="closeSearchResults">關閉</button>
           </div>
-          <div v-if="!searchResults.length" class="empty">找不到符合條件的題目</div>
+          <div v-if="!searchResults.length && !isSearching" class="empty">找不到符合條件的題目</div>
+          <div v-else-if="isSearching" class="loading">搜尋中...</div>
           <div v-else class="question-list search-result-list">
             <div v-for="q in searchResults" :key="q.id" class="question-item">
               <div class="question-info">
@@ -88,6 +89,25 @@
                 <button class="btn btn-sm btn-outline" @click="openChatFromSearchQuestion(q)">Ask AI</button>
               </div>
             </div>
+          </div>
+          
+          <!-- 分頁控制 -->
+          <div v-if="searchTotalCount > searchPageSize" class="search-pagination">
+            <button 
+              class="btn btn-sm" 
+              :disabled="!searchHasPrev || isSearching" 
+              @click="goToSearchPage(searchPage - 1)"
+            >
+              上一頁
+            </button>
+            <span class="page-info">第 {{ searchPage }} / {{ searchTotalPages }} 頁</span>
+            <button 
+              class="btn btn-sm" 
+              :disabled="!searchHasNext || isSearching" 
+              @click="goToSearchPage(searchPage + 1)"
+            >
+              下一頁
+            </button>
           </div>
         </div>
       </div>
@@ -268,6 +288,11 @@ const tagOptions = ref([])
 const searchResults = ref([])
 const showSearchResults = ref(false)
 const isSearching = ref(false)
+const searchPage = ref(1)
+const searchPageSize = ref(20)
+const searchTotalCount = ref(0)
+const searchHasNext = ref(false)
+const searchHasPrev = ref(false)
 
 // Quiz state
 const quizMode = ref(false)
@@ -324,12 +349,16 @@ const loadTags = async () => {
 }
 
 // Search functions
-const searchQuestions = async () => {
+const searchQuestions = async (page = 1) => {
   isSearching.value = true
   showSearchResults.value = true
+  searchPage.value = page
   
   try {
-    const params = { page_size: 100 }  // 增加每頁數量以獲取更多結果
+    const params = { 
+      page: page,
+      page_size: searchPageSize.value
+    }
     if (searchKeyword.value.trim()) {
       params.keyword = searchKeyword.value.trim()
     }
@@ -337,21 +366,51 @@ const searchQuestions = async () => {
       params.tags = selectedSearchTags.value.map(t => t.id).join(',')
     }
     
+    console.log('Search params:', params)
     const res = await questionService.getQuestions(params)
-    searchResults.value = Array.isArray(res.data) ? res.data : res.data?.results || []
+    console.log('Search response:', res.data)
+    
+    // 處理分頁回應
+    if (res.data?.results) {
+      searchResults.value = res.data.results
+      searchTotalCount.value = res.data.count || 0
+      searchHasNext.value = !!res.data.next
+      searchHasPrev.value = !!res.data.previous
+    } else {
+      searchResults.value = Array.isArray(res.data) ? res.data : []
+      searchTotalCount.value = searchResults.value.length
+      searchHasNext.value = false
+      searchHasPrev.value = false
+    }
+    console.log('Search results count:', searchResults.value.length, 'Total:', searchTotalCount.value)
   } catch (e) {
     console.error('搜尋題目失敗:', e)
     searchResults.value = []
+    searchTotalCount.value = 0
   } finally {
     isSearching.value = false
   }
 }
+
+const goToSearchPage = (page) => {
+  if (page >= 1) {
+    searchQuestions(page)
+  }
+}
+
+const searchTotalPages = computed(() => {
+  return Math.ceil(searchTotalCount.value / searchPageSize.value) || 1
+})
 
 const resetSearch = () => {
   searchKeyword.value = ''
   selectedSearchTags.value = []
   searchResults.value = []
   showSearchResults.value = false
+  searchPage.value = 1
+  searchTotalCount.value = 0
+  searchHasNext.value = false
+  searchHasPrev.value = false
 }
 
 const closeSearchResults = () => {
@@ -936,6 +995,33 @@ onUnmounted(() => {
   background: #f3f4f6;
   color: #4b5563;
   border: 1px solid #e5e7eb;
+}
+
+/* Search Pagination */
+.search-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.search-pagination .page-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+  min-width: 100px;
+  text-align: center;
+}
+
+.search-pagination .btn {
+  min-width: 80px;
+}
+
+.search-pagination .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Practice Mode Cards */
