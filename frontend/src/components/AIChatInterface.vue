@@ -82,11 +82,14 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted } from 'vue'
+import { ref, watch, nextTick, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import aiService from '@/services/aiService'
+import { storeToRefs } from 'pinia'
+import { useChatStore } from '@/stores/chatStore'
 
 const router = useRouter()
+const chatStore = useChatStore()
+
 const props = defineProps({
   prefill: {
     type: Object,
@@ -94,15 +97,14 @@ const props = defineProps({
   }
 })
 
-const messages = ref([])
+// Use store state
+const { messages, historyItems, isLoading, isHistoryLoading, errorMessage } = storeToRefs(chatStore)
+
+// Local state
 const inputMessage = ref('')
-const isLoading = ref(false)
-const errorMessage = ref('')
 const messagesContainer = ref(null)
 const chatInputRef = ref(null)
 const activeTab = ref('chat')
-const historyItems = ref([])
-const isHistoryLoading = ref(false)
 
 watch(messages, () => {
   nextTick(() => {
@@ -134,35 +136,18 @@ const handleSend = async () => {
 
   const userMessage = inputMessage.value.trim()
   inputMessage.value = ''
-  errorMessage.value = ''
-
-  messages.value.push({
-    role: 'user',
-    content: userMessage,
-    timestamp: new Date()
-  })
-
-  isLoading.value = true
+  chatStore.clearError()
 
   try {
-    const response = await aiService.sendMessage(userMessage)
-    messages.value.push({
-      role: 'assistant',
-      content: response.response,
-      timestamp: new Date()
-    })
+    await chatStore.sendMessage(userMessage)
   } catch (error) {
-    errorMessage.value = error.message || '發送訊息時發生錯誤'
     console.error('AI chat error:', error)
-  } finally {
-    isLoading.value = false
   }
 }
 
 const clearChat = () => {
   if (confirm('確定要清除所有對話記錄嗎？')) {
-    messages.value = []
-    errorMessage.value = ''
+    chatStore.clearMessages()
   }
 }
 
@@ -187,27 +172,11 @@ const reuseHistory = (entry) => {
 }
 
 const refreshHistory = () => {
-  loadHistory()
-}
-
-const loadHistory = async () => {
-  isHistoryLoading.value = true
-  try {
-    const data = await aiService.getHistory(20, 0)
-    historyItems.value = data.results || []
-    messages.value = historyItems.value.flatMap(item => ([
-      { role: 'user', content: item.message, timestamp: new Date(item.created_at) },
-      { role: 'assistant', content: item.response, timestamp: new Date(item.created_at) }
-    ]))
-  } catch (error) {
-    console.error('Failed to load chat history:', error)
-  } finally {
-    isHistoryLoading.value = false
-  }
+  chatStore.refreshHistory()
 }
 
 onMounted(() => {
-  loadHistory()
+  chatStore.initialize()
 })
 </script>
 
