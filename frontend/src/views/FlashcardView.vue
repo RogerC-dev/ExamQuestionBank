@@ -48,7 +48,7 @@
       </div>
 
       <!-- Dashboard Mode -->
-      <template v-else>
+      <div v-else class="dashboard-mode">
         <header class="page-header">
           <h2><i class="bi bi-collection me-2"></i>快閃卡複習</h2>
         </header>
@@ -89,7 +89,7 @@
           @delete="handleDelete"
           @filter-change="handleFilterChange"
         />
-      </template>
+      </div>
     </div>
   </div>
 </template>

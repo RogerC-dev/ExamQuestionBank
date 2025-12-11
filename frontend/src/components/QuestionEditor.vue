@@ -228,6 +228,10 @@ const examSettings = ref({
   points: 0
 })
 
+// Tag options for multi-select (定義在 watch 之前)
+const tagOptions = ref([])
+const selectedTags = ref([])
+
 // 監聽 question prop 的變化
 watch(() => props.question, (newQuestion) => {
   if (newQuestion) {
@@ -245,13 +249,23 @@ watch(() => props.question, (newQuestion) => {
     // set selectedTags to match tag objects
     if (newQuestion.tags && Array.isArray(newQuestion.tags)) {
       selectedTags.value = newQuestion.tags
-    } else if (newQuestion.tag_ids && Array.isArray(newQuestion.tag_ids)) {
+    } else if (newQuestion.tag_ids && Array.isArray(newQuestion.tag_ids) && tagOptions.value.length > 0) {
       selectedTags.value = tagOptions.value.filter(t => newQuestion.tag_ids.includes(t.id))
     } else {
       selectedTags.value = []
     }
   }
 }, { immediate: true, deep: true })
+
+// 監聯 tagOptions 載入完成後，重新設定 selectedTags
+watch(() => tagOptions.value, (newTagOptions) => {
+  if (newTagOptions.length > 0 && props.question?.tag_ids && Array.isArray(props.question.tag_ids)) {
+    // 如果有 tag_ids 但 selectedTags 還是空的，重新設定
+    if (selectedTags.value.length === 0 && props.question.tag_ids.length > 0) {
+      selectedTags.value = newTagOptions.filter(t => props.question.tag_ids.includes(t.id))
+    }
+  }
+}, { immediate: true })
 
 // 監聽 examQuestion prop 的變化
 watch(() => props.examQuestion, (newExamQuestion) => {
@@ -307,16 +321,25 @@ const handleSave = () => {
   })
 }
 
-// Tag options for multi-select
+// Tag service and components
 import tagService from '../services/tagService'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import { useDebounceFn } from '@vueuse/core'
 
-const tagOptions = ref([])
-const selectedTags = ref([])
+// tagOptions 和 selectedTags 已在上方定義
 const newTagName = ref('')
 const tagSearchQuery = ref('')
+
+// 用於在 tagOptions 載入完成後重新設定 selectedTags
+const updateSelectedTagsFromIds = () => {
+  if (props.question?.tag_ids && Array.isArray(props.question.tag_ids) && tagOptions.value.length > 0) {
+    // 如果 selectedTags 還沒設定，根據 tag_ids 設定
+    if (selectedTags.value.length === 0 && props.question.tag_ids.length > 0) {
+      selectedTags.value = tagOptions.value.filter(t => props.question.tag_ids.includes(t.id))
+    }
+  }
+}
 
 onMounted(async () => {
   try {
@@ -324,6 +347,8 @@ onMounted(async () => {
     let items = res.data?.results || res.data
     if (!Array.isArray(items)) items = []
     tagOptions.value = items.filter(t => t != null)
+    // tagOptions 載入完成後，重新設定 selectedTags
+    updateSelectedTagsFromIds()
   } catch (err) {
     console.error('載入標籤失敗:', err)
   }

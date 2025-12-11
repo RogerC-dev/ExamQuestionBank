@@ -451,7 +451,8 @@ const handleSelectQuestion = async (examQuestion) => {
       explanation: examQuestion.pendingData.explanation,
       status: 'draft',
       options: examQuestion.pendingData.options || [],
-      tags: examQuestion.pendingData.tag_ids || []
+      tag_ids: examQuestion.pendingData.tag_ids || [],
+      tags: null // 標籤從 tag_ids 解析，讓 QuestionEditor 自行處理
     }
     return
   }

@@ -92,7 +92,11 @@ const apply = async () => {
   const pendingUpdates = []
 
   const savedUpdates = []
+  console.log('BulkTagEditor - targetQuestions:', targetQuestions.value)
+  console.log('BulkTagEditor - selectedTags:', selectedTags.value)
+  
   for (const q of targetQuestions.value) {
+    console.log('Processing question:', q)
     try {
       if (q.isPending) {
         // pending question stored locally (pendingQuestions indexed by pending-<index>)
@@ -135,8 +139,10 @@ const apply = async () => {
 
   // Execute bulk update for saved questions if any
   if (savedUpdates.length > 0) {
+    console.log('BulkTagEditor - savedUpdates payload:', savedUpdates)
     try {
       const res = await questionService.bulkUpdateQuestions(savedUpdates)
+      console.log('BulkTagEditor - bulk update response:', res.data)
       const results = res.data?.results || res.data
       for (const r of results) {
         if (r.success) successCount++
