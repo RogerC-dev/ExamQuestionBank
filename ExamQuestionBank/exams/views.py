@@ -576,7 +576,8 @@ class ExamStatsView(APIView):
             {
                 'date': r.completed_at.strftime('%Y-%m-%d'),
                 'accuracy': round(r.correct_count / r.total_count * 100, 1) if r.total_count > 0 else 0,
-                'exam_name': r.exam.name
+                'exam_name': r.exam.name,
+                'exam_id': r.exam.id
             }
             for r in reversed(list(recent_results))
         ]
@@ -584,6 +585,22 @@ class ExamStatsView(APIView):
         total_bank = ExamQuestion.objects.count()
         wrong_count = WrongQuestion.objects.filter(user=user, reviewed=False).count()
         bookmark_count = Bookmark.objects.filter(user=user).count()
+
+        # 常錯題目統計 - 取錯誤次數最多的前10題
+        top_wrong_questions = WrongQuestion.objects.filter(
+            user=user
+        ).select_related('question').order_by('-wrong_count')[:10]
+
+        top_wrong = [
+            {
+                'question_id': wq.question.id,
+                'question_content': wq.question.content[:50] + '...' if len(wq.question.content) > 50 else wq.question.content,
+                'question_subject': wq.question.subject,
+                'wrong_count': wq.wrong_count,
+                'reviewed': wq.reviewed
+            }
+            for wq in top_wrong_questions
+        ]
 
         return Response({
             'total_answered': total_questions,
@@ -594,5 +611,6 @@ class ExamStatsView(APIView):
             'accuracy': round(correct_questions / total_questions * 100, 1) if total_questions > 0 else 0,
             'accuracy_trend': accuracy_trend,
             'wrong_count': wrong_count,
-            'bookmark_count': bookmark_count
+            'bookmark_count': bookmark_count,
+            'top_wrong': top_wrong
         })
