@@ -127,6 +127,7 @@
               <li>基礎快閃卡</li>
               <li>擴充功能基礎功能</li>
             </ul>
+            <i style="flex: 1"></i>
             <button class="btn btn-outline" @click="handleStartFree">開始使用</button>
           </div>
           <div class="pricing-card featured">
@@ -507,6 +508,7 @@ const handleSubscribe = () => {
 }
 
 .pricing-card {
+  display: flex;
   background: var(--surface);
   border-radius: var(--radius);
   padding: 32px 26px;
@@ -518,6 +520,8 @@ const handleSubscribe = () => {
 }
 
 .pricing-card.featured {
+  display: flex;
+  flex-direction: column;
   border-color: var(--primary);
   box-shadow: var(--shadow-hover);
   transform: translateY(-4px);
