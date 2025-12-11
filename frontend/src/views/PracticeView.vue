@@ -28,6 +28,70 @@
         </div>
       </div>
 
+      <!-- Search Section -->
+      <div class="search-section">
+        <h3 class="search-title">題目搜尋</h3>
+        <div class="search-filters">
+          <div class="filter-row">
+            <input
+              v-model="searchKeyword"
+              type="text"
+              class="search-input"
+              placeholder="輸入關鍵字搜尋題目..."
+              @keyup.enter="searchQuestions"
+            />
+            <div class="tag-filter">
+              <multiselect
+                v-model="selectedSearchTags"
+                :options="tagOptions"
+                :multiple="true"
+                :close-on-select="false"
+                :clear-on-select="false"
+                :preserve-search="true"
+                placeholder="選擇標籤篩選..."
+                track-by="id"
+                label="name"
+                class="tag-multiselect"
+              />
+            </div>
+            <button class="btn btn-primary" @click="searchQuestions" :disabled="isSearching">
+              <span v-if="isSearching">搜尋中...</span>
+              <span v-else>搜尋</span>
+            </button>
+            <button class="btn btn-secondary" @click="resetSearch">重設</button>
+          </div>
+        </div>
+        
+        <!-- Search Results -->
+        <div v-if="showSearchResults" class="search-results">
+          <div class="results-header">
+            <span>搜尋結果：{{ searchResults.length }} 題</span>
+            <button v-if="searchResults.length" class="btn btn-sm btn-primary" @click="startQuiz(searchResults, 'search')">
+              全部練習
+            </button>
+            <button class="btn btn-sm btn-secondary" @click="closeSearchResults">關閉</button>
+          </div>
+          <div v-if="!searchResults.length" class="empty">找不到符合條件的題目</div>
+          <div v-else class="question-list search-result-list">
+            <div v-for="q in searchResults" :key="q.id" class="question-item">
+              <div class="question-info">
+                <div class="question-meta">
+                  <span v-if="q.subject" class="meta-badge subject-badge">{{ q.subject }}</span>
+                  <span v-if="q.difficulty" class="meta-badge difficulty-badge" :class="q.difficulty">{{ getDifficultyLabel(q.difficulty) }}</span>
+                  <span v-for="tag in q.tags" :key="tag.id" class="meta-badge tag-badge">{{ tag.name }}</span>
+                </div>
+                <p class="question-text">{{ q.content }}</p>
+              </div>
+              <div class="question-actions">
+                <button class="btn btn-sm" @click="startSingleQuizFromSearch(q)">練習</button>
+                <button class="btn btn-sm" @click="addToFlashcard(q.id)">快閃卡</button>
+                <button class="btn btn-sm btn-outline" @click="openChatFromSearchQuestion(q)">Ask AI</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Tabs -->
       <div class="tabs">
         <button :class="{ active: activeTab === 'exams' }" @click="activeTab = 'exams'">歷屆考卷</button>
@@ -180,7 +244,10 @@ import { useRouter } from 'vue-router'
 import examService from '@/services/examService'
 import questionService from '@/services/questionService'
 import flashcardService from '@/services/flashcardService'
+import tagService from '@/services/tagService'
 import AIChatInterface from '@/components/AIChatInterface.vue'
+import Multiselect from 'vue-multiselect'
+import 'vue-multiselect/dist/vue-multiselect.min.css'
 
 const router = useRouter()
 const activeTab = ref('exams')
@@ -193,6 +260,14 @@ const bookmarks = ref([])
 const loadingExams = ref(false)
 const loadingWrong = ref(false)
 const loadingBookmarks = ref(false)
+
+// Search state
+const searchKeyword = ref('')
+const selectedSearchTags = ref([])
+const tagOptions = ref([])
+const searchResults = ref([])
+const showSearchResults = ref(false)
+const isSearching = ref(false)
 
 // Quiz state
 const quizMode = ref(false)
@@ -233,6 +308,85 @@ const loadData = async () => {
     loadingExams.value = false
     loadingWrong.value = false
     loadingBookmarks.value = false
+  }
+}
+
+// Load tags for search filter
+const loadTags = async () => {
+  try {
+    const res = await tagService.getTags()
+    let items = res.data?.results || res.data
+    if (!Array.isArray(items)) items = []
+    tagOptions.value = items.filter(t => t != null)
+  } catch (err) {
+    console.error('載入標籤失敗:', err)
+  }
+}
+
+// Search functions
+const searchQuestions = async () => {
+  isSearching.value = true
+  showSearchResults.value = true
+  
+  try {
+    const params = { page_size: 100 }  // 增加每頁數量以獲取更多結果
+    if (searchKeyword.value.trim()) {
+      params.keyword = searchKeyword.value.trim()
+    }
+    if (selectedSearchTags.value.length > 0) {
+      params.tags = selectedSearchTags.value.map(t => t.id).join(',')
+    }
+    
+    const res = await questionService.getQuestions(params)
+    searchResults.value = Array.isArray(res.data) ? res.data : res.data?.results || []
+  } catch (e) {
+    console.error('搜尋題目失敗:', e)
+    searchResults.value = []
+  } finally {
+    isSearching.value = false
+  }
+}
+
+const resetSearch = () => {
+  searchKeyword.value = ''
+  selectedSearchTags.value = []
+  searchResults.value = []
+  showSearchResults.value = false
+}
+
+const closeSearchResults = () => {
+  showSearchResults.value = false
+}
+
+const getDifficultyLabel = (difficulty) => {
+  const labels = { easy: '簡單', medium: '中等', hard: '困難' }
+  return labels[difficulty] || difficulty
+}
+
+const startSingleQuizFromSearch = async (question) => {
+  await startQuiz([{ id: question.id, content: question.content, subject: question.subject }], 'search')
+}
+
+const openChatFromSearchQuestion = async (question) => {
+  const content = question.content || ''
+  const questionId = question.id
+
+  try {
+    const res = await questionService.getQuestionOptions(questionId)
+    const options = res.data || []
+
+    if (options.length > 0) {
+      const optionsText = options.map((o, index) => `${getLabel(index+1)}. ${o.content}`).join('\n')
+      const correctOpt = options.find(o => o.is_correct)
+      let order = options.indexOf(correctOpt) + 1
+      const correctAnswer = correctOpt ? `\n\n正確答案：${getLabel(order)}. ${correctOpt.content}` : ''
+      openChat(`題目：${content}\n\n選項：\n${optionsText}${correctAnswer}\n\n請幫我解析這道題目，解釋為什麼正確答案是對的？`)
+    } else {
+      openChat(`題目：${content}\n\n請幫我解析這道題目`)
+    }
+  } catch (e) {
+    console.error('Failed to load question options for AI:', e)
+    openChat(`題目：${content}\n\n請幫我解析這道題目`)
   }
 }
 
@@ -471,6 +625,7 @@ const handleResize = () => {
 
 onMounted(() => {
   loadData()
+  loadTags()
   window.addEventListener('resize', handleResize)
 })
 
@@ -604,6 +759,184 @@ onUnmounted(() => {
 }
 
 .section-title { font-size: 18px; font-weight: 800; color: var(--text-primary); margin-bottom: 18px; }
+
+/* Search Section */
+.search-section {
+  background: var(--surface);
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+  border: 1px solid var(--border);
+}
+
+.search-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 14px 0;
+}
+
+.search-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filter-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  background: #fbfcfd;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(47, 95, 144, 0.1);
+}
+
+.tag-filter {
+  flex: 1;
+  min-width: 250px;
+}
+
+.tag-multiselect {
+  font-size: 14px;
+}
+
+/* Multiselect customization */
+:deep(.multiselect) {
+  min-height: 42px;
+}
+
+:deep(.multiselect__tags) {
+  min-height: 42px;
+  padding: 6px 40px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fbfcfd;
+}
+
+:deep(.multiselect__tags:focus-within) {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(47, 95, 144, 0.1);
+}
+
+:deep(.multiselect__tag) {
+  background: var(--primary);
+  border-radius: 6px;
+  padding: 4px 26px 4px 10px;
+  margin-bottom: 4px;
+}
+
+:deep(.multiselect__tag-icon) {
+  border-radius: 0 6px 6px 0;
+}
+
+:deep(.multiselect__tag-icon:after) {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+:deep(.multiselect__tag-icon:hover) {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+:deep(.multiselect__option--highlight) {
+  background: var(--primary);
+}
+
+:deep(.multiselect__placeholder) {
+  color: #9ca3af;
+  padding-top: 2px;
+}
+
+/* Search Results */
+.search-results {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.results-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.results-header span:first-child {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.search-result-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.question-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.meta-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.subject-badge {
+  background: #e8f4fd;
+  color: #1a5490;
+  border: 1px solid #c8e1f5;
+}
+
+.difficulty-badge {
+  border: 1px solid;
+}
+
+.difficulty-badge.easy {
+  background: #ecf8f1;
+  color: #1f6a3b;
+  border-color: #c8ecd8;
+}
+
+.difficulty-badge.medium {
+  background: #fef9e8;
+  color: #9a7b1b;
+  border-color: #f5e6b3;
+}
+
+.difficulty-badge.hard {
+  background: #fdf1f1;
+  color: #9a1b1b;
+  border-color: #f3d6d6;
+}
+
+.tag-badge {
+  background: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
 
 /* Practice Mode Cards */
 .practice-modes {
@@ -825,6 +1158,20 @@ onUnmounted(() => {
     width: 100%;
     justify-content: flex-end;
   }
+  
+  /* Search responsive */
+  .filter-row {
+    flex-wrap: wrap;
+  }
+  
+  .search-input {
+    min-width: 150px;
+  }
+  
+  .tag-filter {
+    min-width: 200px;
+    flex-basis: 100%;
+  }
 }
 
 /* Mobile Overlay for AI Chat */
@@ -940,6 +1287,49 @@ onUnmounted(() => {
   
   .mode-desc {
     font-size: 11px;
+  }
+  
+  /* Search responsive for mobile */
+  .search-section {
+    padding: 14px;
+  }
+  
+  .search-title {
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+  
+  .filter-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .search-input,
+  .tag-filter {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .filter-row .btn {
+    flex: 1;
+  }
+  
+  .results-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .search-result-list {
+    max-height: 300px;
+  }
+  
+  .question-meta {
+    gap: 4px;
+  }
+  
+  .meta-badge {
+    font-size: 10px;
+    padding: 2px 6px;
   }
   
   .tabs {

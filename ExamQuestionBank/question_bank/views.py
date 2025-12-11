@@ -5,6 +5,7 @@ from rest_framework import status, viewsets, filters
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from django.db import transaction
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -103,6 +104,13 @@ class ExtractAnswerPDFView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class QuestionPagination(PageNumberPagination):
+    """自訂分頁類別，支援前端動態設定 page_size"""
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 500
+
+
 class QuestionViewSet(viewsets.ModelViewSet):
     """
     題目的 CRUD API
@@ -113,6 +121,11 @@ class QuestionViewSet(viewsets.ModelViewSet):
     update: 更新題目
     partial_update: 部分更新題目
     destroy: 刪除題目
+    
+    支援的查詢參數：
+    - keyword: 搜尋題目內容
+    - tags: 依標籤 ID 篩選（逗號分隔，如 tags=1,2,3）
+    - page_size: 每頁數量（預設 20，最大 500）
     """
     queryset = (
         Question.objects.all()
@@ -121,6 +134,27 @@ class QuestionViewSet(viewsets.ModelViewSet):
         .order_by('id')  # 明確排序以避免分頁警告
     )
     permission_classes = [IsAuthenticated]
+    pagination_class = QuestionPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['content', 'subject', 'category']
+
+    def get_queryset(self):
+        """支援 keyword 和 tags 篩選"""
+        queryset = super().get_queryset()
+        
+        # keyword 篩選（搜尋題目內容）
+        keyword = self.request.query_params.get('keyword', '').strip()
+        if keyword:
+            queryset = queryset.filter(content__icontains=keyword)
+        
+        # tags 篩選（依標籤 ID，逗號分隔）
+        tags_param = self.request.query_params.get('tags', '').strip()
+        if tags_param:
+            tag_ids = [int(tid) for tid in tags_param.split(',') if tid.isdigit()]
+            if tag_ids:
+                queryset = queryset.filter(tags__id__in=tag_ids).distinct()
+        
+        return queryset
 
     def get_serializer_class(self):
         """根據不同的動作回傳不同的序列化器"""
