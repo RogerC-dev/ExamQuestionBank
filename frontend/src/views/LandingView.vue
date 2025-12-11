@@ -509,6 +509,7 @@ const handleSubscribe = () => {
 
 .pricing-card {
   display: flex;
+  flex-direction: column;
   background: var(--surface);
   border-radius: var(--radius);
   padding: 32px 26px;
