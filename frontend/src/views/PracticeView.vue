@@ -48,7 +48,7 @@
           <p class="question-content">{{ currentQuestion?.content || currentQuestion?.question_content }}</p>
           <div class="quiz-options">
             <div
-              v-for="opt in currentOptions"
+              v-for="[index, opt] in currentOptions.entries()"
               :key="opt.id"
               class="option-item"
               :class="{
@@ -58,7 +58,7 @@
               }"
               @click="!showAnswer && selectAnswer(opt.id)"
             >
-              <span class="option-label">{{ getLabel(opt.order) }}.</span>
+              <span class="option-label">{{ getLabel(index+1) }}.</span>
               <span>{{ opt.content }}</span>
             </div>
           </div>
@@ -356,9 +356,10 @@ const composeQuestionPrompt = (question, options = null) => {
   if (!question) return ''
   const content = question.content || question.question_content || ''
   const opts = options || currentOptions.value
-  const optionsText = opts.map(o => `${getLabel(o.order)}. ${o.content}`).join('\n')
+  const optionsText = opts.map((o, index) => `${getLabel(index+1)}. ${o.content}`).join('\n')
   const correctOpt = opts.find(o => o.is_correct)
-  const correctAnswer = correctOpt ? `正確答案：${getLabel(correctOpt.order)}. ${correctOpt.content}` : ''
+  let order = opts.indexOf(correctOpt) + 1
+  const correctAnswer = correctOpt ? `正確答案：${getLabel(order)}. ${correctOpt.content}` : ''
   return `題目：${content}\n\n選項：\n${optionsText}\n\n${correctAnswer}\n\n請解釋為什麼這個答案是正確的？`
 }
 
@@ -373,9 +374,10 @@ const openChatFromQuestion = async (question) => {
 
     if (options.length > 0) {
       // Compose full prompt with question and all options
-      const optionsText = options.map(o => `${getLabel(o.order)}. ${o.content}`).join('\n')
+      const optionsText = options.map((o, index) => `${getLabel(index+1)}. ${o.content}`).join('\n')
       const correctOpt = options.find(o => o.is_correct)
-      const correctAnswer = correctOpt ? `\n\n正確答案：${getLabel(correctOpt.order)}. ${correctOpt.content}` : ''
+      let order = options.indexOf(correctOpt) + 1
+      const correctAnswer = correctOpt ? `\n\n正確答案：${getLabel(order)}. ${correctOpt.content}` : ''
       openChat(`題目：${content}\n\n選項：\n${optionsText}${correctAnswer}\n\n請幫我解析這道題目，解釋為什麼正確答案是對的？`)
     } else {
       // Fallback if no options available
