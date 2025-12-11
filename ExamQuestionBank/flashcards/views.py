@@ -19,6 +19,7 @@ class FlashcardViewSet(viewsets.ModelViewSet):
 
     serializer_class = FlashcardSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None  # 關閉分頁，返回所有卡片
     http_method_names = ['get', 'post', 'delete', 'head', 'options']
 
     def get_queryset(self):
