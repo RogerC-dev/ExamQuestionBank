@@ -6,7 +6,7 @@
         v-model="searchTerm" 
         type="text" 
         class="form-control" 
-        placeholder="搜尋題目內容、科目、分類..." 
+        placeholder="搜尋題目內容、科目..."
         @keyup.enter="applyFilters" 
       />
 
@@ -40,7 +40,7 @@
           <tr>
             <th>ID</th>
             <th>科目</th>
-            <th>分類</th>
+            <th>內容</th>
             <th>題型</th>
             <th>難度</th>
             <th>建立時間</th>
@@ -63,7 +63,7 @@
                 <span v-for="t in q.tags" :key="t.id" class="meta-badge tag-badge">{{ t.name }}</span>
               </div>
             </td>
-            <td>{{ q.category }}</td>
+            <td :title="q.content">{{ q.contentSnippet }}</td>
             <td>{{ q.question_type }}</td>
             <td>{{ q.difficulty }}</td>
             <td>{{ q.createdAt }}</td>
@@ -240,6 +240,11 @@ const normalize = (q) => ({
   question_type: q.question_type || '',
   difficulty: q.difficulty || '',
   tags: q.tags || [],
+  contentSnippet: (() => {
+    const raw = q.content || ''
+    return raw.length > 20 ? raw.slice(0, 20) + '…' : raw
+  })(),
+  content: q.content || '',
   createdAt: formatDateTime(q.created_at),
   updatedAt: formatDateTime(q.updated_at)
 })
@@ -569,12 +574,12 @@ th {
 }
 
 th:nth-child(1), td:nth-child(1) { width: 8%; }        /* ID */
-th:nth-child(2), td:nth-child(2) { width: 20%; }       /* 科目 */
-th:nth-child(3), td:nth-child(3) { width: 15%; }       /* 分類 */
+th:nth-child(2), td:nth-child(2) { width: 18%; }       /* 科目 */
+th:nth-child(3), td:nth-child(3) { width: 22%; }       /* 內容 */
 th:nth-child(4), td:nth-child(4) { width: 12%; }       /* 題型 */
 th:nth-child(5), td:nth-child(5) { width: 10%; }       /* 難度 */
-th:nth-child(6), td:nth-child(6) { width: 15%; }       /* 建立時間 */
-th:nth-child(7), td:nth-child(7) { width: 15%; }       /* 更新時間 */
+th:nth-child(6), td:nth-child(6) { width: 12%; }       /* 建立時間 */
+th:nth-child(7), td:nth-child(7) { width: 12%; }       /* 更新時間 */
 th:nth-child(8), td:nth-child(8) { width: 5%; }        /* 操作 */
 
 td {
