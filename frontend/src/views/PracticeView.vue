@@ -11,20 +11,20 @@
           <div class="mode-title">歷屆考題</div>
           <div class="mode-desc">按年度練習歷屆考題</div>
         </div>
+        <div class="mode-card mock-exam-card" @click="openMockExamDialog">
+          <div class="mode-icon">模</div>
+          <div class="mode-title">模擬考題</div>
+          <div class="mode-desc">自訂題目組合模擬測驗</div>
+        </div>
         <div class="mode-card" @click="setTab('wrong')">
           <div class="mode-icon">錯</div>
-          <div class="mode-title">錯題本</div>
+          <div class="mode-title">錯題</div>
           <div class="mode-desc">複習答錯的題目</div>
         </div>
         <div class="mode-card" @click="setTab('bookmarks')">
           <div class="mode-icon">藏</div>
-          <div class="mode-title">收藏題庫</div>
+          <div class="mode-title">收藏</div>
           <div class="mode-desc">複習已收藏的題目</div>
-        </div>
-        <div class="mode-card ask-ai-card" @click="openChat()">
-          <div class="mode-icon">AI</div>
-          <div class="mode-title">Ask AI</div>
-          <div class="mode-desc">題目解析與追問</div>
         </div>
       </div>
 
@@ -255,6 +255,84 @@
 
     <!-- Mobile Overlay Background -->
     <div v-if="isChatOpen" class="mobile-overlay" @click="closeChat"></div>
+
+    <!-- Floating Ask AI Button -->
+    <button v-if="!isChatOpen" class="floating-ai-btn" @click="openChat()" aria-label="Ask AI">
+      <span class="floating-ai-icon">AI</span>
+      <span class="floating-ai-text">Ask AI</span>
+    </button>
+
+    <!-- Mock Exam Dialog -->
+    <div v-if="showMockExamDialog" class="mock-exam-overlay" @click.self="closeMockExamDialog">
+      <div class="mock-exam-dialog">
+        <div class="dialog-header">
+          <h3>建立模擬考題</h3>
+          <button class="btn-close" @click="closeMockExamDialog" aria-label="關閉">×</button>
+        </div>
+        <div class="dialog-body">
+          <p class="dialog-desc">選擇題目來源並設定題數，系統將隨機抽取題目組成模擬測驗。</p>
+          
+          <div class="source-options">
+            <h4>選擇題目來源</h4>
+            <label class="source-checkbox">
+              <input type="checkbox" v-model="mockExamSources.wrong" :disabled="wrongQuestions.length === 0">
+              <span>錯題 ({{ wrongQuestions.length }} 題)</span>
+            </label>
+            <label class="source-checkbox">
+              <input type="checkbox" v-model="mockExamSources.bookmarks" :disabled="bookmarks.length === 0">
+              <span>收藏 ({{ bookmarks.length }} 題)</span>
+            </label>
+            <label class="source-checkbox">
+              <input type="checkbox" v-model="mockExamSources.all">
+              <span>全部題庫</span>
+            </label>
+          </div>
+
+          <div class="question-count-setting">
+            <h4>設定題數</h4>
+            <div class="count-options">
+              <button 
+                v-for="count in [10, 20, 30, 50]" 
+                :key="count" 
+                class="count-btn"
+                :class="{ active: mockExamQuestionCount === count }"
+                @click="mockExamQuestionCount = count"
+              >
+                {{ count }} 題
+              </button>
+            </div>
+            <div class="custom-count">
+              <span>或自訂：</span>
+              <input 
+                type="number" 
+                v-model.number="mockExamQuestionCount" 
+                min="1" 
+                max="100" 
+                class="count-input"
+              >
+              <span>題</span>
+            </div>
+          </div>
+
+          <div v-if="availableMockExamCount > 0" class="available-count">
+            可用題數：{{ availableMockExamCount }} 題
+          </div>
+          <div v-else class="no-questions-warning">
+            請至少選擇一個題目來源
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <button class="btn btn-secondary" @click="closeMockExamDialog">取消</button>
+          <button 
+            class="btn btn-primary" 
+            @click="startMockExam" 
+            :disabled="availableMockExamCount === 0 || mockExamQuestionCount < 1"
+          >
+            開始模擬考 ({{ Math.min(mockExamQuestionCount, availableMockExamCount) }} 題)
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -313,10 +391,40 @@ const selectedAnswer = ref(null)
 const showAnswer = ref(false)
 const isCorrect = ref(false)
 
+// Mock Exam state
+const showMockExamDialog = ref(false)
+const mockExamSources = reactive({
+  wrong: false,
+  bookmarks: false,
+  all: false
+})
+const mockExamQuestionCount = ref(20)
+const allQuestionsPool = ref([])  // For "all questions" source
+
 const currentQuestion = computed(() => quizQuestions.value[currentIndex.value])
 const correctAnswerLabel = computed(() => {
   const correct = currentOptions.value.find(o => o.is_correct)
   return correct ? `${getLabel(correct.order)}. ${correct.content}` : ''
+})
+
+// Computed: how many questions available for mock exam based on selected sources
+const availableMockExamCount = computed(() => {
+  let count = 0
+  const questionIds = new Set()
+  
+  if (mockExamSources.wrong) {
+    wrongQuestions.value.forEach(wq => questionIds.add(wq.question || wq.id))
+  }
+  if (mockExamSources.bookmarks) {
+    bookmarks.value.forEach(bm => questionIds.add(bm.question || bm.id))
+  }
+  if (mockExamSources.all) {
+    // When "all" is selected, we fetch from the entire question bank
+    // For now we'll show stats.total_bank as a rough estimate
+    return stats.total_bank || 100
+  }
+  
+  return questionIds.size
 })
 
 const getLabel = (order) => String.fromCharCode(64 + (order || 1))
@@ -463,6 +571,72 @@ const startPractice = (mode) => {
   if (mode === 'historical' && historicalExams.value.length) {
     viewExam(historicalExams.value[0].id)
   }
+}
+
+// Mock Exam Functions
+const openMockExamDialog = () => {
+  // Reset sources
+  mockExamSources.wrong = false
+  mockExamSources.bookmarks = false
+  mockExamSources.all = false
+  mockExamQuestionCount.value = 20
+  showMockExamDialog.value = true
+}
+
+const closeMockExamDialog = () => {
+  showMockExamDialog.value = false
+}
+
+const startMockExam = async () => {
+  const questionPool = []
+  const seenIds = new Set()
+  
+  // Helper to add questions without duplicates
+  const addQuestion = (q) => {
+    const id = q.question || q.id
+    if (!seenIds.has(id)) {
+      seenIds.add(id)
+      questionPool.push({
+        id,
+        content: q.question_content || q.content,
+        subject: q.question_subject || q.subject
+      })
+    }
+  }
+  
+  // Collect from wrong questions
+  if (mockExamSources.wrong) {
+    wrongQuestions.value.forEach(addQuestion)
+  }
+  
+  // Collect from bookmarks
+  if (mockExamSources.bookmarks) {
+    bookmarks.value.forEach(addQuestion)
+  }
+  
+  // Collect from all questions (fetch random from server)
+  if (mockExamSources.all) {
+    try {
+      const count = Math.min(mockExamQuestionCount.value, 100)
+      const res = await questionService.getQuestions({ page_size: count, random: true })
+      const questions = res.data?.results || res.data || []
+      questions.forEach(q => addQuestion({ id: q.id, content: q.content, subject: q.subject }))
+    } catch (e) {
+      console.error('Failed to fetch all questions:', e)
+    }
+  }
+  
+  if (questionPool.length === 0) {
+    alert('無可用題目')
+    return
+  }
+  
+  // Shuffle and pick the requested number
+  const shuffled = questionPool.sort(() => Math.random() - 0.5)
+  const selectedQuestions = shuffled.slice(0, Math.min(mockExamQuestionCount.value, shuffled.length))
+  
+  closeMockExamDialog()
+  await startQuiz(selectedQuestions, 'mock')
 }
 
 const viewExam = (examId) => router.push({ name: 'ExamPreview', params: { id: examId } })
@@ -1060,17 +1234,247 @@ onUnmounted(() => {
 .mode-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
 .mode-desc { font-size: 13px; color: var(--text-secondary); }
 
-.ask-ai-card {
-  background: #f3f7fb;
-  border: 1px solid rgba(47, 95, 144, 0.4);
+.mock-exam-card {
+  background: linear-gradient(135deg, #f8f4ff 0%, #f3f7ff 100%);
+  border: 1px solid rgba(128, 90, 200, 0.35);
 }
 
-.ask-ai-card .mode-title,
-.ask-ai-card .mode-desc {
-  color: var(--primary);
+.mock-exam-card .mode-icon {
+  background: rgba(128, 90, 200, 0.15);
+  color: #7c3aed;
 }
 
-.ask-ai-card .mode-icon { background: rgba(47, 95, 144, 0.1); }
+.mock-exam-card:hover {
+  border-color: rgba(128, 90, 200, 0.5);
+}
+
+/* Floating AI Button */
+.floating-ai-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #4f7da8 0%, #2f5f90 100%);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  box-shadow: 0 6px 24px rgba(47, 95, 144, 0.35);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.25s ease;
+  z-index: 100;
+}
+
+.floating-ai-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(47, 95, 144, 0.45);
+}
+
+.floating-ai-icon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.floating-ai-text {
+  letter-spacing: 0.02em;
+}
+
+/* Mock Exam Dialog */
+.mock-exam-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.mock-exam-dialog {
+  background: #fff;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 480px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  overflow: hidden;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  background: #f8fafc;
+}
+
+.dialog-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dialog-body {
+  padding: 24px;
+}
+
+.dialog-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 20px;
+  line-height: 1.6;
+}
+
+.source-options {
+  margin-bottom: 24px;
+}
+
+.source-options h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+}
+
+.source-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  background: #f8fafc;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.source-checkbox:hover {
+  background: #f1f5f9;
+}
+
+.source-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.source-checkbox input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.source-checkbox input:disabled + span {
+  opacity: 0.5;
+}
+
+.source-checkbox span {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.question-count-setting h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+}
+
+.count-options {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.count-btn {
+  padding: 8px 16px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.count-btn:hover {
+  background: #e2e8f0;
+}
+
+.count-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.custom-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.count-input {
+  width: 70px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.count-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.available-count {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #ecfdf5;
+  color: #059669;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.no-questions-warning {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  color: #dc2626;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-top: 1px solid var(--border);
+}
 
 /* Tabs */
 .tabs {
