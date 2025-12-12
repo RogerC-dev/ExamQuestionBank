@@ -64,6 +64,31 @@ const examService = {
   },
   removeBookmark(questionId) {
     return api.delete(`/bookmarks/${questionId}/`).catch(handle401)
+  },
+  // 從錯題生成模擬考卷
+  createExamFromWrongQuestions({ name, questionIds, limit, unreviewedOnly } = {}) {
+    return api.post('/mock-exams/from-wrong-questions/', {
+      name,
+      question_ids: questionIds,
+      limit,
+      unreviewed_only: unreviewedOnly
+    }).catch(handle401)
+  },
+  // 從收藏題目生成模擬考卷
+  createExamFromBookmarks({ name, questionIds, limit } = {}) {
+    return api.post('/mock-exams/from-bookmarks/', {
+      name,
+      question_ids: questionIds,
+      limit
+    }).catch(handle401)
+  },
+  // 從任意題目 ID 列表生成考卷
+  createCustomExam({ name, questionIds, timeLimit } = {}) {
+    return api.post('/mock-exams/custom/', {
+      name,
+      question_ids: questionIds,
+      time_limit: timeLimit
+    }).catch(handle401)
   }
 }
 

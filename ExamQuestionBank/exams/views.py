@@ -614,3 +614,178 @@ class ExamStatsView(APIView):
             'bookmark_count': bookmark_count,
             'top_wrong': top_wrong
         })
+
+
+class WrongQuestionExamView(APIView):
+    """從錯題生成模擬考卷 API"""
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="從錯題生成模擬考卷",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'name': openapi.Schema(type=openapi.TYPE_STRING, description='考卷名稱'),
+                'question_ids': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_INTEGER), description='題目 ID 列表（可選，不提供則使用所有錯題）'),
+                'limit': openapi.Schema(type=openapi.TYPE_INTEGER, description='題目數量上限（可選）'),
+                'unreviewed_only': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='僅使用未複習的錯題'),
+            }
+        ),
+        responses={201: MockExamSerializer()}
+    )
+    def post(self, request):
+        name = request.data.get('name', '錯題複習測驗')
+        question_ids = request.data.get('question_ids')
+        limit = request.data.get('limit')
+        unreviewed_only = request.data.get('unreviewed_only', False)
+
+        wrong_qs = WrongQuestion.objects.filter(user=request.user).select_related('question')
+        
+        if unreviewed_only:
+            wrong_qs = wrong_qs.filter(reviewed=False)
+        
+        if question_ids:
+            wrong_qs = wrong_qs.filter(question_id__in=question_ids)
+        
+        wrong_qs = wrong_qs.order_by('-wrong_count', '-last_wrong_at')
+        
+        if limit:
+            wrong_qs = wrong_qs[:limit]
+
+        questions = [wq.question for wq in wrong_qs]
+        
+        if not questions:
+            return Response({"error": "沒有符合條件的錯題"}, status=status.HTTP_404_NOT_FOUND)
+
+        exam = Exam.objects.create(
+            name=name,
+            description=f"從 {len(questions)} 道錯題生成的複習測驗",
+            time_limit=None
+        )
+
+        with transaction.atomic():
+            for index, question in enumerate(questions, start=1):
+                ExamQuestion.objects.create(exam=exam, question=question, order=index)
+
+        mock_exam = MockExam.objects.create(
+            user=request.user,
+            exam=exam,
+            name=name,
+            question_count=len(questions),
+            ai_generated=False
+        )
+
+        return Response(MockExamSerializer(mock_exam).data, status=status.HTTP_201_CREATED)
+
+
+class BookmarkExamView(APIView):
+    """從收藏題目生成模擬考卷 API"""
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="從收藏題目生成模擬考卷",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'name': openapi.Schema(type=openapi.TYPE_STRING, description='考卷名稱'),
+                'question_ids': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_INTEGER), description='題目 ID 列表（可選）'),
+                'limit': openapi.Schema(type=openapi.TYPE_INTEGER, description='題目數量上限（可選）'),
+            }
+        ),
+        responses={201: MockExamSerializer()}
+    )
+    def post(self, request):
+        name = request.data.get('name', '收藏題目測驗')
+        question_ids = request.data.get('question_ids')
+        limit = request.data.get('limit')
+
+        bookmarks = Bookmark.objects.filter(user=request.user).select_related('question')
+        
+        if question_ids:
+            bookmarks = bookmarks.filter(question_id__in=question_ids)
+        
+        bookmarks = bookmarks.order_by('-created_at')
+        
+        if limit:
+            bookmarks = bookmarks[:limit]
+
+        questions = [b.question for b in bookmarks]
+        
+        if not questions:
+            return Response({"error": "沒有符合條件的收藏題目"}, status=status.HTTP_404_NOT_FOUND)
+
+        exam = Exam.objects.create(
+            name=name,
+            description=f"從 {len(questions)} 道收藏題目生成的測驗",
+            time_limit=None
+        )
+
+        with transaction.atomic():
+            for index, question in enumerate(questions, start=1):
+                ExamQuestion.objects.create(exam=exam, question=question, order=index)
+
+        mock_exam = MockExam.objects.create(
+            user=request.user,
+            exam=exam,
+            name=name,
+            question_count=len(questions),
+            ai_generated=False
+        )
+
+        return Response(MockExamSerializer(mock_exam).data, status=status.HTTP_201_CREATED)
+
+
+class CustomExamView(APIView):
+    """從任意題目 ID 列表生成考卷 API"""
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="從題目 ID 列表生成考卷",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['question_ids'],
+            properties={
+                'name': openapi.Schema(type=openapi.TYPE_STRING, description='考卷名稱'),
+                'question_ids': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_INTEGER), description='題目 ID 列表'),
+                'time_limit': openapi.Schema(type=openapi.TYPE_INTEGER, description='時間限制（分鐘）'),
+            }
+        ),
+        responses={201: MockExamSerializer()}
+    )
+    def post(self, request):
+        name = request.data.get('name', '自訂測驗')
+        question_ids = request.data.get('question_ids', [])
+        time_limit = request.data.get('time_limit')
+
+        if not question_ids:
+            return Response({"error": "請提供題目 ID 列表"}, status=status.HTTP_400_BAD_REQUEST)
+
+        questions = list(Question.objects.filter(id__in=question_ids))
+        
+        if not questions:
+            return Response({"error": "找不到指定的題目"}, status=status.HTTP_404_NOT_FOUND)
+
+        # 保持原始順序
+        id_to_question = {q.id: q for q in questions}
+        ordered_questions = [id_to_question[qid] for qid in question_ids if qid in id_to_question]
+
+        exam = Exam.objects.create(
+            name=name,
+            description=f"包含 {len(ordered_questions)} 道題目的自訂測驗",
+            time_limit=time_limit
+        )
+
+        with transaction.atomic():
+            for index, question in enumerate(ordered_questions, start=1):
+                ExamQuestion.objects.create(exam=exam, question=question, order=index)
+
+        mock_exam = MockExam.objects.create(
+            user=request.user,
+            exam=exam,
+            name=name,
+            question_count=len(ordered_questions),
+            time_limit=time_limit,
+            ai_generated=False
+        )
+
+        return Response(MockExamSerializer(mock_exam).data, status=status.HTTP_201_CREATED)
