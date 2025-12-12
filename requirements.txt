@@ -1,66 +1,39 @@
-# Core Django
+# Runtime requirements for ExamQuestionBank
+# Keep this file minimal: packages required to run the application in production
+
 Django==5.2.7
 python-dotenv>=1.1.1
 
-# Django REST Framework
+# REST / API / Docs
 djangorestframework>=3.16.1
 djangorestframework-simplejwt>=5.3.1
 drf-yasg>=1.21.11
 
-# Database & ORM
+# Database / ORM
 mssql-django>=1.6
 pyodbc>=5.2.0
 
-# Filtering & Search
+# Filtering / CORS / Security
 django-filter>=25.1
-
-# CORS & Security
 django-cors-headers>=4.9.0
 
-# Import/Export
+# Admin / import-export (kept in runtime because it's listed in INSTALLED_APPS)
 django-import-export>=4.3.10
 openpyxl>=3.1.5
-Pillow>=10.4.0
 
-# Caching & Background Tasks
-django-redis>=6.0.0
-celery>=5.5.3
-django-celery-beat>=2.8.1
-
-# Authentication & Permissions
-django-allauth>=65.11.2
+# Object permission & versioning (settings enable these apps)
 django-guardian>=3.2.0
-
-# Versioning & Auditing
 django-reversion>=6.0.0
 
-# Development & Debugging
-django-debug-toolbar>=6.0.0
-
-# Monitoring & Error Tracking
-sentry-sdk>=2.39.0
-
-# Internationalization
-django-modeltranslation>=0.19.17
-
-# Storage
-django-storages>=1.14
+# PDF parsing
+pdfplumber==0.11.7
 
 # Utilities
 python-dateutil>=2.9.0
 pytz>=2024.1
-pdfplumber==0.11.7
-
-# AI Services
-openai>=1.0.0
-
-# RAG & Vector Database
-chromadb>=0.4.0
-sentence-transformers>=2.2.0
-faiss-cpu>=1.7.4
-
-# N8N Integration (optional)
 requests>=2.31.0
 
-# Property-based testing
-hypothesis>=6.115.0
+# AI / RAG
+openai>=1.0.0
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
