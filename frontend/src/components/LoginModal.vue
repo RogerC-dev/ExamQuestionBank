@@ -1,7 +1,7 @@
 <template>
   <div v-if="isVisible" class="modal-overlay" @click.self="handleClose">
     <div class="modal-content">
-      <div class="modal-header">
+        <div class="modal-header">
         <h2>{{ isRegisterMode ? '註冊' : '登入' }}</h2>
         <button class="btn-close" @click="handleClose">×</button>
       </div>
@@ -109,11 +109,11 @@
         <div class="switch-hint">
           <span v-if="!isRegisterMode">
             還沒有帳號？
-            <a href="#" @click.prevent="switchMode(true)">立即註冊</a>
+            <button class="switch-link" type="button" @click="switchMode(true)">立即註冊</button>
           </span>
           <span v-else>
             已有帳號？
-            <a href="#" @click.prevent="switchMode(false)">返回登入</a>
+            <button class="switch-link" type="button" @click="switchMode(false)">返回登入</button>
           </span>
         </div>
       </div>
@@ -257,10 +257,10 @@ const handleSubmit = async () => {
 }
 
 const handleClose = () => {
-  if (!loading.value) {
-    isVisible.value = false
-    emit('close')
-  }
+  // Do not close while loading
+  if (loading.value) return
+  isVisible.value = false
+  emit('close')
 }
 </script>
 
@@ -489,6 +489,19 @@ const handleClose = () => {
 }
 
 .switch-hint a:hover {
+  text-decoration: underline;
+}
+
+.switch-hint .switch-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #476996;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.switch-hint .switch-link:hover {
   text-decoration: underline;
 }
 </style>

@@ -16,7 +16,7 @@ const tabs = [
   { name: '題庫管理', path: '/admin', key: 'admin', adminOnly: true }
 ]
 
-const activeTab = ref(route.path === '/' ? 'landing' : route.path.split('/')[1] || 'practice')
+// We don't need an `activeTab` ref – router-link provides active-class handling
 const showLoginModal = ref(false)
 
 // 使用 ref 來追蹤登入狀態變化
@@ -36,6 +36,12 @@ const currentUser = computed(() => {
 
 // 根據使用者角色篩選可見的 tabs
 const visibleTabs = computed(() => {
+  // 未登入時只顯示「首頁」
+  if (!isAuthenticated.value) {
+    return tabs.filter(tab => tab.key === 'landing')
+  }
+
+  // 已登入時根據權限顯示 tabs
   return tabs.filter(tab => {
     if (tab.adminOnly) {
       return currentUser.value?.isAdmin
@@ -44,10 +50,7 @@ const visibleTabs = computed(() => {
   })
 })
 
-const switchTab = (path, key) => {
-  activeTab.value = key
-  router.push(path)
-}
+// `switchTab` 已移除：改用 router-link 做導航，並由 `route` 自動同步 `activeTab`。
 
 const handleLogin = () => {
   showLoginModal.value = true
@@ -81,7 +84,12 @@ const handleLoginSuccess = () => {
 
 // 全域監聽需要登入的事件
 const showLogin = () => {
+  // show login modal (closable)
   showLoginModal.value = true
+}
+
+const handleModalClose = () => {
+  showLoginModal.value = false
 }
 
 // 掛載時註冊全域事件監聽器
@@ -114,15 +122,15 @@ onMounted(() => {
     <!-- Navigation -->
     <nav>
       <div class="nav-container">
-        <a
+        <router-link
           v-for="tab in visibleTabs"
           :key="tab.key"
-          href="#"
-          :class="{ active: activeTab === tab.key }"
-          @click.prevent="switchTab(tab.path, tab.key)"
+          :to="tab.path"
+          active-class="active"
+          exact-active-class="active"
         >
           {{ tab.name }}
-        </a>
+        </router-link>
       </div>
     </nav>
 
@@ -134,7 +142,7 @@ onMounted(() => {
     <!-- Login Modal -->
     <LoginModal
       :visible="showLoginModal"
-      @close="showLoginModal = false"
+      @close="handleModalClose"
       @success="handleLoginSuccess"
     />
   </div>

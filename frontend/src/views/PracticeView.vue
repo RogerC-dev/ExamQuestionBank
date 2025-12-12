@@ -11,12 +11,12 @@
           <div class="mode-title">歷屆考題</div>
           <div class="mode-desc">按年度練習歷屆考題</div>
         </div>
-        <div class="mode-card" @click="activeTab = 'wrong'">
+        <div class="mode-card" @click="setTab('wrong')">
           <div class="mode-icon">錯</div>
           <div class="mode-title">錯題本</div>
           <div class="mode-desc">複習答錯的題目</div>
         </div>
-        <div class="mode-card" @click="activeTab = 'bookmarks'">
+        <div class="mode-card" @click="setTab('bookmarks')">
           <div class="mode-icon">藏</div>
           <div class="mode-title">收藏題庫</div>
           <div class="mode-desc">複習已收藏的題目</div>
@@ -114,9 +114,9 @@
 
       <!-- Tabs -->
       <div class="tabs">
-        <button :class="{ active: activeTab === 'exams' }" @click="activeTab = 'exams'">歷屆考卷</button>
-        <button :class="{ active: activeTab === 'wrong' }" @click="activeTab = 'wrong'">錯題本 ({{ wrongQuestions.length }})</button>
-        <button :class="{ active: activeTab === 'bookmarks' }" @click="activeTab = 'bookmarks'">收藏題目 ({{ bookmarks.length }})</button>
+        <button :class="{ active: currentTab === 'exams' }" @click="setTab('exams')">歷屆考卷</button>
+        <button :class="{ active: currentTab === 'wrong' }" @click="setTab('wrong')">錯題本 ({{ wrongQuestions.length }})</button>
+        <button :class="{ active: currentTab === 'bookmarks' }" @click="setTab('bookmarks')">收藏題目 ({{ bookmarks.length }})</button>
       </div>
 
       <!-- Quiz Mode -->
@@ -159,7 +159,7 @@
       </div>
 
       <!-- Exams Tab -->
-      <section v-if="activeTab === 'exams' && !quizMode" class="content-section">
+      <section v-if="currentTab === 'exams' && !quizMode" class="content-section">
         <div class="section-header">
           <h3>歷屆考卷</h3>
         </div>
@@ -177,7 +177,7 @@
       </section>
 
       <!-- Wrong Questions Tab -->
-      <section v-if="activeTab === 'wrong' && !quizMode" class="content-section">
+      <section v-if="currentTab === 'wrong' && !quizMode" class="content-section">
         <div class="section-header">
           <h3>錯題本</h3>
           <div class="section-actions">
@@ -204,7 +204,7 @@
       </section>
 
       <!-- Bookmarks Tab -->
-      <section v-if="activeTab === 'bookmarks' && !quizMode" class="content-section">
+      <section v-if="currentTab === 'bookmarks' && !quizMode" class="content-section">
         <div class="section-header">
           <h3>收藏題目</h3>
           <div class="section-actions">
@@ -260,7 +260,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import examService from '@/services/examService'
 import questionService from '@/services/questionService'
 import flashcardService from '@/services/flashcardService'
@@ -270,7 +270,17 @@ import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 
 const router = useRouter()
-const activeTab = ref('exams')
+const route = useRoute()
+// route-based tab, default to exams
+const currentTab = computed(() => {
+  const t = route.query.tab
+  if (Array.isArray(t)) return t[0] || 'exams'
+  return t || 'exams'
+})
+
+const setTab = (tab) => {
+  router.push({ path: '/practice', query: { ...route.query, tab } })
+}
 const stats = reactive({ total_bank: 0, total_answered: 0, accuracy: 0, exam_count: 0, wrong_count: 0 })
 
 // Data
@@ -666,6 +676,8 @@ const stopDrag = () => {
 const openChat = (prefillText = '') => {
   chatPrefill.value = { text: prefillText, stamp: Date.now() }
   isChatOpen.value = true
+  // ensure AI panel shows chat tab when opened
+  setTab('chat')
 }
 
 const closeChat = () => {

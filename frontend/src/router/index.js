@@ -97,8 +97,8 @@ router.beforeEach((to, from, next) => {
     sessionStorage.setItem('intended_path', to.fullPath)
     // 觸發登入彈窗
     window.dispatchEvent(new Event('show-login'))
-    // 停留在當前頁面
-    next(false)
+    // 導回首頁
+    next('/')
   }
   // 需要管理員權限
   else if (to.meta.requiresAdmin) {
@@ -106,7 +106,7 @@ router.beforeEach((to, from, next) => {
       // 未登入，觸發登入彈窗
       sessionStorage.setItem('intended_path', to.fullPath)
       window.dispatchEvent(new Event('show-login'))
-      next('/practice')
+      next('/')
     } else if (userRole === 'admin') {
       // 已登入且是管理員
       next()

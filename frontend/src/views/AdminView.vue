@@ -92,39 +92,41 @@
                   </button>
                   <ul class="dropdown-menu" :aria-labelledby="`dropdownExam${exam.id}`">
                     <li>
-                      <a class="dropdown-item" href="#" @click.prevent="editExam(exam.id)">
+                      <button class="dropdown-item" type="button" @click="editExam(exam.id)">
                         編輯
-                      </a>
+                      </button>
                     </li>
                     <li>
-                      <a class="dropdown-item" href="#" @click.prevent="viewExam(exam.id)">
+                      <button class="dropdown-item" type="button" @click="viewExam(exam.id)">
                         檢視
-                      </a>
+                      </button>
                     </li>
                     <li><hr class="dropdown-divider" /></li>
                     <li>
-                      <a
+                      <button
                         class="dropdown-item"
-                        href="#"
-                        :class="{ disabled: exportingExams[exam.id] }"
-                        @click.prevent="exportExam(exam.id)"
+                        type="button"
+                        :disabled="exportingExams[exam.id]"
+                        :aria-disabled="exportingExams[exam.id]"
+                        @click="exportExam(exam.id)"
                       >
                         <span v-if="exportingExams[exam.id]" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                         <span v-if="!exportingExams[exam.id]">匯出</span>
                         <span v-else>匯出中...</span>
-                      </a>
+                      </button>
                     </li>
                     <li>
-                      <a
+                      <button
                         class="dropdown-item text-danger"
-                        href="#"
-                        :class="{ disabled: deletingExamId === exam.id }"
-                        @click.prevent="deleteExam(exam.id)"
+                        type="button"
+                        :disabled="deletingExamId === exam.id"
+                        :aria-disabled="deletingExamId === exam.id"
+                        @click="deleteExam(exam.id)"
                       >
                         <span v-if="deletingExamId === exam.id" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                         <span v-if="!deletingExamId || deletingExamId !== exam.id">刪除</span>
                         <span v-else>刪除中...</span>
-                      </a>
+                      </button>
                     </li>
                   </ul>
                 </div>

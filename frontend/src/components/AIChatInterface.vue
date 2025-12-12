@@ -2,11 +2,11 @@
   <div class="ai-chat-interface">
     <!-- Remove the duplicate header since it's now handled by the parent component -->
     <div class="chat-tabs">
-      <button :class="{ active: activeTab === 'chat' }" @click="activeTab = 'chat'">即時對話</button>
-      <button :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">歷史記錄</button>
+      <button :class="{ active: currentTab === 'chat' }" @click="setTab('chat')">即時對話</button>
+      <button :class="{ active: currentTab === 'history' }" @click="setTab('history')">歷史記錄</button>
     </div>
 
-    <div v-if="activeTab === 'chat'" class="chat-panel">
+    <div v-if="currentTab === 'chat'" class="chat-panel">
       <div class="chat-messages" ref="messagesContainer">
         <div
           v-for="(msg, index) in messages"
@@ -55,7 +55,7 @@
       </div>
     </div>
 
-    <div v-else class="history-panel">
+    <div v-else-if="currentTab === 'history'" class="history-panel">
       <div class="history-toolbar">
         <button class="btn-refresh" @click="refreshHistory" :disabled="isHistoryLoading">
           重新整理
@@ -83,11 +83,12 @@
 
 <script setup>
 import { ref, watch, nextTick, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useChatStore } from '@/stores/chatStore'
 
 const router = useRouter()
+const route = useRoute()
 const chatStore = useChatStore()
 
 const props = defineProps({
@@ -104,7 +105,15 @@ const { messages, historyItems, isLoading, isHistoryLoading, errorMessage } = st
 const inputMessage = ref('')
 const messagesContainer = ref(null)
 const chatInputRef = ref(null)
-const activeTab = ref('chat')
+const currentTab = computed(() => {
+  const t = route.query.tab
+  if (Array.isArray(t)) return t[0] || 'chat'
+  return t || 'chat'
+})
+
+const setTab = (tab) => {
+  router.push({ path: route.path, query: { ...route.query, tab } })
+}
 
 watch(messages, () => {
   nextTick(() => {
@@ -115,7 +124,7 @@ watch(messages, () => {
 watch(() => props.prefill?.stamp, () => {
   if (!props.prefill) return
   inputMessage.value = props.prefill.text || ''
-  activeTab.value = 'chat'
+  setTab('chat')
   nextTick(() => {
     if (chatInputRef.value) {
       const length = inputMessage.value.length
@@ -165,7 +174,7 @@ const goToSubscription = () => {
 
 const reuseHistory = (entry) => {
   inputMessage.value = entry.message || ''
-  activeTab.value = 'chat'
+  setTab('chat')
   nextTick(() => {
     chatInputRef.value?.focus()
   })

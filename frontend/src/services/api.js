@@ -1,4 +1,5 @@
 import axios from 'axios'
+import router from '@/router'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
@@ -42,11 +43,25 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${access}`
         return api(originalRequest)
       } catch (refreshError) {
-        // Refresh failed - logout user
+        // Refresh failed - logout user and trigger login modal and redirect to home
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
         localStorage.removeItem('user_role')
-        window.location.href = '/login'
+        // Save intended path so user can be redirected after login
+        try {
+          sessionStorage.setItem('intended_path', window.location.pathname + window.location.search)
+        } catch (e) {
+          // ignore sessionStorage errors
+        }
+        // Trigger the global login modal used by the app
+        window.dispatchEvent(new Event('show-login'))
+        // Redirect to homepage
+        try {
+          router.push('/')
+        } catch (err) {
+          // fallback to full reload if router push fails
+          window.location.href = '/'
+        }
         return Promise.reject(refreshError)
       }
     }
