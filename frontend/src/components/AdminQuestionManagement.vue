@@ -69,6 +69,115 @@
         </svg>
         <span>搜尋</span>
       </button>
+      <button class="filter-btn filter-btn-import" @click="showImportModal = true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>匯入題目</span>
+      </button>
+    </div>
+
+    <!-- Pending Questions Section -->
+    <div v-if="pendingQuestions.length > 0" class="pending-section">
+      <div class="pending-header">
+        <div class="header-icon">
+          <input 
+            type="checkbox" 
+            :checked="isAllPendingSelected"
+            @change="toggleSelectAllPending"
+            title="全選/取消全選"
+            style="width: 18px; height: 18px; cursor: pointer;"
+          />
+        </div>
+        <div class="header-content">
+          <h3 class="pending-title">暫存題目</h3>
+          <p class="pending-subtitle">
+            共 {{ pendingQuestions.length }} 題
+            <span v-if="selectedPendingIds.length > 0">（已選 {{ selectedPendingIds.length }} 題）</span>
+          </p>
+        </div>
+        <div class="header-actions">
+          <button 
+            v-if="selectedPendingIds.length > 0" 
+            class="btn-bulk-edit-pending" 
+            @click="openBulkSubjectModalForPending"
+            title="批量編輯科目"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            編輯科目
+          </button>
+          <button 
+            v-if="selectedPendingIds.length > 0" 
+            class="btn-bulk-edit-pending" 
+            @click="openBulkTagModalForPending"
+            title="批量編輯標籤"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+              <line x1="7" y1="7" x2="7.01" y2="7"></line>
+            </svg>
+            編輯標籤
+          </button>
+          <button class="btn-clear-pending" @click="clearPendingQuestions">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            清除全部
+          </button>
+          <button class="btn-save-pending" @click="savePendingQuestions" :disabled="isSavingPending">
+            <svg v-if="!isSavingPending" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <div v-else class="pending-spinner"></div>
+            {{ isSavingPending ? `儲存中... (${savingPendingProgress}/${pendingQuestions.length})` : '儲存全部' }}
+          </button>
+        </div>
+      </div>
+      
+      <div class="pending-list">
+        <div
+          v-for="(item, index) in pendingQuestions"
+          :key="`pending-${index}`"
+          class="pending-item"
+        >
+          <input 
+            type="checkbox" 
+            :checked="selectedPendingIds.includes(index)"
+            @change="toggleSelectPending(index, $event.target.checked)"
+            class="pending-checkbox"
+          />
+          <div class="pending-number">{{ index + 1 }}</div>
+          <div class="pending-content">
+            <div class="pending-text">{{ item.content }}</div>
+            <div class="pending-meta">
+              <span class="meta-badge">{{ item.subject }}</span>
+              <span class="meta-badge">{{ item.category }}</span>
+              <span v-if="item.options && item.options.length > 0" class="meta-info">{{ item.options.length }} 選項</span>
+              <span v-if="getCorrectAnswer(item)" class="meta-badge meta-answer">答案: {{ getCorrectAnswer(item) }}</span>
+            </div>
+          </div>
+          <div class="pending-actions">
+            <button class="btn-edit-pending" @click="editPendingQuestion(index)" title="編輯">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+            <button class="btn-remove-pending" @click="removePendingQuestion(index)" title="移除">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="question-table">
@@ -318,14 +427,69 @@
     </nav>
 
     <div v-if="isEditorVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
-      <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">題目編輯</h5>
-            <button type="button" class="btn-close" @click="closeEditor"></button>
+      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content modern-modal">
+          <div class="modern-modal-header">
+            <div class="header-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </div>
+            <div class="header-content-wrapper">
+              <h5 class="modern-modal-title">{{ currentQuestion ? '編輯題目' : '新增題目' }}</h5>
+              <p class="modern-modal-subtitle">{{ currentQuestion ? '修改題目資訊' : '填寫題目資訊並選擇儲存方式' }}</p>
+            </div>
+            <button type="button" class="modern-close-btn" @click="closeEditor" :disabled="saving">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
           </div>
-          <div class="modal-body">
-            <QuestionEditor :question="currentQuestion" :saving="saving" @save="handleSave" />
+          <div class="modal-body modern-modal-body">
+            <QuestionEditor 
+              ref="questionEditorRef" 
+              :question="currentQuestion" 
+              :saving="saving" 
+              @save="handleSave" 
+              @save-pending="handleSaveToPendingFromEditor"
+              @save-direct="handleSaveDirectlyFromEditor"
+            />
+          </div>
+          <div class="modern-modal-footer" v-if="!currentQuestion">
+            <div class="footer-info">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span>選擇儲存方式：直接儲存到題庫或暫存後批次儲存</span>
+            </div>
+            <div class="footer-actions">
+              <button class="footer-btn footer-btn-secondary" @click="closeEditor" :disabled="saving">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                取消
+              </button>
+              <button class="footer-btn footer-btn-pending" @click="handleSaveToPending" :disabled="saving || !isEditorFormValid">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                加入暫存
+              </button>
+              <button class="footer-btn footer-btn-primary" @click="handleSaveDirectly" :disabled="saving || !isEditorFormValid">
+                <svg v-if="!saving" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <div v-else class="btn-spinner-small"></div>
+                {{ saving ? '儲存中...' : '直接儲存' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -428,19 +592,21 @@
     <!-- Bulk Edit Modals -->
     <BulkTagEditor
       v-if="showBulkTagModal"
-      :questions="questions"
-      :pendingQuestions="[]"
-      :preselectedIds="selectedIds"
-      @close="showBulkTagModal = false"
+      :questions="bulkEditMode === 'list' ? questions : []"
+      :pendingQuestions="bulkEditMode === 'pending' ? pendingQuestions : []"
+      :preselectedIds="bulkEditMode === 'list' ? selectedIds : []"
+      :preselectedPendingIds="bulkEditMode === 'pending' ? selectedPendingIds : []"
+      @close="closeBulkTagModal"
       @applied="handleBulkTagsApplied"
     />
 
     <BulkSubjectEditor
       v-if="showBulkSubjectModal"
-      :questions="questions"
-      :pendingQuestions="[]"
-      :preselectedIds="selectedIds"
-      @close="showBulkSubjectModal = false"
+      :questions="bulkEditMode === 'list' ? questions : []"
+      :pendingQuestions="bulkEditMode === 'pending' ? pendingQuestions : []"
+      :preselectedIds="bulkEditMode === 'list' ? selectedIds : []"
+      :preselectedPendingIds="bulkEditMode === 'pending' ? selectedPendingIds : []"
+      @close="closeBulkSubjectModal"
       @applied="handleBulkSubjectApplied"
     />
 
@@ -491,6 +657,131 @@
       </div>
     </div>
 
+    <!-- Import Modal -->
+    <div v-if="showImportModal" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modern-modal">
+          <div class="modern-modal-header">
+            <div class="header-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </div>
+            <div class="header-content-wrapper">
+              <h5 class="modern-modal-title">匯入題目</h5>
+              <p class="modern-modal-subtitle">選擇匯入方式並上傳檔案</p>
+            </div>
+            <button type="button" class="modern-close-btn" @click="closeImportModal">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body modern-modal-body">
+            <div class="import-options">
+              <div class="import-option" @click="selectImportType('json')">
+                <div class="option-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                    <polyline points="13 2 13 9 20 9"></polyline>
+                  </svg>
+                </div>
+                <div class="option-content">
+                  <h6 class="option-title">JSON 檔案</h6>
+                  <p class="option-description">匯入結構化的 JSON 格式題目檔案</p>
+                  <div class="option-hint">支援格式: .json</div>
+                </div>
+                <div class="option-arrow">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </div>
+              </div>
+
+              <div class="import-option" @click="selectImportType('pdf')">
+                <div class="option-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                </div>
+                <div class="option-content">
+                  <h6 class="option-title">PDF 檔案</h6>
+                  <p class="option-description">使用 AI 自動解析 PDF 考卷檔案</p>
+                  <div class="option-hint">支援格式: .pdf</div>
+                </div>
+                <div class="option-arrow">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- JSON Import Section -->
+            <div v-if="importType === 'json'" class="import-section">
+              <div class="upload-zone" @click="$refs.jsonFileInput.click()" @dragover.prevent @drop.prevent="handleJsonDrop">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <p class="upload-text">點擊或拖放檔案至此</p>
+                <p class="upload-hint">支援 JSON 格式檔案</p>
+                <input ref="jsonFileInput" type="file" accept=".json,application/json" style="display: none" @change="handleJsonFileSelect" />
+              </div>
+              <div v-if="selectedJsonFile" class="selected-file">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                  <polyline points="13 2 13 9 20 9"></polyline>
+                </svg>
+                <span>{{ selectedJsonFile.name }}</span>
+                <button @click="clearJsonFile" class="btn-clear-file">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- PDF Import Section -->
+            <div v-if="importType === 'pdf'" class="import-section">
+              <PdfUploadSection ref="pdfUploadRef" @import-success="handlePdfImportSuccess" />
+            </div>
+          </div>
+          <div class="modern-modal-footer" v-if="importType === 'json' && selectedJsonFile">
+            <div class="footer-info">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span>檔案將被解析並添加到暫存區</span>
+            </div>
+            <div class="footer-actions">
+              <button class="footer-btn footer-btn-secondary" @click="closeImportModal">
+                取消
+              </button>
+              <button class="footer-btn footer-btn-primary" @click="processJsonImport" :disabled="isImporting">
+                <svg v-if="!isImporting" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <div v-else class="btn-spinner-small"></div>
+                {{ isImporting ? '匯入中...' : '開始匯入' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -501,11 +792,16 @@ import examService from '@/services/examService'
 import QuestionEditor from '@/components/QuestionEditor.vue'
 import BulkTagEditor from '@/components/BulkTagEditor.vue'
 import BulkSubjectEditor from '@/components/BulkSubjectEditor.vue'
+import PdfUploadSection from '@/components/PdfUploadSection.vue'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import tagService from '@/services/tagService'
 
 const questions = ref([])
+const pendingQuestions = ref([])
+const isSavingPending = ref(false)
+const savingPendingProgress = ref(0)
+const selectedPendingIds = ref([]) // 暫存題目選中的索引
 const isLoading = ref(false)
 const error = ref('')
 const searchTerm = ref('')
@@ -528,6 +824,11 @@ const pageSelectAllCheckbox = ref(null)
 const isEditorVisible = ref(false)
 const currentQuestion = ref(null)
 const saving = ref(false)
+const questionEditorRef = ref(null)
+const editingPendingIndex = ref(null) // 追蹤正在編輯的暫存題目索引
+const isEditorFormValid = computed(() => {
+  return questionEditorRef.value?.isFormValid ?? false
+})
 
 // View Associated Exams Modal state
 const isViewExamsModalVisible = ref(false)
@@ -545,29 +846,44 @@ const isAddingToExam = ref(false)
 const isDeleting = ref(false)
 const showBulkTagModal = ref(false)
 const showBulkSubjectModal = ref(false)
+const bulkEditMode = ref('list') // 'list' or 'pending' - 標記批量編輯的來源
+
+// Import Modal state
+const showImportModal = ref(false)
+const importType = ref(null) // 'json' or 'pdf'
+const selectedJsonFile = ref(null)
+const jsonFileInput = ref(null)
+const pdfUploadRef = ref(null)
+const isImporting = ref(false)
 
 const openBulkTagModal = () => {
-  console.log('Admin: openBulkTagModal called. selectedCount=', selectedCount.value)
-  console.log('Admin: questions=', questions.value)
-  console.log('Admin: selectedIds=', selectedIds.value)
+  bulkEditMode.value = 'list'
   showBulkTagModal.value = true
-  console.log('Admin: showBulkTagModal set to true')
-  setTimeout(() => {
-    const overlay = document.querySelector('.modal-overlay')
-    console.log('Admin: modal-overlay in DOM?', !!overlay, overlay)
-  }, 100)
 }
 
 const openBulkSubjectModal = () => {
-  console.log('Admin: openBulkSubjectModal called. selectedCount=', selectedCount.value)
-  console.log('Admin: questions=', questions.value)
-  console.log('Admin: selectedIds=', selectedIds.value)
+  bulkEditMode.value = 'list'
   showBulkSubjectModal.value = true
-  console.log('Admin: showBulkSubjectModal set to true')
-  setTimeout(() => {
-    const overlay = document.querySelector('.modal-overlay')
-    console.log('Admin: modal-overlay in DOM?', !!overlay, overlay)
-  }, 100)
+}
+
+const openBulkTagModalForPending = () => {
+  bulkEditMode.value = 'pending'
+  showBulkTagModal.value = true
+}
+
+const openBulkSubjectModalForPending = () => {
+  bulkEditMode.value = 'pending'
+  showBulkSubjectModal.value = true
+}
+
+const closeBulkTagModal = () => {
+  showBulkTagModal.value = false
+  bulkEditMode.value = 'list'
+}
+
+const closeBulkSubjectModal = () => {
+  showBulkSubjectModal.value = false
+  bulkEditMode.value = 'list'
 }
 
 // Debugging watch to observe modal states
@@ -609,6 +925,30 @@ const toggleSelectAll = () => {
     const pageIds = questions.value.map(q => q.id)
     const set = new Set([...selectedIds.value, ...pageIds])
     selectedIds.value = Array.from(set)
+  }
+}
+
+// Pending questions selection
+const isAllPendingSelected = computed(() => {
+  if (pendingQuestions.value.length === 0) return false
+  return selectedPendingIds.value.length === pendingQuestions.value.length
+})
+
+const toggleSelectPending = (index, checked) => {
+  if (checked) {
+    if (!selectedPendingIds.value.includes(index)) {
+      selectedPendingIds.value.push(index)
+    }
+  } else {
+    selectedPendingIds.value = selectedPendingIds.value.filter(i => i !== index)
+  }
+}
+
+const toggleSelectAllPending = () => {
+  if (isAllPendingSelected.value) {
+    selectedPendingIds.value = []
+  } else {
+    selectedPendingIds.value = pendingQuestions.value.map((_, index) => index)
   }
 }
 
@@ -827,9 +1167,10 @@ const openEditQuestion = async (id) => {
 
 const openCreateQuestion = () => { currentQuestion.value = null; isEditorVisible.value = true }
 
-const closeEditor = () => { isEditorVisible.value = false; currentQuestion.value = null }
+const closeEditor = () => { isEditorVisible.value = false; currentQuestion.value = null; saving.value = false }
 
 const handleSave = async ({ questionData }) => {
+  // This is called when editing existing question
   try {
     saving.value = true
     if (currentQuestion.value && currentQuestion.value.id) {
@@ -847,6 +1188,58 @@ const handleSave = async ({ questionData }) => {
   } finally {
     saving.value = false
   }
+}
+
+// New: Save directly to database
+const handleSaveDirectly = () => {
+  if (!questionEditorRef.value) return
+  questionEditorRef.value.requestSaveDirect()
+}
+
+// New: Save to pending list
+const handleSaveToPending = () => {
+  if (!questionEditorRef.value) return
+  questionEditorRef.value.requestSavePending()
+}
+
+// Called from QuestionEditor when save direct is triggered
+const handleSaveDirectlyFromEditor = async ({ questionData }) => {
+  try {
+    saving.value = true
+    
+    // 如果是編輯暫存題目
+    if (editingPendingIndex.value !== null) {
+      pendingQuestions.value[editingPendingIndex.value] = questionData
+      alert('暫存題目已更新')
+      closeEditor()
+      editingPendingIndex.value = null
+      return
+    }
+    
+    await questionService.createQuestion(questionData)
+    alert('題目建立成功')
+    closeEditor()
+    fetchQuestions()
+  } catch (err) {
+    console.error('Save question failed', err)
+    alert('儲存題目失敗：' + (err.response?.data?.detail || err.message || ''))
+  } finally {
+    saving.value = false
+  }
+}
+
+// Called from QuestionEditor when save to pending is triggered
+const handleSaveToPendingFromEditor = ({ questionData }) => {
+  // 如果是編輯暫存題目，直接更新
+  if (editingPendingIndex.value !== null) {
+    pendingQuestions.value[editingPendingIndex.value] = questionData
+    alert('暫存題目已更新')
+    editingPendingIndex.value = null
+  } else {
+    addPendingQuestion(questionData)
+    alert('已加入暫存列表')
+  }
+  closeEditor()
 }
 
 const viewQuestion = async (id) => {
@@ -1021,27 +1414,530 @@ const confirmDelete = async () => {
 
 // Handlers for Bulk Tag/Subject modals
 const handleBulkTagsApplied = ({ successCount, errors, pendingUpdates }) => {
-  if (successCount > 0) alert(`成功更新 ${successCount} 題標籤`)
+  let totalUpdated = successCount
+  
+  // 處理暫存題目的更新
+  if (pendingUpdates && pendingUpdates.length > 0) {
+    pendingUpdates.forEach(update => {
+      if (update.index !== undefined) {
+        // 更新暫存題目
+        if (pendingQuestions.value[update.index]) {
+          pendingQuestions.value[update.index].tags = update.tags || []
+          pendingQuestions.value[update.index].tag_ids = update.tag_ids || []
+          totalUpdated++
+        }
+      }
+    })
+  }
+  
+  if (totalUpdated > 0) alert(`成功更新 ${totalUpdated} 題標籤`)
   if (errors && errors.length > 0) alert(`有 ${errors.length} 題更新失敗，請查看 console`)
-  // Close modal and refresh
-  showBulkTagModal.value = false
-  clearSelection()
-  fetchQuestions()
+  
+  closeBulkTagModal()
+  if (bulkEditMode.value === 'pending') {
+    selectedPendingIds.value = []
+  } else {
+    clearSelection()
+    fetchQuestions()
+  }
 }
 
 const handleBulkSubjectApplied = ({ successCount, errors, pendingUpdates }) => {
-  if (successCount > 0) alert(`成功更新 ${successCount} 題科目`)
+  let totalUpdated = successCount
+  
+  // 處理暫存題目的更新
+  if (pendingUpdates && pendingUpdates.length > 0) {
+    pendingUpdates.forEach(update => {
+      if (update.index !== undefined) {
+        // 更新暫存題目
+        if (pendingQuestions.value[update.index]) {
+          if (update.subject !== undefined) {
+            pendingQuestions.value[update.index].subject = update.subject
+          }
+          if (update.category !== undefined) {
+            pendingQuestions.value[update.index].category = update.category
+          }
+          totalUpdated++
+        }
+      }
+    })
+  }
+  
+  if (totalUpdated > 0) alert(`成功更新 ${totalUpdated} 題科目`)
   if (errors && errors.length > 0) alert(`有 ${errors.length} 題更新失敗，請查看 console`)
-  showBulkSubjectModal.value = false
-  clearSelection()
-  fetchQuestions()
+  
+  closeBulkSubjectModal()
+  if (bulkEditMode.value === 'pending') {
+    selectedPendingIds.value = []
+  } else {
+    clearSelection()
+    fetchQuestions()
+  }
 }
+
+// Pending Questions handlers
+const addPendingQuestion = (questionData) => {
+  pendingQuestions.value.push(questionData)
+}
+
+const getCorrectAnswer = (question) => {
+  if (!question.options || !Array.isArray(question.options)) return ''
+  
+  const correctOptions = question.options
+    .map((opt, idx) => opt.is_correct ? String.fromCharCode(65 + idx) : null)
+    .filter(Boolean)
+  
+  return correctOptions.join(', ')
+}
+
+const editPendingQuestion = (index) => {
+  editingPendingIndex.value = index
+  currentQuestion.value = { ...pendingQuestions.value[index] }
+  isEditorVisible.value = true
+}
+
+const removePendingQuestion = (index) => {
+  if (confirm('確定要移除這個暫存題目嗎？')) {
+    pendingQuestions.value.splice(index, 1)
+  }
+}
+
+const clearPendingQuestions = () => {
+  if (confirm(`確定要清除全部 ${pendingQuestions.value.length} 個暫存題目嗎？`)) {
+    pendingQuestions.value = []
+  }
+}
+
+const savePendingQuestions = async () => {
+  if (pendingQuestions.value.length === 0) return
+  
+  if (!confirm(`即將儲存 ${pendingQuestions.value.length} 個題目到題庫，確定要繼續嗎？`)) {
+    return
+  }
+  
+  isSavingPending.value = true
+  savingPendingProgress.value = 0
+  
+  let successCount = 0
+  let failCount = 0
+  const errors = []
+  
+  try {
+    for (let i = 0; i < pendingQuestions.value.length; i++) {
+      const questionData = pendingQuestions.value[i]
+      savingPendingProgress.value = i + 1
+      
+      try {
+        await questionService.createQuestion(questionData)
+        successCount++
+      } catch (err) {
+        console.error(`儲存題目 ${i + 1} 失敗:`, err)
+        failCount++
+        errors.push({ index: i + 1, error: err })
+      }
+    }
+    
+    // Clear pending questions after save
+    pendingQuestions.value = []
+    savingPendingProgress.value = 0
+    
+    // Show result
+    if (failCount === 0) {
+      alert(`成功儲存 ${successCount} 題到題庫`)
+    } else {
+      alert(`成功儲存 ${successCount} 題，失敗 ${failCount} 題`)
+    }
+    
+    // Refresh question list
+    fetchQuestions()
+  } catch (err) {
+    console.error('批量儲存失敗:', err)
+    alert('批量儲存失敗')
+  } finally {
+    isSavingPending.value = false
+    savingPendingProgress.value = 0
+  }
+}
+
+// Import Modal Functions
+const showImportModalFunc = () => {
+  showImportModal.value = true
+  importType.value = null
+  selectedJsonFile.value = null
+}
+
+const closeImportModal = () => {
+  showImportModal.value = false
+  importType.value = null
+  selectedJsonFile.value = null
+  isImporting.value = false
+}
+
+const selectImportType = (type) => {
+  importType.value = type
+}
+
+const handleJsonFileSelect = (event) => {
+  const file = event.target.files[0]
+  if (file && file.type === 'application/json') {
+    selectedJsonFile.value = file
+  } else {
+    alert('請選擇有效的 JSON 檔案')
+  }
+}
+
+const handleJsonDrop = (event) => {
+  const file = event.dataTransfer.files[0]
+  if (file && file.type === 'application/json') {
+    selectedJsonFile.value = file
+  } else {
+    alert('請選擇有效的 JSON 檔案')
+  }
+}
+
+const clearJsonFile = () => {
+  selectedJsonFile.value = null
+  if (jsonFileInput.value) {
+    jsonFileInput.value.value = ''
+  }
+}
+
+const processJsonImport = async () => {
+  if (!selectedJsonFile.value) return
+  
+  isImporting.value = true
+  try {
+    const fileContent = await selectedJsonFile.value.text()
+    const data = JSON.parse(fileContent)
+    
+    // Check if data is array of questions
+    let questionsToImport = []
+    if (Array.isArray(data)) {
+      questionsToImport = data
+    } else if (data.questions && Array.isArray(data.questions)) {
+      questionsToImport = data.questions
+    } else {
+      throw new Error('JSON 格式不正確，應為題目陣列或包含 questions 屬性的物件')
+    }
+    
+    // Add to pending questions
+    const validQuestions = questionsToImport.filter(q => q.content && q.question_type)
+    if (validQuestions.length === 0) {
+      throw new Error('沒有找到有效的題目數據')
+    }
+    
+    pendingQuestions.value.push(...validQuestions)
+    alert(`成功匯入 ${validQuestions.length} 題到暫存區`)
+    closeImportModal()
+  } catch (err) {
+    console.error('JSON 匯入失敗:', err)
+    alert(`匯入失敗: ${err.message}`)
+  } finally {
+    isImporting.value = false
+  }
+}
+
+const handlePdfImportSuccess = (data) => {
+  if (data && data.questions && data.questions.length > 0) {
+    // 轉換 PDF 數據格式為系統需要的格式
+    const formattedQuestions = data.questions.map(q => {
+      // 將選項陣列轉換為對象格式，並標記正確答案
+      const correctAnswer = q.correct_answer || ''
+      let formattedOptions = []
+      
+      if (q.options && Array.isArray(q.options) && q.options.length > 0) {
+        formattedOptions = q.options.map((optionText, index) => {
+          // 選項標籤: A, B, C, D...
+          const optionLabel = String.fromCharCode(65 + index) // A=65, B=66...
+          return {
+            content: optionText,
+            is_correct: correctAnswer === optionLabel || correctAnswer === optionText
+          }
+        })
+      }
+      
+      return {
+        content: q.question || q.content || '',
+        subject: data.examData?.subject || '',
+        category: data.examData?.category || '',
+        question_type: q.options && q.options.length > 0 ? '選擇題' : '申論題',
+        options: formattedOptions,
+        difficulty: data.examData?.level || 'medium',
+        explanation: '',
+        status: 'draft',
+        tags: [],
+        tag_ids: []
+      }
+    })
+    
+    pendingQuestions.value.push(...formattedQuestions)
+    alert(`成功從 PDF 解析 ${formattedQuestions.length} 題到暫存區`)
+    closeImportModal()
+  }
+}
+
+// Expose function for external use (e.g., from PDF import)
+defineExpose({
+  addPendingQuestion,
+  addPendingQuestions: (questions) => {
+    pendingQuestions.value.push(...questions)
+  },
+  showImportModal: showImportModalFunc
+})
 
 </script>
 
 <style scoped>
 .question-admin {
   padding: 0;
+}
+
+/* Pending Questions Section */
+.pending-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 2px dashed #d89b32;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.pending-header {
+  background: linear-gradient(135deg, #d89b32 0%, #c88a2a 100%);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  backdrop-filter: blur(10px);
+}
+
+.header-icon svg {
+  color: white;
+}
+
+.header-content {
+  flex: 1;
+}
+
+.pending-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 4px 0;
+}
+
+.pending-subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-bulk-edit-pending,
+.btn-clear-pending,
+.btn-save-pending {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-bulk-edit-pending {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.btn-bulk-edit-pending:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-clear-pending {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-clear-pending:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-save-pending {
+  background: white;
+  color: #d89b32;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-save-pending:hover:not(:disabled) {
+  background: #f9fafb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-save-pending:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pending-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(216, 155, 50, 0.3);
+  border-top-color: #d89b32;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.pending-list {
+  padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.pending-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: #fff7eb;
+  border: 1px dashed #d89b32;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.pending-item:hover {
+  background: #fef3e2;
+  border-color: #c88a2a;
+  box-shadow: 0 2px 8px rgba(216, 155, 50, 0.1);
+}
+
+.pending-checkbox {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.pending-number {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #d89b32;
+  color: white;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.pending-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.pending-text {
+  font-size: 14px;
+  color: var(--text-primary, #1E293B);
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.pending-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.meta-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(216, 155, 50, 0.15);
+  color: #c88a2a;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.meta-badge.meta-answer {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.meta-info {
+  font-size: 12px;
+  color: var(--text-secondary, #64748B);
+}
+
+.pending-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-edit-pending,
+.btn-remove-pending {
+  flex-shrink: 0;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-edit-pending {
+  color: var(--primary, #476996);
+}
+
+.btn-edit-pending:hover {
+  background: var(--primary-soft, #EEF2FF);
+  transform: scale(1.05);
+}
+
+.btn-remove-pending {
+  color: #dc2626;
+}
+
+.btn-remove-pending:hover {
+  background: #fee2e2;
+  transform: scale(1.05);
 }
 
 /* Filters */
@@ -1721,6 +2617,409 @@ tbody tr:last-child td {
 
   .page-size-select {
     width: 100%;
+  }
+}
+
+/* Modern Modal Styles */
+.modern-modal {
+  border-radius: 16px;
+  overflow: hidden;
+  border: none;
+}
+
+.modern-modal-header {
+  background: linear-gradient(135deg, var(--primary, #476996) 0%, var(--primary-hover, #35527a) 100%);
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  backdrop-filter: blur(10px);
+}
+
+.header-icon-wrapper svg {
+  color: white;
+}
+
+.header-content-wrapper {
+  flex: 1;
+}
+
+.modern-modal-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+
+.modern-modal-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  font-weight: 400;
+}
+
+.modern-close-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.modern-close-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
+.modern-close-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modern-close-btn svg {
+  color: white;
+}
+
+.modern-modal-body {
+  padding: 28px;
+  max-height: calc(90vh - 250px);
+  overflow-y: auto;
+}
+
+.modern-modal-footer {
+  padding: 20px 28px;
+  background: #f9fafb;
+  border-top: 1px solid var(--border, #CBD5E1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary, #64748B);
+  font-size: 13px;
+  flex: 1;
+}
+
+.footer-info svg {
+  flex-shrink: 0;
+}
+
+.footer-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.footer-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.footer-btn svg {
+  flex-shrink: 0;
+}
+
+.footer-btn-secondary {
+  background: white;
+  color: var(--text-secondary, #64748B);
+  border: 1px solid var(--border, #CBD5E1);
+}
+
+.footer-btn-secondary:hover:not(:disabled) {
+  background: #f9fafb;
+  color: var(--text-primary, #1E293B);
+  border-color: #94a3b8;
+}
+
+.footer-btn-pending {
+  background: #fff7eb;
+  color: #d89b32;
+  border: 1px solid #f7d7a8;
+}
+
+.footer-btn-pending:hover:not(:disabled) {
+  background: #fef3e2;
+  border-color: #d89b32;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(216, 155, 50, 0.2);
+}
+
+.footer-btn-primary {
+  background: var(--primary, #476996);
+  color: white;
+  box-shadow: 0 2px 4px rgba(71, 105, 150, 0.2);
+}
+
+.footer-btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover, #35527a);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(71, 105, 150, 0.3);
+}
+
+.footer-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-spinner-small {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@media (max-width: 768px) {
+  .modern-modal-header {
+    padding: 20px;
+  }
+  
+  .modern-modal-title {
+    font-size: 18px;
+  }
+  
+  .modern-modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .footer-info {
+    order: -1;
+  }
+  
+  .footer-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .footer-btn {
+    width: 100%;
+  }
+}
+
+/* Import Modal Styles */
+.import-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.import-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: white;
+  border: 2px solid var(--border, #CBD5E1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.import-option:hover {
+  border-color: var(--primary, #476996);
+  background: var(--primary-soft, #EEF2FF);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.15);
+}
+
+.option-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--primary, #476996), var(--primary-hover, #35527a));
+  border-radius: 12px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.option-content {
+  flex: 1;
+}
+
+.option-title {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+}
+
+.option-description {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+}
+
+.option-hint {
+  font-size: 12px;
+  color: var(--text-secondary, #64748B);
+  background: #f8fafc;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.option-arrow {
+  color: var(--text-secondary, #64748B);
+  flex-shrink: 0;
+}
+
+.import-option:hover .option-arrow {
+  color: var(--primary, #476996);
+  transform: translateX(4px);
+}
+
+.import-section {
+  margin-top: 16px;
+}
+
+.upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  background: #f8fafc;
+  border: 2px dashed var(--border, #CBD5E1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.upload-zone:hover {
+  border-color: var(--primary, #476996);
+  background: var(--primary-soft, #EEF2FF);
+}
+
+.upload-zone svg {
+  color: var(--primary, #476996);
+  margin-bottom: 16px;
+}
+
+.upload-text {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+}
+
+.upload-hint {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+}
+
+.selected-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid var(--border, #CBD5E1);
+  border-radius: 8px;
+}
+
+.selected-file svg {
+  color: var(--primary, #476996);
+  flex-shrink: 0;
+}
+
+.selected-file span {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary, #1E293B);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-clear-file {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary, #64748B);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-clear-file:hover {
+  background: #fee;
+  color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .import-option {
+    padding: 16px;
+  }
+
+  .option-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .option-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .option-title {
+    font-size: 15px;
+  }
+
+  .option-description {
+    font-size: 13px;
+  }
+
+  .upload-zone {
+    padding: 32px 16px;
   }
 }
 </style>

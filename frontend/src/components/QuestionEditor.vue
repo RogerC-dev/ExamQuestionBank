@@ -1,12 +1,8 @@
 <template>
   <div class="question-editor">
-    <div v-if="!question" class="empty-state">
-      <p>請從右側選擇一個題目進行編輯，或新增一個題目</p>
-    </div>
-
-    <div v-else class="editor-content">
-        <div class="editor-header">
-        <h3>編輯題目</h3>
+    <div class="editor-content">
+      <div class="editor-header" v-if="examQuestion">
+        <h3>{{ question ? '編輯題目' : '新增題目' }}</h3>
         <button class="btn btn-sm btn-success" @click="handleSave" :disabled="saving || !isFormValid">
           {{ saving ? '儲存中...' : '儲存' }}
         </button>
@@ -209,7 +205,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['save', 'save-exam-settings'])
+const emit = defineEmits(['save', 'save-exam-settings', 'save-direct', 'save-pending'])
 
 const formData = ref({
   subject: '',
@@ -299,6 +295,16 @@ const formValidation = computed(() => ({
   subject: (formData.value.subject || '').toString().trim().length > 0
 }))
 
+const getQuestionPayload = () => {
+  // Ensure tag_ids are taken from selectedTags
+  formData.value.tag_ids = selectedTags.value.map(t => t.id)
+
+  return {
+    ...formData.value,
+    content: formData.value.content?.toString().trim()
+  }
+}
+
 const handleSave = () => {
   // 儲存題目基本資料
   // Final guard: trim and ensure content not empty
@@ -307,19 +313,41 @@ const handleSave = () => {
     return
   }
 
-  // Ensure tag_ids are taken from selectedTags
-  formData.value.tag_ids = selectedTags.value.map(t => t.id)
-
-  const payload = {
-    ...formData.value,
-    content: formData.value.content?.toString().trim()
-  }
+  const payload = getQuestionPayload()
 
   emit('save', {
     questionData: payload,
     examSettings: props.examQuestion ? examSettings.value : null
   })
 }
+
+// New: Methods called by parent component
+const requestSaveDirect = () => {
+  if (!isFormValid.value) {
+    alert('請填寫題目內容與科目後再儲存。')
+    return
+  }
+  
+  const payload = getQuestionPayload()
+  emit('save-direct', { questionData: payload })
+}
+
+const requestSavePending = () => {
+  if (!isFormValid.value) {
+    alert('請填寫題目內容與科目後再加入暫存。')
+    return
+  }
+  
+  const payload = getQuestionPayload()
+  emit('save-pending', { questionData: payload })
+}
+
+// Expose methods for parent component
+defineExpose({
+  requestSaveDirect,
+  requestSavePending,
+  isFormValid
+})
 
 // Tag service and components
 import tagService from '../services/tagService'

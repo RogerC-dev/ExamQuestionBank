@@ -43,14 +43,14 @@
               <input type="radio" v-model="applyTo" value="all">
               <div class="radio-content">
                 <div class="radio-title">全部題目</div>
-                <div class="radio-desc">套用至當前頁面所有題目 ({{ questions.length }} 題)</div>
+                <div class="radio-desc">套用至當前頁面所有題目 ({{ questions.length + pendingQuestions.length }} 題)</div>
               </div>
             </label>
             <label class="radio-card" :class="{ active: applyTo === 'selected' }">
               <input type="radio" v-model="applyTo" value="selected">
               <div class="radio-content">
                 <div class="radio-title">已選取題目</div>
-                <div class="radio-desc">僅套用至已勾選的題目 ({{ preselectedIds.length }} 題)</div>
+                <div class="radio-desc">僅套用至已勾選的題目 ({{ preselectedIds.length + preselectedPendingIds.length }} 題)</div>
               </div>
             </label>
           </div>
@@ -60,16 +60,31 @@
         <div v-if="applyTo === 'selected'" class="form-section">
           <label class="section-label">
             選擇題目
-            <span class="label-hint">({{ selectedQuestionIds.length }} / {{ questions.length }})</span>
+            <span class="label-hint">({{ selectedQuestionIds.length + selectedPendingIndices.length }} / {{ questions.length + pendingQuestions.length }})</span>
           </label>
           <div class="question-list-wrapper">
             <div class="question-list">
+              <!-- 列表題目 -->
               <label v-for="q in questions" :key="q.id || q.order" class="question-item">
                 <input type="checkbox" v-model="selectedQuestionIds" :value="q.id || q.question">
                 <div class="question-info">
                   <div class="question-content">{{ q.question_content || q.content || q.pendingData?.content || '未命名題目' }}</div>
                   <div class="question-meta">
                     <span class="meta-id">ID: {{ q.id || q.question }}</span>
+                    <span v-if="q.subject" class="meta-subject">{{ q.subject }}</span>
+                  </div>
+                </div>
+              </label>
+              <!-- 暫存題目 -->
+              <label v-for="(q, index) in pendingQuestions" :key="`pending-${index}`" class="question-item pending-item">
+                <input type="checkbox" v-model="selectedPendingIndices" :value="index">
+                <div class="question-info">
+                  <div class="question-content">
+                    <span class="pending-badge">暫存</span>
+                    {{ q.content || '未命名題目' }}
+                  </div>
+                  <div class="question-meta">
+                    <span class="meta-id">編號: {{ index + 1 }}</span>
                     <span v-if="q.subject" class="meta-subject">{{ q.subject }}</span>
                   </div>
                 </div>
@@ -145,14 +160,17 @@ const props = defineProps({
   questions: { type: Array, required: true },
   pendingQuestions: { type: Array, required: true },
   examId: { type: Number, required: false },
-  preselectedIds: { type: Array, default: () => [] }
+  preselectedIds: { type: Array, default: () => [] },
+  preselectedPendingIds: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['close', 'applied'])
 
-const applyTo = ref(props.preselectedIds.length > 0 ? 'selected' : 'all')
+const hasPreselection = props.preselectedIds.length > 0 || props.preselectedPendingIds.length > 0
+const applyTo = ref(hasPreselection ? 'selected' : 'all')
 const selectedSubject = ref('')
 const selectedQuestionIds = ref([...props.preselectedIds])
+const selectedPendingIndices = ref([...props.preselectedPendingIds])
 const processing = ref(false)
 
 onMounted(() => {
@@ -169,14 +187,23 @@ const targetQuestions = computed(() => {
   return props.questions.filter(q => selectedQuestionIds.value.includes(q.id) || selectedQuestionIds.value.includes(q.question))
 })
 
-const targetQuestionsCount = computed(() => targetQuestions.value.length)
+const targetPendingIndices = computed(() => {
+  if (applyTo.value === 'all') {
+    return props.pendingQuestions.map((_, idx) => idx)
+  }
+  return selectedPendingIndices.value
+})
+
+const targetQuestionsCount = computed(() => targetQuestions.value.length + targetPendingIndices.value.length)
 
 const selectAll = () => {
   selectedQuestionIds.value = props.questions.map(q => q.id || q.question)
+  selectedPendingIndices.value = props.pendingQuestions.map((_, idx) => idx)
 }
 
 const deselectAll = () => {
   selectedQuestionIds.value = []
+  selectedPendingIndices.value = []
 }
 
 const getId = (q) => q.question ?? q.id
@@ -186,21 +213,29 @@ const apply = async () => {
   let successCount = 0
   const pendingUpdates = []
 
+  // 處理暫存題目
+  for (const idx of targetPendingIndices.value) {
+    try {
+      const current = props.pendingQuestions[idx]
+      if (current) {
+        pendingUpdates.push({ 
+          index: idx, 
+          subject: selectedSubject.value,
+          category: current.category // 保留原有的 category
+        })
+      }
+    } catch (err) {
+      console.error('更新暫存題目科目失敗', idx, err)
+      errors.push({ id: `pending-${idx}`, error: err.message })
+    }
+  }
+
+  // 處理已保存的題目
   const savedUpdates = []
   for (const q of targetQuestions.value) {
     try {
-      if (q.isPending) {
-        // pending question stored locally
-        const idx = parseInt(q.id.toString().replace('pending-', ''), 10)
-        if (props.pendingQuestions[idx]) {
-          pendingUpdates.push({ idx, subject: selectedSubject.value })
-          successCount++ // 計數暫存題目
-        }
-      } else {
-        // saved question -> update via API
-        const id = getId(q)
-        savedUpdates.push({ id: id, subject: selectedSubject.value })
-      }
+      const id = getId(q)
+      savedUpdates.push({ id: id, subject: selectedSubject.value })
     } catch (err) {
       console.error('更新題目科目失敗', q, err)
       errors.push({ id: q.question || q.id || q.order, error: err.response?.data || err.message })
@@ -516,6 +551,23 @@ const close = () => emit('close')
   background: #f3f4f6;
   border-radius: 4px;
   color: #6b7280;
+}
+
+.pending-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #fff7eb;
+  color: #d89b32;
+  border: 1px solid #d89b32;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.pending-item {
+  background: #fffbf5;
+  border-color: #f7d7a8;
 }
 
 .list-actions {

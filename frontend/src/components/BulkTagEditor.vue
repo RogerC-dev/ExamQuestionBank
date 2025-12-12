@@ -43,7 +43,7 @@
               <input type="radio" v-model="applyTo" value="all">
               <div class="radio-content">
                 <div class="radio-title">全部題目</div>
-                <div class="radio-desc">套用至當前頁面所有題目 ({{ questions.length }} 題)</div>
+                <div class="radio-desc">套用至當前頁面所有題目 ({{ questions.length + pendingQuestions.length }} 題)</div>
               </div>
             </label>
             <label class="radio-card" :class="{ active: applyTo === 'selected' }">
@@ -60,16 +60,34 @@
         <div v-if="applyTo === 'selected'" class="form-section">
           <label class="section-label">
             選擇題目
-            <span class="label-hint">({{ selectedQuestionIds.length }} / {{ questions.length }})</span>
+            <span class="label-hint">({{ selectedQuestionIds.length + selectedPendingIndices.length }} / {{ questions.length + pendingQuestions.length }})</span>
           </label>
           <div class="question-list-wrapper">
             <div class="question-list">
+              <!-- 列表題目 -->
               <label v-for="q in questions" :key="q.id || q.order" class="question-item">
                 <input type="checkbox" v-model="selectedQuestionIds" :value="q.id || q.question">
                 <div class="question-info">
                   <div class="question-content">{{ q.question_content || q.content || q.pendingData?.content || '未命名題目' }}</div>
                   <div class="question-meta">
                     <span class="meta-id">ID: {{ q.id || q.question || q.order }}</span>
+                    <span v-if="q.subject" class="meta-subject">{{ q.subject }}</span>
+                  </div>
+                  <div v-if="q.tags && q.tags.length > 0" class="question-tags">
+                    <span v-for="tag in q.tags" :key="tag.id" class="question-tag">{{ tag.name }}</span>
+                  </div>
+                </div>
+              </label>
+              <!-- 暫存題目 -->
+              <label v-for="(q, index) in pendingQuestions" :key="`pending-${index}`" class="question-item pending-item">
+                <input type="checkbox" v-model="selectedPendingIndices" :value="index">
+                <div class="question-info">
+                  <div class="question-content">
+                    <span class="pending-badge">暫存</span>
+                    {{ q.content || '未命名題目' }}
+                  </div>
+                  <div class="question-meta">
+                    <span class="meta-id">編號: {{ index + 1 }}</span>
                     <span v-if="q.subject" class="meta-subject">{{ q.subject }}</span>
                   </div>
                   <div v-if="q.tags && q.tags.length > 0" class="question-tags">
@@ -168,16 +186,19 @@ const props = defineProps({
   questions: { type: Array, required: true }, // examQuestions list
   pendingQuestions: { type: Array, required: true },
   examId: { type: Number, required: false },
-  preselectedIds: { type: Array, default: () => [] }
+  preselectedIds: { type: Array, default: () => [] },
+  preselectedPendingIds: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['close', 'applied'])
 
-const applyTo = ref(props.preselectedIds.length > 0 ? 'selected' : 'all')
+const hasPreselection = props.preselectedIds.length > 0 || props.preselectedPendingIds.length > 0
+const applyTo = ref(hasPreselection ? 'selected' : 'all')
 const mode = ref('add')
 const tagOptions = ref([])
 const selectedTags = ref([])
 const selectedQuestionIds = ref([...props.preselectedIds])
+const selectedPendingIndices = ref([...props.preselectedPendingIds])
 const processing = ref(false)
 
 onMounted(async () => {
@@ -198,19 +219,31 @@ onUnmounted(() => {
 
 const getId = (q) => q.question ?? q.id
 const contentOf = (q) => q.question_content ?? q.content ?? q.pendingData?.content
+
 const targetQuestions = computed(() => {
-  if (applyTo.value === 'all') return props.questions
+  if (applyTo.value === 'all') {
+    return props.questions
+  }
   return props.questions.filter(q => selectedQuestionIds.value.includes(q.id) || selectedQuestionIds.value.includes(q.question))
 })
 
-const targetQuestionsCount = computed(() => targetQuestions.value.length)
+const targetPendingIndices = computed(() => {
+  if (applyTo.value === 'all') {
+    return props.pendingQuestions.map((_, idx) => idx)
+  }
+  return selectedPendingIndices.value
+})
+
+const targetQuestionsCount = computed(() => targetQuestions.value.length + targetPendingIndices.value.length)
 
 const selectAll = () => {
   selectedQuestionIds.value = props.questions.map(q => q.id || q.question)
+  selectedPendingIndices.value = props.pendingQuestions.map((_, idx) => idx)
 }
 
 const deselectAll = () => {
   selectedQuestionIds.value = []
+  selectedPendingIndices.value = []
 }
 
 const apply = async () => {
@@ -220,46 +253,59 @@ const apply = async () => {
   const pendingUpdates = []
 
   const savedUpdates = []
-  console.log('BulkTagEditor - targetQuestions:', targetQuestions.value)
-  console.log('BulkTagEditor - selectedTags:', selectedTags.value)
   
-  for (const q of targetQuestions.value) {
-    console.log('Processing question:', q)
+  // 處理暫存題目
+  for (const idx of targetPendingIndices.value) {
     try {
-      if (q.isPending) {
-        // pending question stored locally (pendingQuestions indexed by pending-<index>)
-        const idx = parseInt((q.id || '').toString().replace('pending-', ''), 10)
-        if (props.pendingQuestions[idx]) {
-          const current = props.pendingQuestions[idx]
-          const currentTagIds = current.tag_ids || current.tags || []
-          const tagIds = selectedTags.value.map(t => t.id)
-          let newIds = []
-          if (mode.value === 'add') {
-            newIds = Array.from(new Set([...(currentTagIds || []), ...tagIds]))
-          } else {
-            newIds = (currentTagIds || []).filter(id => !tagIds.includes(id))
-          }
-          pendingUpdates.push({ idx, tag_ids: newIds })
-        }
-      } else {
-        // saved question -> update via API
-        // fetch current question tags if not present
-        const id = getId(q)
-        let currentQuestion = q.questionDetail
-        if (!currentQuestion) {
-          const res = await questionService.getQuestion(id)
-          currentQuestion = res.data
-        }
-        const currentTagIds = currentQuestion.tags ? currentQuestion.tags.map(t => t.id) : []
-        const tagIdsToModify = selectedTags.value.map(t => t.id)
-        let newTagIds
+      const current = props.pendingQuestions[idx]
+      if (current) {
+        const currentTagIds = current.tag_ids || []
+        const currentTags = current.tags || []
+        const tagIds = selectedTags.value.map(t => t.id)
+        let newTagIds = []
+        let newTags = []
+        
         if (mode.value === 'add') {
-          newTagIds = Array.from(new Set([...currentTagIds, ...tagIdsToModify]))
+          newTagIds = Array.from(new Set([...currentTagIds, ...tagIds]))
+          // 合併標籤對象
+          const existingTagMap = new Map(currentTags.map(t => [t.id, t]))
+          selectedTags.value.forEach(t => existingTagMap.set(t.id, t))
+          newTags = Array.from(existingTagMap.values())
         } else {
-          newTagIds = currentTagIds.filter(id => !tagIdsToModify.includes(id))
+          newTagIds = currentTagIds.filter(id => !tagIds.includes(id))
+          newTags = currentTags.filter(t => !tagIds.includes(t.id))
         }
-        savedUpdates.push({ id: id, tag_ids: newTagIds })
+        
+        pendingUpdates.push({ 
+          index: idx, 
+          tag_ids: newTagIds,
+          tags: newTags
+        })
       }
+    } catch (err) {
+      console.error('更新暫存題目標籤失敗', idx, err)
+      errors.push({ id: `pending-${idx}`, error: err.message })
+    }
+  }
+  
+  // 處理已保存的題目
+  for (const q of targetQuestions.value) {
+    try {
+      const id = getId(q)
+      let currentQuestion = q.questionDetail
+      if (!currentQuestion) {
+        const res = await questionService.getQuestion(id)
+        currentQuestion = res.data
+      }
+      const currentTagIds = currentQuestion.tags ? currentQuestion.tags.map(t => t.id) : []
+      const tagIdsToModify = selectedTags.value.map(t => t.id)
+      let newTagIds
+      if (mode.value === 'add') {
+        newTagIds = Array.from(new Set([...currentTagIds, ...tagIdsToModify]))
+      } else {
+        newTagIds = currentTagIds.filter(id => !tagIdsToModify.includes(id))
+      }
+      savedUpdates.push({ id: id, tag_ids: newTagIds })
     } catch (err) {
       console.error('更新題目標籤失敗', q, err)
       errors.push({ id: q.question || q.id || q.order, error: err.response?.data || err.message })
@@ -676,6 +722,23 @@ const close = () => emit('close')
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
+}
+
+.pending-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #fff7eb;
+  color: #d89b32;
+  border: 1px solid #d89b32;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.pending-item {
+  background: #fffbf5;
+  border-color: #f7d7a8;
 }
 
 .list-actions {

@@ -19,15 +19,31 @@
       <!-- 題目列表 -->
       <div class="right-panel" style="width: 100%;">
         <div class="right-panel-inner">
-          <div class="d-flex gap-2 align-items-center ps-3 pe-3 pt-2 pb-2 border-bottom flex-wrap">
-            <button class="btn btn-sm btn-secondary" @click="isAutoDistributeModalVisible = true" :disabled="autoDistributeLoading">自動配分</button>
+          <div class="question-toolbar">
+            <button class="toolbar-btn toolbar-btn-primary" @click="isAutoDistributeModalVisible = true" :disabled="autoDistributeLoading">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="2" x2="12" y2="6"></line>
+                <line x1="12" y1="18" x2="12" y2="22"></line>
+                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                <line x1="2" y1="12" x2="6" y2="12"></line>
+                <line x1="18" y1="12" x2="22" y2="12"></line>
+                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+              </svg>
+              <span>自動配分</span>
+            </button>
             <!-- Bulk tag/subject actions moved to 管理中心的題目管理多選工具欄 -->
             <button 
               v-if="selectedQuestionIds.length > 0" 
-              class="btn btn-sm btn-danger" 
+              class="toolbar-btn toolbar-btn-danger" 
               @click="handleBulkRemove"
             >
-              批次移除 ({{ selectedQuestionIds.length }})
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>批次移除 ({{ selectedQuestionIds.length }})</span>
             </button>
           </div>
           <div class="question-list-wrapper">
@@ -1066,6 +1082,70 @@ onMounted(async () => {
   padding: 24px;
   max-width: 1600px;
   margin: 0 auto;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.question-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: white;
+  border-bottom: 1px solid var(--border, #CBD5E1);
+  flex-wrap: wrap;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.toolbar-btn svg {
+  flex-shrink: 0;
+}
+
+.toolbar-btn-primary {
+  background: var(--primary, #476996);
+  color: white;
+}
+
+.toolbar-btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover, #35527a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
+}
+
+.toolbar-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.toolbar-btn-danger {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.toolbar-btn-danger:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+.toolbar-btn-danger:active {
+  transform: translateY(0);
 }
 
 .content-container {
