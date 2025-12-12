@@ -713,7 +713,7 @@
                 </div>
                 <div class="option-content">
                   <h6 class="option-title">PDF 檔案</h6>
-                  <p class="option-description">使用 AI 自動解析 PDF 考卷檔案</p>
+                  <p class="option-description">自動解析考選部 PDF 考卷檔案</p>
                   <div class="option-hint">支援格式: .pdf</div>
                 </div>
                 <div class="option-arrow">
