@@ -38,6 +38,17 @@
       <table class="table table-striped table-hover">
         <thead>
           <tr>
+            <th style="width:4%">
+              <input
+                ref="pageSelectAllCheckbox"
+                type="checkbox"
+                :checked="isPageAllSelected"
+                :indeterminate="selectedCount > 0 && !isPageAllSelected"
+                :disabled="isLoading"
+                @change="toggleSelectAll"
+                aria-label="選取全部"
+              />
+            </th>
             <th>ID</th>
             <th>科目</th>
             <th>內容</th>
@@ -50,12 +61,21 @@
         </thead>
         <tbody>
           <tr v-if="isLoading">
-            <td colspan="8" class="table-status">題目資料載入中...</td>
+            <td colspan="9" class="table-status">題目資料載入中...</td>
           </tr>
           <tr v-else-if="!questions.length">
-            <td colspan="8" class="table-status">暫無符合條件的題目</td>
+            <td colspan="9" class="table-status">暫無符合條件的題目</td>
           </tr>
           <tr v-else v-for="q in questions" :key="q.id">
+            <td>
+              <input
+                type="checkbox"
+                :checked="isRowSelected(q.id)"
+                :disabled="isLoading || deletingId === q.id"
+                @change="toggleSelect(q.id, $event.target.checked)"
+                aria-label="選取題目"
+              />
+            </td>
             <td>{{ q.id }}</td>
             <td>
               <div>{{ q.subject }}</div>
@@ -90,6 +110,11 @@
                       檢視
                     </button>
                   </li>
+                  <li>
+                    <button class="dropdown-item" type="button" @click="viewAssociatedExams(q.id, q.content)">
+                      查看關聯考卷
+                    </button>
+                  </li>
                   <li><hr class="dropdown-divider" /></li>
                   <li>
                     <button
@@ -110,6 +135,21 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Selection Toolbar (Sticky) -->
+    <div class="selection-toolbar-wrapper" v-if="selectedCount > 0">
+      <div class="selection-toolbar sticky-top">
+        <div class="d-flex align-items-center gap-3">
+          <span class="text-muted fw-semibold">已選 <span class="badge bg-primary">{{ selectedCount }}</span> 筆</span>
+          <button class="btn btn-sm btn-outline-secondary" @click="clearSelection">清除選取</button>
+          <button class="btn btn-sm btn-primary" @click="openAddToExamModal">加入到考卷</button>
+          <button class="btn btn-sm btn-danger" @click="deleteSelectedQuestions" :disabled="isDeleting">
+            <span v-if="isDeleting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            {{ isDeleting ? '刪除中...' : '批量刪除' }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Enhanced Pagination -->
@@ -148,7 +188,7 @@
           <button 
             class="page-link" 
             :disabled="isLoading"
-            @click="goToPage(page)"
+            @click="typeof page === 'number' ? goToPage(page) : null"
           >
             {{ page }}
           </button>
@@ -201,12 +241,154 @@
       </div>
     </div>
 
+    <!-- View Associated Exams Modal -->
+    <div v-if="isViewExamsModalVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">題目關聯考卷</h5>
+            <button type="button" class="btn-close" @click="closeViewExamsModal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">題目內容</label>
+              <p class="text-break">{{ currentQuestionContent }}</p>
+            </div>
+            <div>
+              <label class="form-label fw-semibold">關聯考卷</label>
+              <div v-if="isLoadingAssociatedExams" class="text-center">
+                <div class="spinner-border" role="status">
+                  <span class="visually-hidden">加載中...</span>
+                </div>
+              </div>
+              <div v-else-if="associatedExams.length === 0" class="alert alert-info small">
+                此題目未關聯到任何考卷
+              </div>
+              <div v-else class="list-group">
+                <div v-for="exam in associatedExams" :key="exam.id" class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <h6 class="mb-1">{{ exam.name }}</h6>
+                      <small class="text-muted">ID: {{ exam.id }}</small>
+                    </div>
+                    <span class="badge bg-secondary">{{ exam.question_count || 0 }} 題</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="closeViewExamsModal">關閉</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add to Exam Modal -->
+    <div v-if="isAddToExamModalVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">加入到考卷</h5>
+            <button type="button" class="btn-close" @click="closeAddToExamModal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info" role="alert">
+              將 {{ selectedCount }} 題加入到選定的考卷
+            </div>
+            <div class="mb-3">
+              <label class="form-label">選擇考卷</label>
+              <multiselect
+                v-model="selectedExams"
+                :options="availableExams"
+                :loading="isLoadingExams"
+                :multiple="true"
+                :close-on-select="false"
+                placeholder="搜尋或選擇考卷..."
+                track-by="id"
+                label="name"
+                :searchable="true"
+              />
+            </div>
+            <div v-if="selectedExams.length > 0" class="alert alert-secondary small">
+              <div><strong>已選擇 {{ selectedExams.length }} 個考卷：</strong></div>
+              <ul class="mb-0 mt-2">
+                <li v-for="exam in selectedExams" :key="exam.id" class="small">
+                  {{ exam.name }} (ID: {{ exam.id }} | 現有題數: {{ exam.question_count || 0 }})
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="closeAddToExamModal">取消</button>
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              @click="addQuestionsToExam"
+              :disabled="selectedExams.length === 0 || isAddingToExam"
+            >
+              <span v-if="isAddingToExam" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              {{ isAddingToExam ? '加入中...' : '確認加入' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="isDeleteConfirmModalVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">確認刪除</h5>
+            <button type="button" class="btn-close" @click="closeDeleteConfirmModal" :disabled="isDeleting"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-danger mb-3" role="alert">
+              <strong>⚠️ 警告：此操作無法復原</strong>
+            </div>
+            <div class="mb-3">
+              <p class="mb-2">您將刪除 <strong>{{ selectedCount }} 題</strong>。</p>
+              <div v-if="isLoadingAffectedExams" class="text-center my-3">
+                <div class="spinner-border spinner-border-sm" role="status">
+                  <span class="visually-hidden">加載中...</span>
+                </div>
+              </div>
+              <div v-else-if="affectedExamsForDelete.length > 0" class="alert alert-warning small">
+                <p class="mb-2"><strong>這些題目涉及 {{ affectedExamsForDelete.length }} 份考卷：</strong></p>
+                <ul class="mb-0">
+                  <li v-for="exam in affectedExamsForDelete" :key="exam.id">
+                    {{ exam.name }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="closeDeleteConfirmModal" :disabled="isDeleting">
+              取消
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-danger" 
+              @click="confirmDelete"
+              :disabled="isDeleting || isLoadingAffectedExams"
+            >
+              <span v-if="isDeleting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              {{ isDeleting ? '刪除中...' : '確認刪除' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import questionService from '@/services/questionService'
+import examService from '@/services/examService'
 import QuestionEditor from '@/components/QuestionEditor.vue'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
@@ -229,9 +411,73 @@ const paginationState = ref({
 })
 const jumpToPage = ref(null)
 const deletingId = ref(null)
+const selectedIds = ref([])
+const pageSelectAllCheckbox = ref(null)
+
 const isEditorVisible = ref(false)
 const currentQuestion = ref(null)
 const saving = ref(false)
+
+// View Associated Exams Modal state
+const isViewExamsModalVisible = ref(false)
+const currentQuestionId = ref(null)
+const currentQuestionContent = ref('')
+const associatedExams = ref([])
+const isLoadingAssociatedExams = ref(false)
+
+// Add to Exam Modal state
+const isAddToExamModalVisible = ref(false)
+const selectedExams = ref([])
+const availableExams = ref([])
+const isLoadingExams = ref(false)
+const isAddingToExam = ref(false)
+const isDeleting = ref(false)
+
+// Affected exams state for delete confirmation
+const isDeleteConfirmModalVisible = ref(false)
+const affectedExamsForDelete = ref([])
+const isLoadingAffectedExams = ref(false)
+
+// Selection helpers
+const isRowSelected = (id) => selectedIds.value.includes(id)
+const selectedCount = computed(() => selectedIds.value.length)
+
+const isPageAllSelected = computed(() => {
+  if (!questions.value || questions.value.length === 0) return false
+  return questions.value.every(q => selectedIds.value.includes(q.id))
+})
+
+const emit = defineEmits(["update:selected-ids"])
+
+const toggleSelect = (id, checked) => {
+  const idx = selectedIds.value.indexOf(id)
+  if (checked && idx === -1) {
+    selectedIds.value = [...selectedIds.value, id]
+  } else if (!checked && idx !== -1) {
+    selectedIds.value = selectedIds.value.filter(x => x !== id)
+  }
+}
+
+const toggleSelectAll = () => {
+  if (isPageAllSelected.value) {
+    // remove current page ids from selection
+    const pageIds = questions.value.map(q => q.id)
+    selectedIds.value = selectedIds.value.filter(id => !pageIds.includes(id))
+  } else {
+    // add all page ids (avoid duplicates)
+    const pageIds = questions.value.map(q => q.id)
+    const set = new Set([...selectedIds.value, ...pageIds])
+    selectedIds.value = Array.from(set)
+  }
+}
+
+const clearSelection = () => { selectedIds.value = [] }
+
+// Emit selection changes to parent
+watch(selectedIds, (val) => {
+  try { emit('update:selected-ids', val) } catch (e) { /* noop if parent not listening */ }
+}, { deep: true })
+
 
 const normalize = (q) => ({
   id: q.id,
@@ -467,11 +713,100 @@ const viewQuestion = async (id) => {
   openEditQuestion(id)
 }
 
+const openAddToExamModal = async () => {
+  isAddToExamModalVisible.value = true
+  selectedExams.value = []
+  await loadAvailableExams()
+}
+
+const closeAddToExamModal = () => {
+  isAddToExamModalVisible.value = false
+  selectedExams.value = []
+}
+
+const loadAvailableExams = async () => {
+  isLoadingExams.value = true
+  try {
+    const { data } = await examService.getExams({ pageSize: 100 })
+    const list = Array.isArray(data) ? data : data.results || []
+    availableExams.value = list
+    console.log('Loaded exams:', list)
+  } catch (err) {
+    console.error('Failed to load exams', err)
+    alert('載入考卷列表失敗')
+  } finally {
+    isLoadingExams.value = false
+  }
+}
+
+const addQuestionsToExam = async () => {
+  if (selectedExams.value.length === 0 || selectedCount.value === 0) return
+  
+  isAddingToExam.value = true
+  try {
+    // Add each question to each selected exam
+    // According to API docs: POST /exams/{id}/add_question/ with { question, order, points }
+    for (const exam of selectedExams.value) {
+      for (let i = 0; i < selectedIds.value.length; i++) {
+        const questionId = selectedIds.value[i]
+        await examService.addQuestionToExam(exam.id, {
+          question: questionId,
+          order: i + 1
+        })
+      }
+    }
+    
+    const examNames = selectedExams.value.map(e => e.name).join('、')
+    alert(`成功將 ${selectedCount.value} 題加入到考卷「${examNames}」`)
+    closeAddToExamModal()
+    clearSelection()
+  } catch (err) {
+    console.error('Error adding questions to exam', err)
+    alert('加入考卷失敗：' + (err.response?.data?.detail || err.message || '請重試'))
+  } finally {
+    isAddingToExam.value = false
+  }
+}
+
+const closeViewExamsModal = () => {
+  isViewExamsModalVisible.value = false
+  currentQuestionId.value = null
+  currentQuestionContent.value = ''
+  associatedExams.value = []
+}
+
+const viewAssociatedExams = async (questionId, content) => {
+  isViewExamsModalVisible.value = true
+  currentQuestionId.value = questionId
+  currentQuestionContent.value = content
+  await loadAssociatedExams(questionId)
+}
+
+const loadAssociatedExams = async (questionId) => {
+  isLoadingAssociatedExams.value = true
+  try {
+    // Use dedicated API endpoint to get exams containing this question
+    const { data } = await examService.getExamsByQuestion(questionId)
+    const exams = Array.isArray(data) ? data : data.results || []
+    associatedExams.value = exams
+    console.log('Associated exams:', exams)
+  } catch (err) {
+    console.error('Failed to load associated exams', err)
+    alert('載入關聯考卷失敗')
+  } finally {
+    isLoadingAssociatedExams.value = false
+  }
+}
+
 const deleteQuestion = async (id) => {
   if (!confirm('確定要刪除此題目嗎？')) return
   deletingId.value = id
   try {
     await questionService.deleteQuestion(id)
+    // remove from selection if present
+    if (selectedIds.value.includes(id)) {
+      selectedIds.value = selectedIds.value.filter(x => x !== id)
+    }
     alert('題目已刪除')
     fetchQuestions()
   } catch (err) {
@@ -479,6 +814,67 @@ const deleteQuestion = async (id) => {
     alert('刪除題目失敗')
   } finally {
     deletingId.value = null
+  }
+}
+
+const deleteSelectedQuestions = async () => {
+  if (selectedCount.value === 0) return
+  
+  // Load affected exams first
+  isLoadingAffectedExams.value = true
+  try {
+    const response = await examService.getExamsByQuestions(selectedIds.value)
+    const exams = Array.isArray(response) ? response : response.data ? response.data : []
+    console.log('Affected exams:', exams)
+    affectedExamsForDelete.value = exams
+  } catch (err) {
+    console.error('Failed to load affected exams', err)
+    affectedExamsForDelete.value = []
+  } finally {
+    isLoadingAffectedExams.value = false
+  }
+  
+  // Show confirmation modal
+  isDeleteConfirmModalVisible.value = true
+}
+
+const closeDeleteConfirmModal = () => {
+  isDeleteConfirmModalVisible.value = false
+}
+
+const confirmDelete = async () => {
+  isDeleting.value = true
+  try {
+    const idsToDelete = [...selectedIds.value]
+    let successCount = 0
+    let failCount = 0
+    
+    for (const id of idsToDelete) {
+      try {
+        await questionService.deleteQuestion(id)
+        successCount++
+      } catch (err) {
+        console.error(`Failed to delete question ${id}`, err)
+        failCount++
+      }
+    }
+    
+    selectedIds.value = []
+    affectedExamsForDelete.value = []
+    isDeleteConfirmModalVisible.value = false
+    
+    if (failCount === 0) {
+      alert(`成功刪除 ${successCount} 題`)
+    } else {
+      alert(`成功刪除 ${successCount} 題，失敗 ${failCount} 題`)
+    }
+    
+    fetchQuestions()
+  } catch (err) {
+    console.error('Batch delete failed', err)
+    alert('批量刪除失敗')
+  } finally {
+    isDeleting.value = false
   }
 }
 
@@ -573,14 +969,36 @@ th {
   border-bottom: 2px solid #e0e0e0;
 }
 
-th:nth-child(1), td:nth-child(1) { width: 8%; }        /* ID */
-th:nth-child(2), td:nth-child(2) { width: 18%; }       /* 科目 */
-th:nth-child(3), td:nth-child(3) { width: 22%; }       /* 內容 */
-th:nth-child(4), td:nth-child(4) { width: 12%; }       /* 題型 */
-th:nth-child(5), td:nth-child(5) { width: 10%; }       /* 難度 */
-th:nth-child(6), td:nth-child(6) { width: 12%; }       /* 建立時間 */
-th:nth-child(7), td:nth-child(7) { width: 12%; }       /* 更新時間 */
-th:nth-child(8), td:nth-child(8) { width: 5%; }        /* 操作 */
+th:nth-child(1), td:nth-child(1) { width: 4%; }        /* 選取欄 */
+th:nth-child(2), td:nth-child(2) { width: 8%; }        /* ID */
+th:nth-child(3), td:nth-child(3) { width: 18%; }       /* 科目 */
+th:nth-child(4), td:nth-child(4) { width: 22%; }       /* 內容 */
+th:nth-child(5), td:nth-child(5) { width: 12%; }       /* 題型 */
+th:nth-child(6), td:nth-child(6) { width: 10%; }       /* 難度 */
+th:nth-child(7), td:nth-child(7) { width: 12%; }       /* 建立時間 */
+th:nth-child(8), td:nth-child(8) { width: 12%; }       /* 更新時間 */
+th:nth-child(9), td:nth-child(9) { width: 5%; }        /* 操作 */
+
+.selection-toolbar-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  margin-bottom: 16px;
+  bottom: 50px;
+}
+
+.selection-toolbar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
 
 td {
   padding: 16px;

@@ -283,6 +283,69 @@ class ExamViewSet(viewsets.ModelViewSet):
             'question_count': exam.exam_questions.count()
         })
 
+    @action(detail=False, methods=['get'])
+    def by_question(self, request):
+        """Get all exams that contain a specific question"""
+        question_id = request.query_params.get('question_id')
+        
+        if not question_id:
+            return Response(
+                {"error": "question_id parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from question_bank.models import ExamQuestion
+            exam_questions = ExamQuestion.objects.filter(question_id=question_id)
+            exam_ids = exam_questions.values_list('exam_id', flat=True).distinct()
+            exams = self.filter_queryset(self.get_queryset()).filter(id__in=exam_ids)
+            serializer = ExamListSerializer(exams, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['get'])
+    def by_questions(self, request):
+        """Get all exams that contain any of the specified questions"""
+        question_ids_str = request.query_params.get('question_ids')
+        
+        if not question_ids_str:
+            return Response(
+                {"error": "question_ids parameter is required (comma-separated IDs)"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Parse comma-separated question IDs
+            question_ids = [int(qid.strip()) for qid in question_ids_str.split(',') if qid.strip()]
+            
+            if not question_ids:
+                return Response([])
+            
+            from question_bank.models import ExamQuestion
+            exam_questions = ExamQuestion.objects.filter(question_id__in=question_ids)
+            exam_ids = exam_questions.values_list('exam_id', flat=True).distinct()
+            exams = self.filter_queryset(self.get_queryset()).filter(id__in=exam_ids)
+            serializer = ExamListSerializer(exams, many=True)
+            return Response(serializer.data)
+        except ValueError as e:
+            return Response(
+                {"error": "Invalid question_ids format. Expected comma-separated integers."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
 class MockExamView(APIView):
     """模擬測驗生成與列表 API"""

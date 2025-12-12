@@ -38,6 +38,13 @@ const examService = {
   startExam(examId) {
     return api.post(`/exams/${examId}/start/`).catch(handle401)
   },
+  getExamsByQuestion(questionId) {
+    return api.get('/exams/by_question/', { params: { question_id: questionId } }).catch(handle401)
+  },
+  getExamsByQuestions(questionIds) {
+    const questionIdsStr = Array.isArray(questionIds) ? questionIds.join(',') : questionIds
+    return api.get('/exams/by_questions/', { params: { question_ids: questionIdsStr } }).catch(handle401)
+  },
   saveExamResult(resultData) {
     return api.post('/exam-results/', resultData).catch(handle401)
   },
