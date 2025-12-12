@@ -7,19 +7,33 @@
       </div>
 
       <div class="header-actions">
+        <button class="btn btn-sm btn-outline-secondary me-1" @click="$emit('add-existing-question')">
+          + 從題庫加入
+        </button>
         <button class="btn btn-sm btn-primary" @click="$emit('add-question')">
           + 新增題目
         </button>
       </div>
     </div>
 
-    <div class="search-box">
+    <div class="search-box d-flex align-items-center gap-2">
+      <input
+        type="checkbox"
+        :checked="isAllSelected"
+        :indeterminate.prop="isPartialSelected"
+        @change="toggleSelectAll"
+        class="form-check-input m-0"
+        title="全選/取消全選"
+      />
       <input
         v-model="searchQuery"
         type="text"
         placeholder="搜尋題目內容、科目..."
-        class="search-input"
+        class="search-input flex-grow-1"
       />
+      <span v-if="selectedIds.length > 0" class="text-muted small text-nowrap">
+        已選 {{ selectedIds.length }} 題
+      </span>
     </div>
 
     <div v-if="loading" class="loading">載入中...</div>
@@ -35,15 +49,18 @@
         :item="item"
         :is-active="selectedQuestionId === item.question"
         :has-pending-edit="Boolean(pendingEdits[item.id])"
+        :is-checked="selectedIds.includes(item.id)"
+        :show-checkbox="true"
         @select="selectQuestion"
         @remove="(id) => $emit('remove-question', id)"
+        @toggle-check="toggleCheck"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import QuestionItem from './QuestionItem.vue'
 
 const props = defineProps({
@@ -80,23 +97,20 @@ const props = defineProps({
 const emit = defineEmits([
   'select-question',
   'add-question',
+  'add-existing-question',
   'remove-question',
   'auto-distribute',
-  'update:total-points'
+  'update:total-points',
+  'update:selected-ids'
 ])
 
 const searchQuery = ref('')
+const selectedIds = ref([])
 
 const filteredQuestions = computed(() => {
   let questions = props.questions
-
-  // 先按 order 排序
   questions = [...questions].sort((a, b) => (a.order || 0) - (b.order || 0))
-
-  // 如果有搜尋條件，進行過濾
-  if (!searchQuery.value) {
-    return questions
-  }
+  if (!searchQuery.value) return questions
 
   const query = searchQuery.value.toLowerCase()
   return questions.filter(item => {
@@ -108,13 +122,47 @@ const filteredQuestions = computed(() => {
   })
 })
 
+const isAllSelected = computed(() => {
+  return filteredQuestions.value.length > 0 && 
+    filteredQuestions.value.every(q => selectedIds.value.includes(q.id))
+})
+
+const isPartialSelected = computed(() => {
+  const selected = filteredQuestions.value.filter(q => selectedIds.value.includes(q.id))
+  return selected.length > 0 && selected.length < filteredQuestions.value.length
+})
+
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    selectedIds.value = []
+  } else {
+    selectedIds.value = filteredQuestions.value.map(q => q.id)
+  }
+  emit('update:selected-ids', selectedIds.value)
+}
+
+const toggleCheck = (id) => {
+  const idx = selectedIds.value.indexOf(id)
+  if (idx === -1) {
+    selectedIds.value.push(id)
+  } else {
+    selectedIds.value.splice(idx, 1)
+  }
+  emit('update:selected-ids', selectedIds.value)
+}
+
 const selectQuestion = (item) => {
   emit('select-question', item)
 }
 
-const autoDistributeDisabled = computed(() => {
-  return props.autoDistributeLoading || props.questions.length === 0
+watch(() => props.questions, () => {
+  // 清除已不存在的選取項
+  selectedIds.value = selectedIds.value.filter(id => 
+    props.questions.some(q => q.id === id)
+  )
 })
+
+defineExpose({ selectedIds })
 </script>
 
 <style scoped>
@@ -152,23 +200,7 @@ const autoDistributeDisabled = computed(() => {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.total-points-control {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  font-size: 13px;
-  color: #4b5563;
-}
-
-.total-points-control input {
-  width: 80px;
-  padding: 6px 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  font-size: 14px;
 }
 
 .search-box {
@@ -226,18 +258,13 @@ const autoDistributeDisabled = computed(() => {
   background: #45a049;
 }
 
-.btn-secondary {
-  background: #f3f4f6;
+.btn-outline-secondary {
+  background: white;
   color: #374151;
   border: 1px solid #d1d5db;
 }
 
-.btn-secondary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary:not(:disabled):hover {
-  background: #e5e7eb;
+.btn-outline-secondary:hover {
+  background: #f3f4f6;
 }
 </style>

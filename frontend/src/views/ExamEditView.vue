@@ -29,13 +29,25 @@
       <!-- 右側：題目列表 -->
       <div class="right-panel">
         <div class="right-panel-inner">
-          <div class="d-flex gap-2 align-items-center ps-3 pe-3 pt-2 pb-2 border-bottom">
+          <div class="d-flex gap-2 align-items-center ps-3 pe-3 pt-2 pb-2 border-bottom flex-wrap">
             <button class="btn btn-sm btn-secondary" @click="isAutoDistributeModalVisible = true" :disabled="autoDistributeLoading">自動配分</button>
-            <button class="btn btn-sm btn-secondary" @click="showBulkTagModal = true">批次編輯標籤</button>
-            <button class="btn btn-sm btn-secondary" @click="showBulkSubjectModal = true">批次編輯科目</button>
+            <button class="btn btn-sm btn-secondary" @click="showBulkTagModal = true">
+              批次編輯標籤{{ selectedQuestionIds.length > 0 ? ` (${selectedQuestionIds.length})` : '' }}
+            </button>
+            <button class="btn btn-sm btn-secondary" @click="showBulkSubjectModal = true">
+              批次編輯科目{{ selectedQuestionIds.length > 0 ? ` (${selectedQuestionIds.length})` : '' }}
+            </button>
+            <button 
+              v-if="selectedQuestionIds.length > 0" 
+              class="btn btn-sm btn-danger" 
+              @click="handleBulkRemove"
+            >
+              批次移除 ({{ selectedQuestionIds.length }})
+            </button>
           </div>
           <div class="question-list-wrapper">
             <QuestionList
+              ref="questionListRef"
               :questions="allQuestions"
               :selected-question-id="selectedQuestionId"
               :loading="loadingQuestions"
@@ -45,8 +57,10 @@
               :show-auto-distribute="false"
               @select-question="handleSelectQuestion"
               @add-question="handleAddQuestion"
+              @add-existing-question="showAddModal = true"
               @remove-question="handleRemoveQuestion"
               @auto-distribute="autoDistributePoints"
+              @update:selected-ids="handleSelectedIdsChange"
             />
           </div>
           <div class="right-actions">
@@ -62,8 +76,24 @@
       @close="showAddModal = false"
       @add="handleAddQuestionToExam"
     />
-    <BulkTagEditor v-if="showBulkTagModal" :questions="allQuestions" :pendingQuestions="pendingQuestions" :examId="examId" @close="showBulkTagModal=false" @applied="handleBulkTagsApplied" />
-    <BulkSubjectEditor v-if="showBulkSubjectModal" :questions="allQuestions" :pendingQuestions="pendingQuestions" :examId="examId" @close="showBulkSubjectModal=false" @applied="handleBulkSubjectApplied" />
+    <BulkTagEditor 
+      v-if="showBulkTagModal" 
+      :questions="allQuestions" 
+      :pendingQuestions="pendingQuestions" 
+      :examId="examId" 
+      :preselectedIds="selectedQuestionIds"
+      @close="showBulkTagModal=false" 
+      @applied="handleBulkTagsApplied" 
+    />
+    <BulkSubjectEditor 
+      v-if="showBulkSubjectModal" 
+      :questions="allQuestions" 
+      :pendingQuestions="pendingQuestions" 
+      :examId="examId" 
+      :preselectedIds="selectedQuestionIds"
+      @close="showBulkSubjectModal=false" 
+      @applied="handleBulkSubjectApplied" 
+    />
 
     <!-- 儲存進度 Modal -->
     <div v-if="isSavingProgressVisible" class="modal d-block" style="background: rgba(0, 0, 0, 0.5)">
@@ -184,6 +214,10 @@ const pendingQuestions = ref([])
 const selectedQuestionId = ref(null)
 const selectedQuestion = ref(null)
 const selectedExamQuestion = ref(null)
+
+// 多選的題目 IDs
+const selectedQuestionIds = ref([])
+const questionListRef = ref(null)
 
 // 載入和儲存狀態
 const loadingQuestions = ref(false)
@@ -710,19 +744,39 @@ const handleAddQuestion = () => {
   handleSelectQuestion(newExamQuestion)
 }
 
-// 將題目新增到考卷
-const handleAddQuestionToExam = async (questionId, order, points) => {
+// 將題目新增到考卷（支援多選）
+const handleAddQuestionToExam = async (questionIds, points) => {
   if (!examId.value) return
 
+  // 確保 questionIds 是陣列
+  const ids = Array.isArray(questionIds) ? questionIds : [questionIds]
+  
   try {
-    await examService.addQuestionToExam(examId.value, {
-      question: questionId,
-      order: order,
-      points: points
-    })
+    let successCount = 0
+    let failCount = 0
+    const currentOrder = examQuestions.value.length
+
+    for (let i = 0; i < ids.length; i++) {
+      try {
+        await examService.addQuestionToExam(examId.value, {
+          question: ids[i],
+          order: currentOrder + i + 1,
+          points: points
+        })
+        successCount++
+      } catch (err) {
+        console.error(`新增題目 ${ids[i]} 失敗:`, err)
+        failCount++
+      }
+    }
 
     showAddModal.value = false
-    alert('題目新增成功')
+    
+    if (failCount === 0) {
+      alert(`成功新增 ${successCount} 題`)
+    } else {
+      alert(`新增完成：成功 ${successCount} 題，失敗 ${failCount} 題`)
+    }
 
     // 重新載入考卷資料
     await loadExam()
@@ -730,6 +784,11 @@ const handleAddQuestionToExam = async (questionId, order, points) => {
     console.error('新增題目失敗:', error)
     alert('新增題目失敗：' + (error.response?.data?.message || error.message))
   }
+}
+
+// 處理多選變更
+const handleSelectedIdsChange = (ids) => {
+  selectedQuestionIds.value = ids
 }
 
 const handleBulkTagsApplied = async ({ successCount, errors, pendingUpdates = [] }) => {
@@ -820,6 +879,50 @@ const handleRemoveQuestion = async (examQuestionId) => {
     console.error('移除題目失敗:', error)
     alert('移除題目失敗：' + (error.response?.data?.message || error.message))
   }
+}
+
+// 批次移除題目
+const handleBulkRemove = async () => {
+  if (selectedQuestionIds.value.length === 0) return
+  if (!confirm(`確定要移除選取的 ${selectedQuestionIds.value.length} 個題目嗎？`)) return
+
+  let successCount = 0
+  let failCount = 0
+
+  for (const id of selectedQuestionIds.value) {
+    try {
+      if (typeof id === 'string' && id.startsWith('pending-')) {
+        const index = parseInt(id.replace('pending-', ''))
+        pendingQuestions.value.splice(index, 1)
+        successCount++
+      } else {
+        if (pendingQuestionEdits.value[id]) {
+          const nextEdits = { ...pendingQuestionEdits.value }
+          delete nextEdits[id]
+          pendingQuestionEdits.value = nextEdits
+        }
+        await examService.removeQuestionFromExam(examId.value, id)
+        successCount++
+      }
+    } catch (err) {
+      console.error(`移除題目 ${id} 失敗:`, err)
+      failCount++
+    }
+  }
+
+  // 清空選擇
+  selectedQuestionIds.value = []
+  selectedQuestionId.value = null
+  selectedQuestion.value = null
+  selectedExamQuestion.value = null
+
+  if (failCount === 0) {
+    alert(`成功移除 ${successCount} 題`)
+  } else {
+    alert(`移除完成：成功 ${successCount} 題，失敗 ${failCount} 題`)
+  }
+
+  await loadExam()
 }
 
 const startAutoDistribute = async () => {

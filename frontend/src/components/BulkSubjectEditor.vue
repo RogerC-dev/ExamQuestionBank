@@ -19,7 +19,7 @@
           <label>選擇題目</label>
           <div class="question-list">
             <label v-for="q in questions" :key="q.id || q.order" class="question-item">
-              <input type="checkbox" v-model="selectedQuestionIds" :value="q.question || (q.id || q.order)"> 
+              <input type="checkbox" v-model="selectedQuestionIds" :value="q.id"> 
               <span class="question-summary">{{ q.question_content || q.pendingData?.content || '未命名題目' }}</span>
             </label>
           </div>
@@ -46,14 +46,15 @@ import questionService from '@/services/questionService'
 const props = defineProps({
   questions: { type: Array, required: true },
   pendingQuestions: { type: Array, required: true },
-  examId: { type: Number, required: false }
+  examId: { type: Number, required: false },
+  preselectedIds: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['close', 'applied'])
 
-const applyTo = ref('all')
+const applyTo = ref(props.preselectedIds.length > 0 ? 'selected' : 'all')
 const selectedSubject = ref('')
-const selectedQuestionIds = ref([])
+const selectedQuestionIds = ref([...props.preselectedIds])
 const processing = ref(false)
 
 onMounted(async () => {
@@ -62,7 +63,7 @@ onMounted(async () => {
 
 const targetQuestions = computed(() => {
   if (applyTo.value === 'all') return props.questions
-  return props.questions.filter(q => selectedQuestionIds.value.includes(q.question || q.id || q.order))
+  return props.questions.filter(q => selectedQuestionIds.value.includes(q.id))
 })
 
 const apply = async () => {

@@ -4,10 +4,19 @@
     :class="{
       active: isActive,
       pending: item.isPending,
-      'has-pending-edit': hasPendingEdit
+      'has-pending-edit': hasPendingEdit,
+      checked: isChecked
     }"
     @click="$emit('select', item)"
   >
+    <input
+      v-if="showCheckbox"
+      type="checkbox"
+      :checked="isChecked"
+      class="form-check-input item-checkbox"
+      @click.stop
+      @change="$emit('toggle-check', item.id)"
+    />
     <div
       class="question-number"
       :class="{
@@ -53,10 +62,18 @@ defineProps({
   hasPendingEdit: {
     type: Boolean,
     default: false
+  },
+  isChecked: {
+    type: Boolean,
+    default: false
+  },
+  showCheckbox: {
+    type: Boolean,
+    default: false
   }
 })
 
-defineEmits(['select', 'remove'])
+defineEmits(['select', 'remove', 'toggle-check'])
 </script>
 
 <style scoped>
@@ -84,6 +101,10 @@ defineEmits(['select', 'remove'])
   background: #eef3f9;
 }
 
+.question-item.checked {
+  background: #f0f9ff;
+}
+
 .question-item.pending {
   border-color: #d89b32;
   border-style: dashed;
@@ -92,6 +113,12 @@ defineEmits(['select', 'remove'])
 
 .question-item.pending.active {
   background: #fdeed9;
+}
+
+.item-checkbox {
+  flex-shrink: 0;
+  margin-top: 4px;
+  cursor: pointer;
 }
 
 .question-number {

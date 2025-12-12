@@ -2,20 +2,32 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>新增題目到考卷</h3>
+        <h3>從題庫加入題目</h3>
         <button class="btn-close" @click="$emit('close')">×</button>
       </div>
 
       <div class="modal-body">
         <!-- 搜尋區 -->
         <div class="search-section">
-          <input
-            v-model="searchKeyword"
-            type="text"
-            placeholder="搜尋題目內容..."
-            class="search-input"
-            @input="handleSearch"
-          />
+          <div class="d-flex gap-2 align-items-center">
+            <input
+              type="checkbox"
+              :checked="isAllSelected"
+              :indeterminate.prop="isPartialSelected"
+              @change="toggleSelectAll"
+              class="form-check-input m-0"
+            />
+            <input
+              v-model="searchKeyword"
+              type="text"
+              placeholder="搜尋題目內容..."
+              class="search-input flex-grow-1"
+              @input="handleSearch"
+            />
+            <span v-if="selectedQuestions.length > 0" class="text-muted small text-nowrap">
+              已選 {{ selectedQuestions.length }} 題
+            </span>
+          </div>
         </div>
 
         <!-- 題目列表 -->
@@ -30,9 +42,16 @@
             v-for="question in questions"
             :key="question.id"
             class="question-item"
-            :class="{ selected: selectedQuestionId === question.id }"
-            @click="selectQuestion(question)"
+            :class="{ selected: selectedQuestions.some(q => q.id === question.id) }"
+            @click="toggleQuestion(question)"
           >
+            <input
+              type="checkbox"
+              :checked="selectedQuestions.some(q => q.id === question.id)"
+              class="form-check-input"
+              @click.stop
+              @change="toggleQuestion(question)"
+            />
             <div class="question-info">
               <div class="question-badges">
                 <span class="badge">{{ question.subject }}</span>
@@ -44,21 +63,11 @@
         </div>
 
         <!-- 設定區 -->
-        <div v-if="selectedQuestionId" class="settings-section">
-          <h4>題目設定</h4>
+        <div v-if="selectedQuestions.length > 0" class="settings-section">
+          <h4>配分設定</h4>
           <div class="form-row">
             <div class="form-group">
-              <label for="order">順序</label>
-              <input
-                id="order"
-                v-model.number="order"
-                type="number"
-                min="1"
-                class="form-input"
-              />
-            </div>
-            <div class="form-group">
-              <label for="points">配分</label>
+              <label for="points">每題配分</label>
               <input
                 id="points"
                 v-model.number="points"
@@ -78,10 +87,10 @@
         </button>
         <button
           class="btn btn-primary"
-          :disabled="!selectedQuestionId"
+          :disabled="selectedQuestions.length === 0"
           @click="handleAdd"
         >
-          確認新增
+          確認新增 {{ selectedQuestions.length > 0 ? `(${selectedQuestions.length}題)` : '' }}
         </button>
       </div>
     </div>
@@ -89,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import questionService from '../services/questionService'
 
 const emit = defineEmits(['close', 'add'])
@@ -97,11 +106,37 @@ const emit = defineEmits(['close', 'add'])
 const questions = ref([])
 const loading = ref(false)
 const searchKeyword = ref('')
-const selectedQuestionId = ref(null)
-const order = ref(1)
-const points = ref(0)
+const selectedQuestions = ref([])
+const points = ref(1)
 
 let searchTimeout = null
+
+const isAllSelected = computed(() => {
+  return questions.value.length > 0 && 
+    questions.value.every(q => selectedQuestions.value.some(sq => sq.id === q.id))
+})
+
+const isPartialSelected = computed(() => {
+  const selected = questions.value.filter(q => selectedQuestions.value.some(sq => sq.id === q.id))
+  return selected.length > 0 && selected.length < questions.value.length
+})
+
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    selectedQuestions.value = []
+  } else {
+    selectedQuestions.value = [...questions.value]
+  }
+}
+
+const toggleQuestion = (question) => {
+  const idx = selectedQuestions.value.findIndex(q => q.id === question.id)
+  if (idx === -1) {
+    selectedQuestions.value.push(question)
+  } else {
+    selectedQuestions.value.splice(idx, 1)
+  }
+}
 
 const loadQuestions = async () => {
   loading.value = true
@@ -127,13 +162,9 @@ const handleSearch = () => {
   }, 500)
 }
 
-const selectQuestion = (question) => {
-  selectedQuestionId.value = question.id
-}
-
 const handleAdd = () => {
-  if (!selectedQuestionId.value) return
-  emit('add', selectedQuestionId.value, order.value, points.value)
+  if (selectedQuestions.value.length === 0) return
+  emit('add', selectedQuestions.value.map(q => q.id), points.value)
 }
 
 onMounted(() => {
@@ -200,18 +231,17 @@ onMounted(() => {
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 20px 24px;
 }
 
 .search-section {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .search-input {
-  width: 100%;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 14px;
 }
 
@@ -220,42 +250,44 @@ onMounted(() => {
   border-color: #4CAF50;
 }
 
-.loading,
-.empty {
-  padding: 40px;
-  text-align: center;
-  color: #999;
-}
-
 .questions-list {
-  max-height: 400px;
+  max-height: 300px;
   overflow-y: auto;
-  margin-bottom: 20px;
+  border: 1px solid #eee;
+  border-radius: 6px;
 }
 
 .question-item {
-  padding: 12px;
-  border: 1px solid #eee;
-  border-radius: 6px;
-  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s;
+}
+
+.question-item:last-child {
+  border-bottom: none;
 }
 
 .question-item:hover {
-  border-color: #4CAF50;
   background: #f9f9f9;
 }
 
 .question-item.selected {
-  border-color: #4CAF50;
   background: #e8f5e9;
+}
+
+.question-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .question-badges {
   display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
 .badge {
@@ -278,34 +310,32 @@ onMounted(() => {
 }
 
 .settings-section {
-  padding: 16px;
-  background: #f9f9f9;
-  border-radius: 6px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
 }
 
 .settings-section h4 {
-  margin: 0 0 12px 0;
-  font-size: 16px;
+  margin: 0 0 12px;
+  font-size: 14px;
   font-weight: 600;
   color: #333;
 }
 
 .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 16px;
 }
 
 .form-group {
-  margin-bottom: 0;
+  flex: 1;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 6px;
-  font-weight: 500;
-  color: #555;
-  font-size: 14px;
+  font-size: 13px;
+  color: #666;
 }
 
 .form-input {
@@ -321,6 +351,13 @@ onMounted(() => {
   border-color: #4CAF50;
 }
 
+.loading,
+.empty {
+  padding: 40px;
+  text-align: center;
+  color: #999;
+}
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -332,16 +369,20 @@ onMounted(() => {
 .btn {
   padding: 10px 20px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s;
 }
 
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
 }
 
 .btn-primary {
@@ -353,12 +394,8 @@ onMounted(() => {
   background: #45a049;
 }
 
-.btn-secondary {
-  background: #f5f5f5;
-  color: #333;
-}
-
-.btn-secondary:hover {
-  background: #e0e0e0;
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>
