@@ -167,9 +167,10 @@ defineExpose({ selectedIds })
 
 <style scoped>
 .question-list {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(0, 0, 0, 0.04);
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -181,7 +182,7 @@ defineExpose({ selectedIds })
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--surface-muted);
 }
 
 .list-header h3 {

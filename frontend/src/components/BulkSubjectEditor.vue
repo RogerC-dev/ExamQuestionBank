@@ -1,46 +1,144 @@
 <template>
   <div class="modal-overlay" @click.self="close">
-    <div class="modal-content">
+    <div class="modal-container">
+      <!-- Header -->
       <div class="modal-header">
-        <h3>批次編輯科目</h3>
-        <button class="btn-close" @click="close">×</button>
-      </div>
-
-      <div class="modal-body">
-        <div class="form-group">
-          <label>套用範圍</label>
+        <div class="header-content">
+          <div class="icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+          </div>
           <div>
-            <label><input type="radio" v-model="applyTo" value="all"> 全部題目</label>
-            <label style="margin-left:16px"><input type="radio" v-model="applyTo" value="selected"> 選取題目</label>
+            <h3 class="modal-title">批次編輯科目</h3>
+            <p class="modal-subtitle">為選定的題目統一設定科目名稱</p>
           </div>
         </div>
+        <button class="close-btn" @click="close" :disabled="processing">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
 
-        <div v-if="applyTo === 'selected'" class="form-group">
-          <label>選擇題目</label>
-          <div class="question-list">
-            <label v-for="q in questions" :key="q.id || q.order" class="question-item">
-              <input type="checkbox" v-model="selectedQuestionIds" :value="q.id"> 
-              <span class="question-summary">{{ q.question_content || q.pendingData?.content || '未命名題目' }}</span>
+      <!-- Body -->
+      <div class="modal-body">
+        <!-- Info Banner -->
+        <div class="info-banner">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>將為 <strong>{{ targetQuestionsCount }}</strong> 個題目設定科目</span>
+        </div>
+
+        <!-- Scope Selection -->
+        <div class="form-section">
+          <label class="section-label">套用範圍</label>
+          <div class="radio-group">
+            <label class="radio-card" :class="{ active: applyTo === 'all' }">
+              <input type="radio" v-model="applyTo" value="all">
+              <div class="radio-content">
+                <div class="radio-title">全部題目</div>
+                <div class="radio-desc">套用至當前頁面所有題目 ({{ questions.length }} 題)</div>
+              </div>
+            </label>
+            <label class="radio-card" :class="{ active: applyTo === 'selected' }">
+              <input type="radio" v-model="applyTo" value="selected">
+              <div class="radio-content">
+                <div class="radio-title">已選取題目</div>
+                <div class="radio-desc">僅套用至已勾選的題目 ({{ preselectedIds.length }} 題)</div>
+              </div>
             </label>
           </div>
         </div>
 
-        <div class="form-group">
-          <label>科目</label>
-          <input v-model="selectedSubject" type="text" class="form-control" placeholder="輸入科目名稱">
+        <!-- Question List (when selected scope) -->
+        <div v-if="applyTo === 'selected'" class="form-section">
+          <label class="section-label">
+            選擇題目
+            <span class="label-hint">({{ selectedQuestionIds.length }} / {{ questions.length }})</span>
+          </label>
+          <div class="question-list-wrapper">
+            <div class="question-list">
+              <label v-for="q in questions" :key="q.id || q.order" class="question-item">
+                <input type="checkbox" v-model="selectedQuestionIds" :value="q.id || q.question">
+                <div class="question-info">
+                  <div class="question-content">{{ q.question_content || q.content || q.pendingData?.content || '未命名題目' }}</div>
+                  <div class="question-meta">
+                    <span class="meta-id">ID: {{ q.id || q.question }}</span>
+                    <span v-if="q.subject" class="meta-subject">{{ q.subject }}</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+            <div class="list-actions">
+              <button type="button" class="text-btn" @click="selectAll">全選</button>
+              <button type="button" class="text-btn" @click="deselectAll">取消全選</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subject Input -->
+        <div class="form-section">
+          <label class="section-label" for="subject-input">
+            科目名稱
+            <span class="required">*</span>
+          </label>
+          <input 
+            id="subject-input"
+            v-model="selectedSubject" 
+            type="text" 
+            class="subject-input" 
+            placeholder="例如：數學、英文、國文..."
+            :disabled="processing"
+            @keyup.enter="!processing && selectedSubject && apply()"
+          >
+          <div v-if="!selectedSubject" class="field-hint">請輸入要設定的科目名稱</div>
+        </div>
+
+        <!-- Preview -->
+        <div v-if="selectedSubject && targetQuestionsCount > 0" class="preview-section">
+          <div class="preview-label">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            預覽
+          </div>
+          <div class="preview-content">
+            將 {{ targetQuestionsCount }} 個題目的科目設定為：
+            <span class="preview-subject">「{{ selectedSubject }}」</span>
+          </div>
         </div>
       </div>
 
+      <!-- Footer -->
       <div class="modal-footer">
-        <button class="btn btn-secondary" @click="close">取消</button>
-        <button class="btn btn-primary" :disabled="processing || !selectedSubject" @click="apply">套用</button>
+        <button class="btn-cancel" @click="close" :disabled="processing">
+          取消
+        </button>
+        <button 
+          class="btn-apply" 
+          :disabled="processing || !selectedSubject || targetQuestionsCount === 0" 
+          @click="apply"
+        >
+          <span v-if="processing" class="spinner"></span>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          {{ processing ? '處理中...' : '確認套用' }}
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import questionService from '@/services/questionService'
 
 const props = defineProps({
@@ -57,15 +155,31 @@ const selectedSubject = ref('')
 const selectedQuestionIds = ref([...props.preselectedIds])
 const processing = ref(false)
 
-onMounted(async () => {
+onMounted(() => {
+  console.log('BulkSubjectEditor mounted. preselectedIds=', props.preselectedIds)
   // 不需要載入科目選項，使用者直接輸入
+})
+
+onUnmounted(() => {
+  console.log('BulkSubjectEditor unmounted')
 })
 
 const targetQuestions = computed(() => {
   if (applyTo.value === 'all') return props.questions
-  return props.questions.filter(q => selectedQuestionIds.value.includes(q.id))
+  return props.questions.filter(q => selectedQuestionIds.value.includes(q.id) || selectedQuestionIds.value.includes(q.question))
 })
 
+const targetQuestionsCount = computed(() => targetQuestions.value.length)
+
+const selectAll = () => {
+  selectedQuestionIds.value = props.questions.map(q => q.id || q.question)
+}
+
+const deselectAll = () => {
+  selectedQuestionIds.value = []
+}
+
+const getId = (q) => q.question ?? q.id
 const apply = async () => {
   processing.value = true
   const errors = []
@@ -84,7 +198,8 @@ const apply = async () => {
         }
       } else {
         // saved question -> update via API
-        savedUpdates.push({ id: q.question, subject: selectedSubject.value })
+        const id = getId(q)
+        savedUpdates.push({ id: id, subject: selectedSubject.value })
       }
     } catch (err) {
       console.error('更新題目科目失敗', q, err)
@@ -116,15 +231,458 @@ const close = () => emit('close')
 </script>
 
 <style scoped>
-.modal-overlay { position: fixed; inset: 0; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.4); z-index:1000 }
-.modal-content { width:90%; max-width:900px; background:white; border-radius:6px; overflow:hidden }
-.modal-header { display:flex; justify-content:space-between; padding:16px; border-bottom:1px solid #eee }
-.modal-body { padding: 16px }
-.modal-footer { padding: 12px 16px; display:flex; gap: 8px; justify-content:flex-end; border-top:1px solid #eee }
-.question-list { max-height:220px; overflow:auto; border:1px solid #eee; padding:8px; border-radius:6px }
-.question-item { display:flex; gap:8px; align-items:center; padding:4px 8px }
-.question-summary { color:#444 }
-.form-group { margin-bottom: 16px }
-.form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #333 }
-.form-control { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px }
+/* Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 2147483647;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Container */
+.modal-container {
+  width: 90%;
+  max-width: 700px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.header-content {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--primary, #476996);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.modal-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.close-btn:hover:not(:disabled) {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.close-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Body */
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Info Banner */
+.info-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--primary-soft, #EEF2FF);
+  border: 1px solid var(--border, #CBD5E1);
+  border-radius: 8px;
+  color: var(--text-primary, #1E293B);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.info-banner svg {
+  flex-shrink: 0;
+}
+
+.info-banner strong {
+  color: #1e3a8a;
+  font-weight: 600;
+}
+
+/* Form Section */
+.form-section {
+  margin-bottom: 24px;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.label-hint {
+  font-weight: 400;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.required {
+  color: #ef4444;
+}
+
+/* Radio Group */
+.radio-group {
+  display: grid;
+  gap: 12px;
+}
+
+.radio-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.radio-card:hover {
+  border-color: var(--primary, #476996);
+  background: #f8fafc;
+}
+
+.radio-card.active {
+  border-color: var(--primary, #476996);
+  background: var(--primary-soft, #EEF2FF);
+}
+
+.radio-card input[type="radio"] {
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary, #476996);
+}
+
+.radio-content {
+  flex: 1;
+}
+
+.radio-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.radio-desc {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Question List */
+.question-list-wrapper {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.question-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.question-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.question-item:last-child {
+  border-bottom: none;
+}
+
+.question-item:hover {
+  background: #f9fafb;
+}
+
+.question-item input[type="checkbox"] {
+  margin-top: 4px;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary, #476996);
+}
+
+.question-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.question-content {
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.question-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.meta-id {
+  font-family: monospace;
+}
+
+.meta-subject {
+  padding: 2px 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  color: #6b7280;
+}
+
+.list-actions {
+  display: flex;
+  gap: 16px;
+  padding: 10px 16px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.text-btn {
+  border: none;
+  background: none;
+  color: var(--primary, #476996);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.text-btn:hover {
+  background: var(--primary-soft, #EEF2FF);
+  color: var(--primary-hover, #35527a);
+}
+
+/* Subject Input */
+.subject-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 15px;
+  transition: all 0.2s;
+  background: white;
+}
+
+.subject-input:focus {
+  outline: none;
+  border-color: var(--primary, #476996);
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
+}
+
+.subject-input:disabled {
+  background: #f9fafb;
+  cursor: not-allowed;
+}
+
+.field-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* Preview */
+.preview-section {
+  padding: 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  margin-top: 8px;
+}
+
+.preview-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #166534;
+  margin-bottom: 8px;
+}
+
+.preview-content {
+  font-size: 14px;
+  color: #15803d;
+}
+
+.preview-subject {
+  font-weight: 600;
+  color: #14532d;
+}
+
+/* Footer */
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 20px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 0 0 16px 16px;
+}
+
+.btn-cancel,
+.btn-apply {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+}
+
+.btn-cancel {
+  background: white;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.btn-apply {
+  background: var(--primary, #476996);
+  color: white;
+  border: none;
+}
+
+.btn-apply:hover:not(:disabled) {
+  background: var(--primary-hover, #35527a);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-apply:disabled,
+.btn-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Scrollbar */
+.question-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.question-list::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.question-list::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.question-list::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
 </style>

@@ -14,29 +14,14 @@
       @import-success="handlePdfImport"
     />
 
-    <!-- 下方：左右分欄 -->
-    <div class="content-container">
-      <!-- 左側：題目編輯器 -->
-      <div class="left-panel">
-        <QuestionEditor
-          :question="selectedQuestion"
-          :exam-question="selectedExamQuestion"
-          :saving="savingQuestion"
-          @save="handleSaveQuestion"
-        />
-      </div>
-
-      <!-- 右側：題目列表 -->
-      <div class="right-panel">
+    <!-- 下方：題目列表全寬 -->
+    <div class="content-container" style="width: 100%;">
+      <!-- 題目列表 -->
+      <div class="right-panel" style="width: 100%;">
         <div class="right-panel-inner">
           <div class="d-flex gap-2 align-items-center ps-3 pe-3 pt-2 pb-2 border-bottom flex-wrap">
             <button class="btn btn-sm btn-secondary" @click="isAutoDistributeModalVisible = true" :disabled="autoDistributeLoading">自動配分</button>
-            <button class="btn btn-sm btn-secondary" @click="showBulkTagModal = true">
-              批次編輯標籤{{ selectedQuestionIds.length > 0 ? ` (${selectedQuestionIds.length})` : '' }}
-            </button>
-            <button class="btn btn-sm btn-secondary" @click="showBulkSubjectModal = true">
-              批次編輯科目{{ selectedQuestionIds.length > 0 ? ` (${selectedQuestionIds.length})` : '' }}
-            </button>
+            <!-- Bulk tag/subject actions moved to 管理中心的題目管理多選工具欄 -->
             <button 
               v-if="selectedQuestionIds.length > 0" 
               class="btn btn-sm btn-danger" 
@@ -70,30 +55,34 @@
       </div>
     </div>
 
+    <!-- 編輯題目彈窗 -->
+    <div v-if="isEditQuestionModalVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">編輯題目</h5>
+            <button type="button" class="btn-close" @click="closeEditModal" :disabled="savingQuestion"></button>
+          </div>
+          <div class="modal-body">
+            <QuestionEditor
+              v-if="selectedQuestion"
+              :question="selectedQuestion"
+              :exam-question="selectedExamQuestion"
+              :saving="savingQuestion"
+              @save="handleSaveQuestion"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 新增題目的彈窗 -->
     <AddQuestionModal
       v-if="showAddModal"
       @close="showAddModal = false"
       @add="handleAddQuestionToExam"
     />
-    <BulkTagEditor 
-      v-if="showBulkTagModal" 
-      :questions="allQuestions" 
-      :pendingQuestions="pendingQuestions" 
-      :examId="examId" 
-      :preselectedIds="selectedQuestionIds"
-      @close="showBulkTagModal=false" 
-      @applied="handleBulkTagsApplied" 
-    />
-    <BulkSubjectEditor 
-      v-if="showBulkSubjectModal" 
-      :questions="allQuestions" 
-      :pendingQuestions="pendingQuestions" 
-      :examId="examId" 
-      :preselectedIds="selectedQuestionIds"
-      @close="showBulkSubjectModal=false" 
-      @applied="handleBulkSubjectApplied" 
-    />
+    <!-- BulkTagEditor and BulkSubjectEditor are moved to AdminQuestionManagement -->
 
     <!-- 儲存進度 Modal -->
     <div v-if="isSavingProgressVisible" class="modal d-block" style="background: rgba(0, 0, 0, 0.5)">
@@ -190,8 +179,6 @@ import ExamForm from '../components/ExamForm.vue'
 import QuestionEditor from '../components/QuestionEditor.vue'
 import QuestionList from '../components/QuestionList.vue'
 import AddQuestionModal from '../components/AddQuestionModal.vue'
-import BulkTagEditor from '../components/BulkTagEditor.vue'
-import BulkSubjectEditor from '../components/BulkSubjectEditor.vue'
 import PdfUploadSection from '../components/PdfUploadSection.vue'
 import examService from '../services/examService'
 import questionService from '../services/questionService'
@@ -223,6 +210,7 @@ const questionListRef = ref(null)
 const loadingQuestions = ref(false)
 const savingExam = ref(false)
 const savingQuestion = ref(false)
+const isEditQuestionModalVisible = ref(false)
 
 // 儲存進度 Modal
 const isSavingProgressVisible = ref(false)
@@ -234,8 +222,6 @@ const savingStepType = ref('') // 'exam', 'questions', 'updates'
 
 // 新增題目彈窗
 const showAddModal = ref(false)
-const showBulkTagModal = ref(false)
-const showBulkSubjectModal = ref(false)
 
 // 自動配分 Modal
 const isAutoDistributeModalVisible = ref(false)
@@ -465,7 +451,18 @@ const handleCancel = () => {
   router.push('/admin/exams')
 }
 
-// 選擇題目
+const closeEditModal = () => {
+  isEditQuestionModalVisible.value = false
+  // 可選：延遲清除選中題目以避免 modal 關閉時閃爍
+  setTimeout(() => {
+    if (!isEditQuestionModalVisible.value) {
+      selectedQuestionId.value = null
+      selectedQuestion.value = null
+      selectedExamQuestion.value = null
+    }
+  }, 300)
+}
+
 const handleSelectQuestion = async (examQuestion) => {
   selectedQuestionId.value = examQuestion.question
   selectedExamQuestion.value = {
@@ -488,6 +485,7 @@ const handleSelectQuestion = async (examQuestion) => {
       tag_ids: examQuestion.pendingData.tag_ids || [],
       tags: null // 標籤從 tag_ids 解析，讓 QuestionEditor 自行處理
     }
+    isEditQuestionModalVisible.value = true
     return
   }
 
@@ -501,6 +499,8 @@ const handleSelectQuestion = async (examQuestion) => {
     selectedQuestion.value = pendingEdit?.questionData
       ? { ...response.data, ...pendingEdit.questionData }
       : response.data
+    // 打開編輯 modal
+    isEditQuestionModalVisible.value = true
   } catch (error) {
     console.error('載入題目失敗:', error)
     alert('載入題目失敗')
@@ -791,49 +791,7 @@ const handleSelectedIdsChange = (ids) => {
   selectedQuestionIds.value = ids
 }
 
-const handleBulkTagsApplied = async ({ successCount, errors, pendingUpdates = [] }) => {
-  let msg = `已成功更新 ${successCount} 題。`
-  if (errors && errors.length) {
-    msg += `
-失敗：${errors.length} 題，詳情請查看 console。`
-    console.error('批次標籤更新錯誤：', errors)
-  }
-  alert(msg)
-  // Apply pending updates locally
-  if (pendingUpdates.length) {
-    pendingUpdates.forEach(u => {
-      if (pendingQuestions.value[u.idx]) {
-        pendingQuestions.value[u.idx].tag_ids = u.tag_ids
-      }
-    })
-  }
-  // Reload exam only if some saved questions were updated
-  if (successCount > 0) {
-    await loadExam()
-  }
-}
-
-const handleBulkSubjectApplied = async ({ successCount, errors, pendingUpdates = [] }) => {
-  let msg = `已成功更新 ${successCount} 題。`
-  if (errors && errors.length) {
-    msg += `
-失敗：${errors.length} 題，詳情請查看 console。`
-    console.error('批次科目更新錯誤：', errors)
-  }
-  alert(msg)
-  // Apply pending updates locally
-  if (pendingUpdates.length) {
-    pendingUpdates.forEach(u => {
-      if (pendingQuestions.value[u.idx]) {
-        pendingQuestions.value[u.idx].subject = u.subject
-      }
-    })
-  }
-  // Reload exam only if some saved questions were updated
-  if (successCount > 0) {
-    await loadExam()
-  }
-}
+// Bulk tag/subject handlers removed; feature moved to AdminQuestionManagement
 
 // 從考卷移除題目
 const handleRemoveQuestion = async (examQuestionId) => {
@@ -1150,10 +1108,13 @@ onMounted(async () => {
 .question-list-wrapper {
   flex: 1;
   min-height: 0; /* for proper scrolling in flex container */
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 8px; /* give space so shadows and rounded corners don't get clipped */
 }
 .question-list-wrapper > * {
   height: 100%;
+  width: 100%;
 }
 .right-actions {
   padding: 12px 0 0 0;

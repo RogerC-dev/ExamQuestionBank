@@ -2,36 +2,73 @@
   <div class="question-admin">
     <!-- Question Filters -->
     <div class="question-filters">
-      <input 
-        v-model="searchTerm" 
-        type="text" 
-        class="form-control" 
-        placeholder="搜尋題目內容、科目..."
-        @keyup.enter="applyFilters" 
-      />
+      <div class="filter-search">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <input 
+          v-model="searchTerm" 
+          type="text" 
+          class="filter-input" 
+          placeholder="搜尋題目內容、科目..."
+          @keyup.enter="applyFilters" 
+        />
+      </div>
 
-      <multiselect
-        v-model="selectedSearchTags"
-        :options="tagOptions"
-        :multiple="true"
-        :close-on-select="false"
-        :clear-on-select="false"
-        :preserve-search="true"
-        placeholder="選擇標籤..."
-        track-by="id"
-        label="name"
-        class="tag-multiselect"
-      />
+      <div class="filter-tags-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tags-icon">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+          <line x1="7" y1="7" x2="7.01" y2="7"></line>
+        </svg>
+        <multiselect
+          v-model="selectedSearchTags"
+          :options="tagOptions"
+          :multiple="true"
+          :close-on-select="false"
+          :clear-on-select="false"
+          :preserve-search="true"
+          placeholder="選擇標籤..."
+          track-by="id"
+          label="name"
+          class="tag-multiselect"
+        />
+      </div>
 
-      <select v-model="ordering" class="form-select" @change="applyFilters">
-        <option value="-created_at">最新建立</option>
-        <option value="created_at">最舊建立</option>
-        <option value="-updated_at">最近更新</option>
-        <option value="content">題目內容 A-Z</option>
-      </select>
+      <div class="filter-select-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="select-icon">
+          <line x1="4" y1="21" x2="4" y2="14"></line>
+          <line x1="4" y1="10" x2="4" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12" y2="3"></line>
+          <line x1="20" y1="21" x2="20" y2="16"></line>
+          <line x1="20" y1="12" x2="20" y2="3"></line>
+          <line x1="1" y1="14" x2="7" y2="14"></line>
+          <line x1="9" y1="8" x2="15" y2="8"></line>
+          <line x1="17" y1="16" x2="23" y2="16"></line>
+        </svg>
+        <select v-model="ordering" class="filter-select" @change="applyFilters">
+          <option value="-created_at">最新建立</option>
+          <option value="created_at">最舊建立</option>
+          <option value="-updated_at">最近更新</option>
+          <option value="content">題目內容 A-Z</option>
+        </select>
+      </div>
 
-      <button class="btn btn-secondary" @click="resetFilters">重設條件</button>
-      <button class="btn btn-primary" @click="applyFilters">搜尋</button>
+      <button class="filter-btn filter-btn-reset" @click="resetFilters">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+        <span>重設</span>
+      </button>
+      <button class="filter-btn filter-btn-search" @click="applyFilters">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <span>搜尋</span>
+      </button>
     </div>
 
     <div class="question-table">
@@ -138,19 +175,72 @@
     </div>
 
     <!-- Selection Toolbar (Sticky) -->
-    <div class="selection-toolbar-wrapper" v-if="selectedCount > 0">
-      <div class="selection-toolbar sticky-top">
-        <div class="d-flex align-items-center gap-3">
-          <span class="text-muted fw-semibold">已選 <span class="badge bg-primary">{{ selectedCount }}</span> 筆</span>
-          <button class="btn btn-sm btn-outline-secondary" @click="clearSelection">清除選取</button>
-          <button class="btn btn-sm btn-primary" @click="openAddToExamModal">加入到考卷</button>
-          <button class="btn btn-sm btn-danger" @click="deleteSelectedQuestions" :disabled="isDeleting">
-            <span v-if="isDeleting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-            {{ isDeleting ? '刪除中...' : '批量刪除' }}
-          </button>
+    <transition name="slide-up">
+      <div class="selection-toolbar-wrapper" v-if="selectedCount > 0">
+        <div class="selection-toolbar">
+          <div class="toolbar-content">
+            <div class="toolbar-info">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 11 12 14 22 4"></polyline>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+              <span class="toolbar-text">已選取</span>
+              <span class="toolbar-count">{{ selectedCount }}</span>
+              <span class="toolbar-text">個題目</span>
+            </div>
+            
+            <div class="toolbar-divider"></div>
+            
+            <div class="toolbar-actions">
+              <button class="toolbar-btn toolbar-btn-secondary" @click="clearSelection" title="清除選取">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                <span>清除</span>
+              </button>
+              
+              <button class="toolbar-btn toolbar-btn-primary" @click="openAddToExamModal" title="加入到考卷">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="12" y1="18" x2="12" y2="12"></line>
+                  <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+                <span>加入考卷</span>
+              </button>
+              
+              <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkTagModal" title="批次編輯標籤">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                  <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                </svg>
+                <span>編輯標籤</span>
+              </button>
+              
+              <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkSubjectModal" title="批次編輯科目">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                <span>編輯科目</span>
+              </button>
+              
+              <div class="toolbar-divider"></div>
+              
+              <button class="toolbar-btn toolbar-btn-danger" @click="deleteSelectedQuestions" :disabled="isDeleting" title="批量刪除">
+                <div v-if="isDeleting" class="toolbar-spinner"></div>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span>{{ isDeleting ? '刪除中...' : '刪除' }}</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </transition>
 
     <!-- Enhanced Pagination -->
     <nav v-if="paginationState.totalPages > 0" class="pagination-wrapper">
@@ -335,6 +425,25 @@
       </div>
     </div>
 
+    <!-- Bulk Edit Modals -->
+    <BulkTagEditor
+      v-if="showBulkTagModal"
+      :questions="questions"
+      :pendingQuestions="[]"
+      :preselectedIds="selectedIds"
+      @close="showBulkTagModal = false"
+      @applied="handleBulkTagsApplied"
+    />
+
+    <BulkSubjectEditor
+      v-if="showBulkSubjectModal"
+      :questions="questions"
+      :pendingQuestions="[]"
+      :preselectedIds="selectedIds"
+      @close="showBulkSubjectModal = false"
+      @applied="handleBulkSubjectApplied"
+    />
+
     <!-- Delete Confirmation Modal -->
     <div v-if="isDeleteConfirmModalVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
       <div class="modal-dialog modal-dialog-centered">
@@ -390,6 +499,8 @@ import { ref, onMounted, computed, watch } from 'vue'
 import questionService from '@/services/questionService'
 import examService from '@/services/examService'
 import QuestionEditor from '@/components/QuestionEditor.vue'
+import BulkTagEditor from '@/components/BulkTagEditor.vue'
+import BulkSubjectEditor from '@/components/BulkSubjectEditor.vue'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import tagService from '@/services/tagService'
@@ -432,6 +543,36 @@ const availableExams = ref([])
 const isLoadingExams = ref(false)
 const isAddingToExam = ref(false)
 const isDeleting = ref(false)
+const showBulkTagModal = ref(false)
+const showBulkSubjectModal = ref(false)
+
+const openBulkTagModal = () => {
+  console.log('Admin: openBulkTagModal called. selectedCount=', selectedCount.value)
+  console.log('Admin: questions=', questions.value)
+  console.log('Admin: selectedIds=', selectedIds.value)
+  showBulkTagModal.value = true
+  console.log('Admin: showBulkTagModal set to true')
+  setTimeout(() => {
+    const overlay = document.querySelector('.modal-overlay')
+    console.log('Admin: modal-overlay in DOM?', !!overlay, overlay)
+  }, 100)
+}
+
+const openBulkSubjectModal = () => {
+  console.log('Admin: openBulkSubjectModal called. selectedCount=', selectedCount.value)
+  console.log('Admin: questions=', questions.value)
+  console.log('Admin: selectedIds=', selectedIds.value)
+  showBulkSubjectModal.value = true
+  console.log('Admin: showBulkSubjectModal set to true')
+  setTimeout(() => {
+    const overlay = document.querySelector('.modal-overlay')
+    console.log('Admin: modal-overlay in DOM?', !!overlay, overlay)
+  }, 100)
+}
+
+// Debugging watch to observe modal states
+watch(showBulkTagModal, (v) => console.log('showBulkTagModal changed:', v))
+watch(showBulkSubjectModal, (v) => console.log('showBulkSubjectModal changed:', v))
 
 // Affected exams state for delete confirmation
 const isDeleteConfirmModalVisible = ref(false)
@@ -878,77 +1019,263 @@ const confirmDelete = async () => {
   }
 }
 
+// Handlers for Bulk Tag/Subject modals
+const handleBulkTagsApplied = ({ successCount, errors, pendingUpdates }) => {
+  if (successCount > 0) alert(`成功更新 ${successCount} 題標籤`)
+  if (errors && errors.length > 0) alert(`有 ${errors.length} 題更新失敗，請查看 console`)
+  // Close modal and refresh
+  showBulkTagModal.value = false
+  clearSelection()
+  fetchQuestions()
+}
+
+const handleBulkSubjectApplied = ({ successCount, errors, pendingUpdates }) => {
+  if (successCount > 0) alert(`成功更新 ${successCount} 題科目`)
+  if (errors && errors.length > 0) alert(`有 ${errors.length} 題更新失敗，請查看 console`)
+  showBulkSubjectModal.value = false
+  clearSelection()
+  fetchQuestions()
+}
+
 </script>
 
 <style scoped>
 .question-admin {
-  /* Container styles matching AdminView */
+  padding: 0;
 }
 
+/* Filters */
 .question-filters {
   display: flex;
-  flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border, #CBD5E1);
+  flex-wrap: wrap;
 }
 
-.question-filters .form-control {
+.filter-search {
+  display: flex;
+  height: fit-content;
+  position: relative;
   flex: 1;
-  min-width: 220px;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
+  min-width: 280px;
 }
 
-.question-filters .form-select {
-  width: 220px;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary, #64748B);
+  pointer-events: none;
+}
+
+.filter-input {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
   font-size: 14px;
-  background: #fff;
+  transition: all 0.2s ease;
+  background: #f9fafb;
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: var(--primary, #476996);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
+}
+
+.filter-tags-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+  align-self: flex-start;
+}
+
+.tags-icon {
+  position: absolute;
+  left: 14px;
+  top: 16px;
+  z-index: 1;
+  color: var(--text-secondary, #64748B);
+  pointer-events: none;
 }
 
 .tag-multiselect {
-  flex: 1;
-  min-width: 220px;
+  width: 100%;
 }
 
+.tag-multiselect :deep(.multiselect__tags) {
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 12px 8px 44px;
+  background: #f9fafb;
+  min-height: 44px;
+  transition: all 0.2s ease;
+}
+
+.tag-multiselect :deep(.multiselect__tags):focus-within {
+  border-color: var(--primary, #476996);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
+}
+
+.tag-multiselect :deep(.multiselect__tag) {
+  background: var(--primary, #476996);
+  color: white;
+  border-radius: 6px;
+  padding: 6px 26px 6px 10px;
+  margin: 2px 4px 2px 0;
+}
+
+.tag-multiselect :deep(.multiselect__tag-icon:after) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.tag-multiselect :deep(.multiselect__tag-icon:hover) {
+  background: var(--primary-hover, #35527a);
+}
+
+.tag-multiselect :deep(.multiselect__option--highlight) {
+  background: var(--primary, #476996);
+}
+
+.tag-multiselect :deep(.multiselect__option--selected) {
+  background: var(--primary-soft, #EEF2FF);
+  color: var(--primary, #476996);
+}
+
+.tag-multiselect :deep(.multiselect__content-wrapper) {
+  position: absolute;
+  width: 100%;
+  z-index: 50;
+}
+
+.filter-select-wrapper {
+  display: flex;
+  height: fit-content;
+  position: relative;
+  min-width: 200px;
+}
+
+.select-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary, #64748B);
+  pointer-events: none;
+}
+
+.filter-select {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--primary, #476996);
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  height: fit-content;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filter-btn svg {
+  flex-shrink: 0;
+}
+
+.filter-btn-reset {
+  background: #f3f4f6;
+  color: var(--text-secondary, #64748B);
+}
+
+.filter-btn-reset:hover {
+  background: #e5e7eb;
+  color: var(--text-primary, #1E293B);
+}
+
+.filter-btn-search {
+  background: var(--primary, #476996);
+  color: white;
+}
+
+.filter-btn-search:hover {
+  background: var(--primary-hover, #35527a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
+}
+
+/* Table */
 .question-table { 
   background: white; 
-  border-radius: 8px; 
+  border-radius: 12px; 
   padding: 0; 
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border, #CBD5E1);
+  margin-bottom: 24px;
 }
 
 .table-status { 
   text-align: center; 
-  color: #6b7280; 
+  color: var(--text-secondary, #64748B);
   font-size: 14px; 
-  padding: 24px;
+  padding: 60px 20px !important;
 }
 
 .meta-badge {
   display: inline-block;
-  padding: 4px 8px;
+  padding: 4px 10px;
   margin-right: 6px;
   margin-bottom: 4px;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
 }
 
 .tag-badge {
-  display: inline-block;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  color: #374151;
-  padding: 2px 8px;
-  border-radius: 99px;
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  background: var(--primary-soft, #EEF2FF);
+  border: 1px solid var(--border, #CBD5E1);
+  color: var(--primary, #476996);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
   margin-right: 6px;
+  margin-bottom: 4px;
 }
 
 table {
@@ -957,16 +1284,25 @@ table {
 }
 
 thead {
-  background: #f8f9fa;
+  background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
+  border-bottom: 2px solid var(--border, #CBD5E1);
 }
 
 th {
   padding: 16px;
   text-align: left;
   font-weight: 600;
-  color: #2c3e50;
-  font-size: 14px;
-  border-bottom: 2px solid #e0e0e0;
+  color: var(--text-primary, #1E293B);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+th input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary, #476996);
 }
 
 th:nth-child(1), td:nth-child(1) { width: 4%; }        /* 選取欄 */
@@ -979,24 +1315,186 @@ th:nth-child(7), td:nth-child(7) { width: 12%; }       /* 建立時間 */
 th:nth-child(8), td:nth-child(8) { width: 12%; }       /* 更新時間 */
 th:nth-child(9), td:nth-child(9) { width: 5%; }        /* 操作 */
 
+/* Selection Toolbar Animations */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
 .selection-toolbar-wrapper {
-  position: sticky;
-  top: 0;
-  z-index: 999;
-  margin-bottom: 16px;
-  bottom: 50px;
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: calc(100% - 48px);
+  max-width: 1200px;
 }
 
 .selection-toolbar {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 16px;
   background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border, #CBD5E1);
+}
+
+.toolbar-content {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  gap: 16px;
+}
+
+.toolbar-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: var(--primary-soft, #EEF2FF);
+  border-radius: 10px;
+}
+
+.toolbar-info svg {
+  color: var(--primary, #476996);
+  flex-shrink: 0;
+}
+
+.toolbar-text {
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+  font-weight: 500;
+}
+
+.toolbar-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 10px;
+  background: var(--primary, #476996);
+  color: white;
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 32px;
+  background: #e5e7eb;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.toolbar-btn svg {
+  flex-shrink: 0;
+}
+
+.toolbar-btn-secondary {
+  background: #f3f4f6;
+  color: var(--text-secondary, #64748B);
+}
+
+.toolbar-btn-secondary:hover {
+  background: #e5e7eb;
+  color: var(--text-primary, #1E293B);
+  transform: translateY(-1px);
+}
+
+.toolbar-btn-primary {
+  background: var(--primary, #476996);
+  color: white;
+}
+
+.toolbar-btn-primary:hover {
+  background: var(--primary-hover, #35527a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
+}
+
+.toolbar-btn-danger {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.toolbar-btn-danger:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.toolbar-btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.toolbar-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(220, 38, 38, 0.3);
+  border-top-color: #dc2626;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .toolbar-content {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+  }
+  
+  .toolbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  
+  .toolbar-btn span {
+    display: none;
+  }
+  
+  .toolbar-btn {
+    padding: 8px 12px;
+  }
+  
+  .toolbar-divider {
+    display: none;
+  }
 }
 
 
@@ -1004,24 +1502,41 @@ td {
   padding: 16px;
   border-bottom: 1px solid #f0f0f0;
   font-size: 14px;
+  color: var(--text-primary, #1E293B);
   overflow: visible;
   text-overflow: ellipsis;
 }
 
-tr:hover {
-  background: #f8f9fa;
+td input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary, #476996);
 }
 
-/* Enhanced Pagination Styles */
+tbody tr {
+  transition: all 0.2s ease;
+}
+
+tbody tr:hover {
+  background: var(--primary-soft, #EEF2FF);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Pagination */
 .pagination-wrapper {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 16px;
+  padding: 20px;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border, #CBD5E1);
   flex-wrap: wrap;
 }
 
@@ -1032,14 +1547,38 @@ tr:hover {
   flex-wrap: wrap;
 }
 
+.pagination-info .text-muted {
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+  font-weight: 500;
+}
+
 .page-size-select {
   width: auto;
-  min-width: 120px;
+  min-width: 130px;
+  padding: 8px 32px 8px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.page-size-select:focus {
+  outline: none;
+  border-color: var(--primary, #476996);
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
 }
 
 .pagination {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 
 .page-link {
@@ -1048,28 +1587,35 @@ tr:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #dee2e6;
-  color: #495057;
-  background-color: #fff;
-  transition: all 0.2s;
+  padding: 0 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  color: var(--text-primary, #1E293B);
+  background-color: white;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .page-link:hover:not(:disabled) {
-  background-color: #e9ecef;
-  border-color: #dee2e6;
+  background-color: var(--primary-soft, #EEF2FF);
+  border-color: var(--primary, #476996);
+  color: var(--primary, #476996);
+  transform: translateY(-1px);
 }
 
 .page-item.active .page-link {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
+  background: var(--primary, #476996);
+  border-color: var(--primary, #476996);
   color: white;
-  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(71, 105, 150, 0.2);
 }
 
 .page-item.disabled .page-link {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.4;
+  transform: none;
 }
 
 .page-jumper {
@@ -1078,30 +1624,88 @@ tr:hover {
   gap: 8px;
 }
 
+.page-jumper .text-muted {
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+}
+
 .page-jumper input {
   width: 70px;
   text-align: center;
+  padding: 8px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.page-jumper input:focus {
+  outline: none;
+  border-color: var(--primary, #476996);
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
 }
 
 .page-jumper .btn {
   white-space: nowrap;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary, #476996);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
+.page-jumper .btn:hover:not(:disabled) {
+  background: var(--primary-hover, #35527a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
+}
+
+.page-jumper .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .question-filters {
-    flex-direction: column;
+  .question-admin {
+    padding: 0;
   }
 
-  .question-filters .form-control,
-  .question-filters .form-select,
-  .tag-multiselect {
+  .question-filters {
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .filter-search,
+  .filter-tags-wrapper,
+  .filter-select-wrapper {
+    display: flex;
+    height: fit-content;
     width: 100%;
     min-width: auto;
+  }
+
+  .filter-btn {
+    flex: 1;
+  }
+
+  .question-table {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 800px;
   }
 
   .pagination-wrapper {
     flex-direction: column;
     gap: 12px;
+    padding: 16px;
   }
 
   .pagination-info,

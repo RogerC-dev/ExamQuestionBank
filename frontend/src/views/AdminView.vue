@@ -2,33 +2,68 @@
   <div class="admin-view">
     <div class="container">
       <div class="admin-header">
-        <div style="display:flex; align-items:center; gap:20px">
-          <h2 class="section-title">題庫管理後台</h2>
-          <div class="admin-tabs">
-            <button :class="['tab-btn', { active: currentTab === 'exams' }]" @click="setTab('exams')">考卷管理</button>
-            <button :class="['tab-btn', { active: currentTab === 'questions' }]" @click="setTab('questions')">題目管理</button>
+        <div class="header-top">
+          <div class="header-title-section">
+            <h2 class="section-title">題庫管理後台</h2>
+            <p class="section-subtitle">管理考卷與題目資料</p>
+          </div>
+          <div class="admin-actions">
+            <template v-if="currentTab === 'exams'">
+              <button class="action-btn action-btn-secondary" @click="batchImport" :disabled="isImporting">
+                <div v-if="isImporting" class="btn-spinner"></div>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>{{ isImporting ? '匯入中...' : '匯入考卷' }}</span>
+              </button>
+              <button class="action-btn action-btn-primary" @click="addExam">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>新增考卷</span>
+              </button>
+              <input ref="jsonImportInput" type="file" accept="application/json" style="display:none" @change="handleImportFile" />
+            </template>
+            <template v-else>
+              <button class="action-btn action-btn-secondary" @click="importQuestions" :disabled="isImportingQuestions">
+                <div v-if="isImportingQuestions" class="btn-spinner"></div>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>{{ isImportingQuestions ? '匯入中...' : '匯入題目' }}</span>
+              </button>
+              <button class="action-btn action-btn-primary" @click="addQuestion">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>新增題目</span>
+              </button>
+              <input ref="questionImportInput" type="file" accept="application/json" style="display:none" @change="handleQuestionImportFile" />
+            </template>
           </div>
         </div>
-        <div class="admin-actions">
-          <template v-if="currentTab === 'exams'">
-            <button class="btn btn-primary" @click="addExam">新增考卷</button>
-            <button class="btn btn-primary" @click="batchImport" :disabled="isImporting">
-            <span v-if="isImporting" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-            <span v-if="!isImporting">匯入考卷</span>
-            <span v-else>匯入中...</span>
+        <div class="admin-tabs">
+          <button :class="['tab-btn', { active: currentTab === 'exams' }]" @click="setTab('exams')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <span>考卷管理</span>
           </button>
-          <!-- JSON import (hidden input) -->
-          <input ref="jsonImportInput" type="file" accept="application/json" style="display:none" @change="handleImportFile" />
-          </template>
-          <template v-else>
-            <button class="btn btn-primary" @click="addQuestion">新增題目</button>
-            <button class="btn btn-primary" @click="importQuestions" :disabled="isImportingQuestions">
-              <span v-if="isImportingQuestions" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-              <span v-if="!isImportingQuestions">匯入題目</span>
-              <span v-else>匯入中...</span>
-            </button>
-            <input ref="questionImportInput" type="file" accept="application/json" style="display:none" @change="handleQuestionImportFile" />
-          </template>
+          <button :class="['tab-btn', { active: currentTab === 'questions' }]" @click="setTab('questions')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <span>題目管理</span>
+          </button>
         </div>
       </div>
 
@@ -36,22 +71,53 @@
       <div v-if="currentTab === 'exams'">
         <!-- Exam Filters -->
         <div class="exam-filters">
-          <input
-            v-model="searchTerm"
-            type="text"
-            class="form-control"
-            placeholder="搜尋考卷名稱或說明"
-            @keyup.enter="applyFilters"
-          />
+          <div class="filter-search">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input
+              v-model="searchTerm"
+              type="text"
+              class="filter-input"
+              placeholder="搜尋考卷名稱或說明..."
+              @keyup.enter="applyFilters"
+            />
+          </div>
 
-          <select v-model="ordering" class="form-select" @change="applyFilters">
-            <option v-for="option in orderingOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
+          <div class="filter-select-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="select-icon">
+              <line x1="4" y1="21" x2="4" y2="14"></line>
+              <line x1="4" y1="10" x2="4" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12" y2="3"></line>
+              <line x1="20" y1="21" x2="20" y2="16"></line>
+              <line x1="20" y1="12" x2="20" y2="3"></line>
+              <line x1="1" y1="14" x2="7" y2="14"></line>
+              <line x1="9" y1="8" x2="15" y2="8"></line>
+              <line x1="17" y1="16" x2="23" y2="16"></line>
+            </svg>
+            <select v-model="ordering" class="filter-select" @change="applyFilters">
+              <option v-for="option in orderingOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
 
-          <button class="btn btn-secondary" @click="resetFilters">重設條件</button>
-          <button class="btn btn-primary" @click="applyFilters">搜尋</button>
+          <button class="filter-btn filter-btn-reset" @click="resetFilters">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+            <span>重設</span>
+          </button>
+          <button class="filter-btn filter-btn-search" @click="applyFilters">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <span>搜尋</span>
+          </button>
         </div>
 
         <!-- Upload Area -->
@@ -1185,50 +1251,270 @@ onMounted(() => {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 24px;
 }
 
+/* Admin Header */
 .admin-header {
+  margin-bottom: 32px;
+}
+
+.header-top {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-title-section {
+  flex: 1;
 }
 
 .section-title {
-  font-size: 20px;
-  font-weight: bold;
-  color: #2c3e50;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary, #1E293B);
+  margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
 }
 
+.section-subtitle {
+  font-size: 15px;
+  color: var(--text-secondary, #64748B);
+  margin: 0;
+}
+
+/* Action Buttons */
 .admin-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.action-btn svg {
+  flex-shrink: 0;
+}
+
+.action-btn-primary {
+  background: var(--primary, #476996);
+  color: white;
+  box-shadow: 0 2px 4px rgba(71, 105, 150, 0.2);
+}
+
+.action-btn-primary:hover {
+  background: var(--primary-hover, #35527a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
+}
+
+.action-btn-secondary {
+  background: #f3f4f6;
+  color: var(--text-secondary, #64748B);
+}
+
+.action-btn-secondary:hover {
+  background: #e5e7eb;
+  color: var(--text-primary, #1E293B);
+  transform: translateY(-1px);
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Tabs */
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  background: #f3f4f6;
+  border-radius: 12px;
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-secondary, #64748B);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn svg {
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary, #1E293B);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.tab-btn:hover svg {
+  opacity: 1;
+}
+
+.tab-btn.active {
+  background: white;
+  color: var(--primary, #476996);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tab-btn.active svg {
+  opacity: 1;
+}
+
+/* Filters */
 .exam-filters {
   display: flex;
-  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border, #CBD5E1);
+  flex-wrap: wrap;
 }
 
-.filter-input,
-.filter-select {
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
+.filter-search {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary, #64748B);
+  pointer-events: none;
 }
 
 .filter-input {
-  flex: 1;
-  min-width: 220px;
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: #f9fafb;
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: var(--primary, #476996);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
+}
+
+.filter-select-wrapper {
+  position: relative;
+  min-width: 200px;
+}
+
+.select-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary, #64748B);
+  pointer-events: none;
 }
 
 .filter-select {
-  width: 220px;
-  background: #fff;
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--primary, #476996);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filter-btn svg {
+  flex-shrink: 0;
+}
+
+.filter-btn-reset {
+  background: #f3f4f6;
+  color: var(--text-secondary, #64748B);
+}
+
+.filter-btn-reset:hover {
+  background: #e5e7eb;
+  color: var(--text-primary, #1E293B);
+}
+
+.filter-btn-search {
+  background: var(--primary, #476996);
+  color: white;
+}
+
+.filter-btn-search:hover {
+  background: var(--primary-hover, #35527a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
 }
 
 .alert {
@@ -1243,96 +1529,60 @@ onMounted(() => {
   color: #842029;
 }
 
-.btn {
-  padding: 10px 24px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-primary {
-  background: #007bff;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #0056b3;
-}
-
-.btn-secondary {
-  background: #6c757d;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: #5a6268;
-}
-
+/* Upload Area */
 .upload-area {
   background: white;
-  border: 2px dashed #cbd5e0;
-  border-radius: 8px;
+  border: 2px dashed var(--border, #CBD5E1);
+  border-radius: 12px;
   padding: 60px;
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
 }
 
 .upload-area:hover {
-  border-color: #007bff;
-  background: #f8f9fa;
+  border-color: var(--primary, #476996);
+  background: var(--primary-soft, #EEF2FF);
 }
 
 .upload-icon {
   font-size: 64px;
-  color: #cbd5e0;
+  color: var(--text-secondary, #64748B);
   margin-bottom: 16px;
 }
 
 .upload-text {
   font-size: 16px;
-  color: #666;
+  color: var(--text-primary, #1E293B);
+  font-weight: 500;
   margin-bottom: 8px;
 }
 
 .upload-hint {
   font-size: 14px;
-  color: #999;
+  color: var(--text-secondary, #64748B);
 }
 
 .pdf-upload-wrapper {
   margin-bottom: 30px;
 }
 
+/* Table */
 .exam-table {
   background: white;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border, #CBD5E1);
+  margin-bottom: 24px;
 }
 
 .table-status {
   text-align: center;
-  color: #6b7280;
+  color: var(--text-secondary, #64748B);
   font-size: 14px;
-}
-
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-bottom: 30px;
-}
-
-.page-indicator {
-  font-size: 14px;
-  color: #4a5568;
+  padding: 60px 20px !important;
 }
 
 table {
@@ -1341,16 +1591,18 @@ table {
 }
 
 thead {
-  background: #f8f9fa;
+  background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
+  border-bottom: 2px solid var(--border, #CBD5E1);
 }
 
 th {
   padding: 16px;
   text-align: left;
   font-weight: 600;
-  color: #2c3e50;
-  font-size: 14px;
-  border-bottom: 2px solid #e0e0e0;
+  color: var(--text-primary, #1E293B);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* 設定各欄位寬度 */
@@ -1367,12 +1619,21 @@ td {
   padding: 16px;
   border-bottom: 1px solid #f0f0f0;
   font-size: 14px;
+  color: var(--text-primary, #1E293B);
   overflow: visible;
   text-overflow: ellipsis;
 }
 
-tr:hover {
-  background: #f8f9fa;
+tbody tr {
+  transition: all 0.2s ease;
+}
+
+tbody tr:hover {
+  background: var(--primary-soft, #EEF2FF);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .icon-btn {
@@ -1430,24 +1691,80 @@ tr:hover {
   color: #7f8c8d;
 }
 
-@media (max-width: 768px) {
-  .admin-header {
+/* Responsive */
+@media (max-width: 1024px) {
+  .header-top {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .admin-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .section-title {
+    font-size: 24px;
+  }
+
+  .section-subtitle {
+    font-size: 14px;
+  }
+
+  .admin-tabs {
+    width: 100%;
+  }
+
+  .tab-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .tab-btn span {
+    display: none;
   }
 
   .admin-actions {
-    flex-wrap: wrap;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .action-btn span {
+    display: none;
+  }
+
+  .action-btn {
+    padding: 10px 14px;
   }
 
   .exam-filters {
     flex-direction: column;
+    padding: 16px;
   }
 
-  .filter-select,
-  .filter-input {
+  .filter-search,
+  .filter-select-wrapper {
     width: 100%;
+    min-width: auto;
+  }
+
+  .filter-btn {
+    flex: 1;
+  }
+
+  .exam-table {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 800px;
   }
 }
 

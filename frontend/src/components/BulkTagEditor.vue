@@ -1,54 +1,164 @@
 <template>
   <div class="modal-overlay" @click.self="close">
-    <div class="modal-content">
+    <div class="modal-container">
+      <!-- Header -->
       <div class="modal-header">
-        <h3>批次編輯標籤</h3>
-        <button class="btn-close" @click="close">×</button>
-      </div>
-
-      <div class="modal-body">
-        <div class="form-group">
-          <label>套用範圍</label>
+        <div class="header-content">
+          <div class="icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+              <line x1="7" y1="7" x2="7.01" y2="7"></line>
+            </svg>
+          </div>
           <div>
-            <label><input type="radio" v-model="applyTo" value="all"> 全部題目</label>
-            <label style="margin-left:16px"><input type="radio" v-model="applyTo" value="selected"> 選取題目</label>
+            <h3 class="modal-title">批次編輯標籤</h3>
+            <p class="modal-subtitle">批次新增或移除題目標籤</p>
           </div>
         </div>
+        <button class="close-btn" @click="close" :disabled="processing">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
 
-        <div v-if="applyTo === 'selected'" class="form-group">
-          <label>選擇題目</label>
-          <div class="question-list">
-            <label v-for="q in questions" :key="q.id || q.order" class="question-item">
-              <input type="checkbox" v-model="selectedQuestionIds" :value="q.id"> 
-              <span class="question-summary">{{ q.question_content || q.pendingData?.content || '未命名題目' }}</span>
+      <!-- Body -->
+      <div class="modal-body">
+        <!-- Info Banner -->
+        <div class="info-banner">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>將為 <strong>{{ targetQuestionsCount }}</strong> 個題目 <strong>{{ mode === 'add' ? '新增' : '移除' }}</strong> 標籤</span>
+        </div>
+
+        <!-- 套用範圍 -->
+        <div class="form-section">
+          <label class="section-label">套用範圍</label>
+          <div class="radio-group-horizontal">
+            <label class="radio-card" :class="{ active: applyTo === 'all' }">
+              <input type="radio" v-model="applyTo" value="all">
+              <div class="radio-content">
+                <div class="radio-title">全部題目</div>
+                <div class="radio-desc">套用至當前頁面所有題目 ({{ questions.length }} 題)</div>
+              </div>
+            </label>
+            <label class="radio-card" :class="{ active: applyTo === 'selected' }">
+              <input type="radio" v-model="applyTo" value="selected">
+              <div class="radio-content">
+                <div class="radio-title">選取題目</div>
+                <div class="radio-desc">僅套用至勾選的題目</div>
+              </div>
             </label>
           </div>
         </div>
 
-        <div class="form-group">
-          <label>標籤操作</label>
-          <div>
-            <label><input type="radio" v-model="mode" value="add"> 新增標籤</label>
-            <label style="margin-left:16px"><input type="radio" v-model="mode" value="remove"> 移除標籤</label>
+        <!-- 選擇題目 -->
+        <div v-if="applyTo === 'selected'" class="form-section">
+          <label class="section-label">
+            選擇題目
+            <span class="label-hint">({{ selectedQuestionIds.length }} / {{ questions.length }})</span>
+          </label>
+          <div class="question-list-wrapper">
+            <div class="question-list">
+              <label v-for="q in questions" :key="q.id || q.order" class="question-item">
+                <input type="checkbox" v-model="selectedQuestionIds" :value="q.id || q.question">
+                <div class="question-info">
+                  <div class="question-content">{{ q.question_content || q.content || q.pendingData?.content || '未命名題目' }}</div>
+                  <div class="question-meta">
+                    <span class="meta-id">ID: {{ q.id || q.question || q.order }}</span>
+                    <span v-if="q.subject" class="meta-subject">{{ q.subject }}</span>
+                  </div>
+                  <div v-if="q.tags && q.tags.length > 0" class="question-tags">
+                    <span v-for="tag in q.tags" :key="tag.id" class="question-tag">{{ tag.name }}</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+            <div class="list-actions">
+              <button type="button" class="text-btn" @click="selectAll">全選</button>
+              <button type="button" class="text-btn" @click="deselectAll">取消全選</button>
+            </div>
           </div>
         </div>
 
-        <div class="form-group">
-          <label>標籤</label>
-          <multiselect v-model="selectedTags" :options="tagOptions" :multiple="true" track-by="id" label="name" placeholder="選擇標籤"></multiselect>
+        <!-- 標籤操作 -->
+        <div class="form-section">
+          <label class="section-label">標籤操作</label>
+          <div class="mode-selection">
+            <div class="mode-card" :class="{ active: mode === 'add' }" @click="mode = 'add'">
+              <div class="mode-radio"></div>
+              <div class="mode-label">
+                <div class="mode-label-title">➕ 新增標籤</div>
+                <div class="mode-label-desc">將選定標籤加入題目</div>
+              </div>
+            </div>
+            <div class="mode-card" :class="{ active: mode === 'remove' }" @click="mode = 'remove'">
+              <div class="mode-radio"></div>
+              <div class="mode-label">
+                <div class="mode-label-title">➖ 移除標籤</div>
+                <div class="mode-label-desc">從題目中移除選定標籤</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 標籤選擇 -->
+        <div class="form-section">
+          <label class="section-label">
+            選擇標籤 
+            <span class="required">*</span>
+          </label>
+          <div class="tags-input-card">
+            <multiselect 
+              v-model="selectedTags" 
+              :options="tagOptions" 
+              :multiple="true" 
+              track-by="id" 
+              label="name" 
+              placeholder="點擊選擇標籤..."
+              :disabled="processing"
+            />
+          </div>
+          <div v-if="selectedTags.length > 0" class="preview-section">
+            <div class="preview-header">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span class="preview-title">預覽變更</span>
+            </div>
+            <div class="preview-content">
+              將 <strong>{{ mode === 'add' ? '新增' : '移除' }}</strong> 以下標籤：
+              <div class="tag-preview-list">
+                <span v-for="tag in selectedTags" :key="tag.id" class="tag-chip">{{ tag.name }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
+      <!-- Footer -->
       <div class="modal-footer">
-        <button class="btn btn-secondary" @click="close">取消</button>
-        <button class="btn btn-primary" :disabled="processing || (selectedTags.length===0)" @click="apply">套用</button>
+        <button class="btn-cancel" @click="close" :disabled="processing">
+          取消
+        </button>
+        <button class="btn-apply" :disabled="processing || selectedTags.length === 0" @click="apply">
+          <div v-if="processing" class="spinner"></div>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          {{ processing ? '處理中...' : '套用' }}
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import tagService from '@/services/tagService'
@@ -71,6 +181,7 @@ const selectedQuestionIds = ref([...props.preselectedIds])
 const processing = ref(false)
 
 onMounted(async () => {
+  console.log('BulkTagEditor mounted. preselectedIds=', props.preselectedIds)
   try {
     const res = await tagService.getTags()
     let items = res.data?.results || res.data
@@ -81,10 +192,26 @@ onMounted(async () => {
   }
 })
 
+onUnmounted(() => {
+  console.log('BulkTagEditor unmounted')
+})
+
+const getId = (q) => q.question ?? q.id
+const contentOf = (q) => q.question_content ?? q.content ?? q.pendingData?.content
 const targetQuestions = computed(() => {
   if (applyTo.value === 'all') return props.questions
-  return props.questions.filter(q => selectedQuestionIds.value.includes(q.id))
+  return props.questions.filter(q => selectedQuestionIds.value.includes(q.id) || selectedQuestionIds.value.includes(q.question))
 })
+
+const targetQuestionsCount = computed(() => targetQuestions.value.length)
+
+const selectAll = () => {
+  selectedQuestionIds.value = props.questions.map(q => q.id || q.question)
+}
+
+const deselectAll = () => {
+  selectedQuestionIds.value = []
+}
 
 const apply = async () => {
   processing.value = true
@@ -101,7 +228,7 @@ const apply = async () => {
     try {
       if (q.isPending) {
         // pending question stored locally (pendingQuestions indexed by pending-<index>)
-        const idx = parseInt(q.id.toString().replace('pending-', ''), 10)
+        const idx = parseInt((q.id || '').toString().replace('pending-', ''), 10)
         if (props.pendingQuestions[idx]) {
           const current = props.pendingQuestions[idx]
           const currentTagIds = current.tag_ids || current.tags || []
@@ -117,9 +244,10 @@ const apply = async () => {
       } else {
         // saved question -> update via API
         // fetch current question tags if not present
+        const id = getId(q)
         let currentQuestion = q.questionDetail
         if (!currentQuestion) {
-          const res = await questionService.getQuestion(q.question)
+          const res = await questionService.getQuestion(id)
           currentQuestion = res.data
         }
         const currentTagIds = currentQuestion.tags ? currentQuestion.tags.map(t => t.id) : []
@@ -130,7 +258,7 @@ const apply = async () => {
         } else {
           newTagIds = currentTagIds.filter(id => !tagIdsToModify.includes(id))
         }
-        savedUpdates.push({ id: q.question, tag_ids: newTagIds })
+        savedUpdates.push({ id: id, tag_ids: newTagIds })
       }
     } catch (err) {
       console.error('更新題目標籤失敗', q, err)
@@ -164,12 +292,604 @@ const close = () => emit('close')
 </script>
 
 <style scoped>
-.modal-overlay { position: fixed; inset: 0; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.4); z-index:1000 }
-.modal-content { width:90%; max-width:900px; background:white; border-radius:6px; overflow:hidden }
-.modal-header { display:flex; justify-content:space-between; padding:16px; border-bottom:1px solid #eee }
-.modal-body { padding: 16px }
-.modal-footer { padding: 12px 16px; display:flex; gap: 8px; justify-content:flex-end; border-top:1px solid #eee }
-.question-list { max-height:220px; overflow:auto; border:1px solid #eee; padding:8px; border-radius:6px }
-.question-item { display:flex; gap:8px; align-items:center; padding:4px 8px }
-.question-summary { color:#444 }
+/* Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 2147483647;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Container */
+.modal-container {
+  width: 90%;
+  max-width: 720px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid #CBD5E1;
+}
+
+.header-content {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--primary, #476996);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+  margin: 0 0 4px 0;
+}
+
+.modal-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+  margin: 0;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.close-btn:hover:not(:disabled) {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.close-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Body */
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Info Banner */
+.info-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--primary-soft, #EEF2FF);
+  border: 1px solid var(--border, #CBD5E1);
+  border-radius: 8px;
+  color: var(--text-primary, #1E293B);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.info-banner svg {
+  color: var(--primary, #476996);
+  flex-shrink: 0;
+}
+
+.info-banner strong {
+  color: var(--primary, #476996);
+  font-weight: 600;
+}
+
+/* Form Section */
+.form-section {
+  margin-bottom: 24px;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+  margin-bottom: 12px;
+}
+
+.label-hint {
+  font-weight: 400;
+  color: var(--text-secondary, #64748B);
+  font-size: 13px;
+}
+
+.required {
+  color: #ef4444;
+}
+
+/* Radio Group */
+.radio-group {
+  display: grid;
+  gap: 12px;
+}
+
+.radio-group-horizontal {
+  display: flex;
+  gap: 12px;
+}
+
+.radio-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.radio-card:hover {
+  border-color: var(--primary, #476996);
+  background: #f8fafc;
+}
+
+.radio-card.active {
+  border-color: var(--primary, #476996);
+  background: var(--primary-soft, #EEF2FF);
+}
+
+.radio-card input[type="radio"] {
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary, #476996);
+}
+
+.radio-content {
+  flex: 1;
+}
+
+.radio-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+  margin-bottom: 4px;
+}
+
+.radio-desc {
+  font-size: 13px;
+  color: var(--text-secondary, #64748B);
+}
+
+/* Mode Selection */
+.mode-selection {
+  display: flex;
+  gap: 12px;
+}
+
+.mode-card {
+  flex: 1;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mode-card:hover {
+  border-color: var(--primary, #476996);
+  background: var(--primary-soft, #EEF2FF);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.mode-card.active {
+  border-color: var(--primary, #476996);
+  background: var(--primary-soft, #EEF2FF);
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
+}
+
+.mode-radio {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mode-card.active .mode-radio {
+  border-color: var(--primary, #476996);
+}
+
+.mode-card.active .mode-radio::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  background: var(--primary, #476996);
+  border-radius: 50%;
+}
+
+.mode-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mode-label-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+}
+
+.mode-label-desc {
+  font-size: 12px;
+  color: var(--text-secondary, #64748B);
+}
+
+/* Question List */
+.question-list-wrapper {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.question-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.question-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.question-item:last-child {
+  border-bottom: none;
+}
+
+.question-item:hover {
+  background: #f9fafb;
+}
+
+.question-item input[type="checkbox"] {
+  margin-top: 4px;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary, #476996);
+}
+
+.question-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.question-content {
+  font-size: 14px;
+  color: var(--text-primary, #1E293B);
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.question-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary, #64748B);
+}
+
+.meta-id {
+  font-family: monospace;
+}
+
+.meta-subject {
+  padding: 2px 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  color: #6b7280;
+}
+
+.question-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.question-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: var(--primary-soft, #EEF2FF);
+  color: var(--primary, #476996);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.list-actions {
+  display: flex;
+  gap: 16px;
+  padding: 10px 16px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.text-btn {
+  border: none;
+  background: none;
+  color: var(--primary, #476996);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.text-btn:hover {
+  background: var(--primary-soft, #EEF2FF);
+  color: var(--primary-hover, #35527a);
+}
+
+/* Tags Input */
+.tags-input-card {
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  transition: all 0.2s ease;
+}
+
+.tags-input-card:focus-within {
+  border-color: var(--primary, #476996);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
+}
+
+/* Multiselect styling */
+:deep(.multiselect) {
+  min-height: 44px;
+}
+
+:deep(.multiselect__tags) {
+  border: none;
+  background: transparent;
+  padding: 4px;
+  min-height: 40px;
+}
+
+:deep(.multiselect__tag) {
+  background: var(--primary, #476996);
+  color: white;
+  border-radius: 6px;
+  padding: 6px 26px 6px 10px;
+  margin: 2px 4px 2px 0;
+}
+
+:deep(.multiselect__tag-icon:after) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+:deep(.multiselect__tag-icon:hover) {
+  background: var(--primary-hover, #35527a);
+}
+
+:deep(.multiselect__option--highlight) {
+  background: var(--primary, #476996);
+}
+
+:deep(.multiselect__option--selected) {
+  background: var(--primary-soft, #EEF2FF);
+  color: var(--primary, #476996);
+}
+
+/* Preview */
+.preview-section {
+  padding: 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  margin-top: 16px;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #166534;
+  margin-bottom: 8px;
+}
+
+.preview-header svg {
+  color: #16a34a;
+}
+
+.preview-content {
+  font-size: 14px;
+  color: #15803d;
+  line-height: 1.6;
+}
+
+.preview-content strong {
+  color: #14532d;
+  font-weight: 600;
+}
+
+.tag-preview-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Footer */
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 20px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 0 0 16px 16px;
+}
+
+.btn-cancel,
+.btn-apply {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+}
+
+.btn-cancel {
+  background: white;
+  color: var(--text-secondary, #64748B);
+  border: 1px solid #d1d5db;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.btn-apply {
+  background: var(--primary, #476996);
+  color: white;
+  border: none;
+}
+
+.btn-apply:hover:not(:disabled) {
+  background: var(--primary-hover, #35527a);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-apply:disabled,
+.btn-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Scrollbar */
+.question-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.question-list::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.question-list::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.question-list::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
 </style>
