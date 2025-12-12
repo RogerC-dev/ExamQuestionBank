@@ -2,55 +2,71 @@
   <div class="admin-view">
     <div class="container">
       <div class="admin-header">
-        <h2 class="section-title">題庫管理後台</h2>
+        <div style="display:flex; align-items:center; gap:20px">
+          <h2 class="section-title">題庫管理後台</h2>
+          <div class="admin-tabs">
+            <button :class="['tab-btn', { active: currentTab === 'exams' }]" @click="setTab('exams')">考卷管理</button>
+            <button :class="['tab-btn', { active: currentTab === 'questions' }]" @click="setTab('questions')">題目管理</button>
+          </div>
+        </div>
         <div class="admin-actions">
-          <button class="btn btn-primary" @click="addExam">新增考卷</button>
-          <button class="btn btn-primary" @click="batchImport" :disabled="isImporting">
+          <template v-if="currentTab === 'exams'">
+            <button class="btn btn-primary" @click="addExam">新增考卷</button>
+            <button class="btn btn-primary" @click="batchImport" :disabled="isImporting">
             <span v-if="isImporting" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
             <span v-if="!isImporting">匯入考卷</span>
             <span v-else>匯入中...</span>
           </button>
           <!-- JSON import (hidden input) -->
           <input ref="jsonImportInput" type="file" accept="application/json" style="display:none" @change="handleImportFile" />
+          </template>
+          <template v-else>
+            <button class="btn btn-primary" @click="addQuestion">新增題目</button>
+            <button class="btn btn-primary" @click="importQuestions" :disabled="isImportingQuestions">
+              <span v-if="isImportingQuestions" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              <span v-if="!isImportingQuestions">匯入題目</span>
+              <span v-else>匯入中...</span>
+            </button>
+            <input ref="questionImportInput" type="file" accept="application/json" style="display:none" @change="handleQuestionImportFile" />
+          </template>
         </div>
       </div>
 
-      <div class="exam-filters">
-        <input
-          v-model="searchTerm"
-          type="text"
-          class="form-control"
-          placeholder="搜尋考卷名稱或說明"
-          @keyup.enter="applyFilters"
-        />
+      <!-- Main Content: exams or questions -->
+      <div v-if="currentTab === 'exams'">
+        <!-- Exam Filters -->
+        <div class="exam-filters">
+          <input
+            v-model="searchTerm"
+            type="text"
+            class="form-control"
+            placeholder="搜尋考卷名稱或說明"
+            @keyup.enter="applyFilters"
+          />
 
-        <select v-model="ordering" class="form-select" @change="applyFilters">
-          <option v-for="option in orderingOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </select>
+          <select v-model="ordering" class="form-select" @change="applyFilters">
+            <option v-for="option in orderingOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
 
-        <button class="btn btn-secondary" @click="resetFilters">重設條件</button>
-        <button class="btn btn-primary" @click="applyFilters">搜尋</button>
-      </div>
+          <button class="btn btn-secondary" @click="resetFilters">重設條件</button>
+          <button class="btn btn-primary" @click="applyFilters">搜尋</button>
+        </div>
 
-      <!-- Upload Area -->
-      <div v-if="showUploadSection" class="upload-area" @click="handleUpload">
-        <div class="upload-icon">[檔案]</div>
-        <div class="upload-text">拖放檔案至此或點擊上傳</div>
-        <div class="upload-hint">支援格式: JSON, CSV, PDF</div>
-      </div>
+        <!-- Upload Area -->
+        <div v-if="showUploadSection" class="upload-area" @click="handleUpload">
+          <div class="upload-icon">[檔案]</div>
+          <div class="upload-text">拖放檔案至此或點擊上傳</div>
+          <div class="upload-hint">支援格式: JSON, CSV, PDF</div>
+        </div>
 
-      <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
-        {{ errorMessage }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-
-      <!-- PDF 匯入模組 -->
-      <!-- PDF 匯入模組需在考卷建立/編輯頁使用，admin 列表暫不顯示 -->
-
-      <!-- Exam Table -->
-      <div class="exam-table">
+        <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+          {{ errorMessage }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <!-- Exam Table -->
+        <div class="exam-table">
         <table class="table table-striped table-hover">
           <thead>
             <tr>
@@ -134,24 +150,86 @@
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
 
-      <nav v-if="paginationState.hasPrev || paginationState.hasNext" class="d-flex justify-content-end align-items-center gap-3">
+      <div v-else>
+        <AdminQuestionManagement />
+      </div>
+
+      <!-- Enhanced Pagination -->
+      <nav v-if="currentTab === 'exams' && paginationState.totalPages > 0" class="pagination-wrapper">
+        <div class="pagination-info">
+          <span class="text-muted">
+            共 {{ paginationState.totalCount }} 筆 | 第 {{ currentPage }} / {{ paginationState.totalPages }} 頁
+          </span>
+          <select v-model="pageSize" class="form-select form-select-sm page-size-select" @change="onPageSizeChange">
+            <option :value="10">每頁 10 筆</option>
+            <option :value="20">每頁 20 筆</option>
+            <option :value="50">每頁 50 筆</option>
+            <option :value="100">每頁 100 筆</option>
+          </select>
+        </div>
+
         <ul class="pagination mb-0">
           <li class="page-item" :class="{ disabled: !paginationState.hasPrev || isLoading }">
-            <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToPreviousPage">
-              上一頁
+            <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToFirstPage" title="第一頁">
+              <span aria-hidden="true">&laquo;</span>
             </button>
           </li>
-          <li class="page-item disabled">
-            <span class="page-link">第 {{ currentPage }} 頁</span>
+          <li class="page-item" :class="{ disabled: !paginationState.hasPrev || isLoading }">
+            <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToPreviousPage" title="上一頁">
+              <span aria-hidden="true">&lsaquo;</span>
+            </button>
+          </li>
+
+          <!-- Page Numbers -->
+          <li 
+            v-for="page in visiblePages" 
+            :key="page" 
+            class="page-item" 
+            :class="{ active: page === currentPage, disabled: isLoading }"
+          >
+            <button 
+              class="page-link" 
+              :disabled="isLoading"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </li>
+
+          <li class="page-item" :class="{ disabled: !paginationState.hasNext || isLoading }">
+            <button class="page-link" :disabled="!paginationState.hasNext || isLoading" @click="goToNextPage" title="下一頁">
+              <span aria-hidden="true">&rsaquo;</span>
+            </button>
           </li>
           <li class="page-item" :class="{ disabled: !paginationState.hasNext || isLoading }">
-            <button class="page-link" :disabled="!paginationState.hasNext || isLoading" @click="goToNextPage">
-              下一頁
+            <button class="page-link" :disabled="!paginationState.hasNext || isLoading" @click="goToLastPage" title="最後一頁">
+              <span aria-hidden="true">&raquo;</span>
             </button>
           </li>
         </ul>
+
+        <div class="page-jumper">
+          <span class="text-muted me-2">跳至</span>
+          <input 
+            v-model.number="jumpToPage" 
+            type="number" 
+            class="form-control form-control-sm" 
+            :min="1" 
+            :max="paginationState.totalPages"
+            @keyup.enter="handlePageJump"
+            placeholder="頁碼"
+          />
+          <button 
+            class="btn btn-sm btn-secondary" 
+            :disabled="isLoading || !isValidJumpPage"
+            @click="handlePageJump"
+          >
+            前往
+          </button>
+        </div>
       </nav>
 
       <!-- Activity Log removed -->
@@ -233,14 +311,23 @@ import questionService from '@/services/questionService'
 import ExamDetailModal from '@/components/ExamDetailModal.vue'
 import { usePdfImportStore } from '@/stores/pdfImport'
 import examService from '@/services/examService'
+import AdminQuestionManagement from '@/components/AdminQuestionManagement.vue'
 
 const exams = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
+const currentTab = ref('exams')
 const searchTerm = ref('')
 const ordering = ref('-created_at')
 const currentPage = ref(1)
-const paginationState = ref({ hasNext: false, hasPrev: false })
+const pageSize = ref(20)
+const paginationState = ref({ 
+  hasNext: false, 
+  hasPrev: false, 
+  totalPages: 0, 
+  totalCount: 0 
+})
+const jumpToPage = ref(null)
 const selectedExamDetail = ref(null)
 const isExamDetailVisible = ref(false)
 const isExamDetailLoading = ref(false)
@@ -259,6 +346,11 @@ const importProgressText = ref('')
 const totalImportQuestions = ref(0)
 const completedImportQuestions = ref(0)
 // showActivityLog removed — no longer used
+
+// Question management refs
+const questionImportInput = ref(null)
+const isImportingQuestions = ref(false)
+const questionManagementRef = ref(null)
 
 const filteredExams = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
@@ -338,7 +430,10 @@ const fetchExams = async () => {
   errorMessage.value = ''
 
   try {
-    const params = { page: currentPage.value }
+    const params = { 
+      page: currentPage.value,
+      page_size: pageSize.value
+    }
     const trimmedSearch = searchTerm.value.trim()
 
     if (trimmedSearch) {
@@ -354,12 +449,22 @@ const fetchExams = async () => {
 
     exams.value = list.map(normalizeExam)
 
+    // Update pagination state
     if (Array.isArray(data)) {
-      paginationState.value = { hasNext: false, hasPrev: false }
+      paginationState.value = { 
+        hasNext: false, 
+        hasPrev: false, 
+        totalPages: 1, 
+        totalCount: data.length 
+      }
     } else {
+      const count = data.count || 0
+      const totalPages = Math.ceil(count / pageSize.value)
       paginationState.value = {
         hasNext: Boolean(data.next),
-        hasPrev: Boolean(data.previous) || currentPage.value > 1
+        hasPrev: Boolean(data.previous) || currentPage.value > 1,
+        totalPages: totalPages || 1,
+        totalCount: count
       }
     }
   } catch (error) {
@@ -382,17 +487,98 @@ const resetFilters = () => {
   fetchExams()
 }
 
+const goToFirstPage = () => { 
+  if (currentPage.value === 1 || isLoading.value) return
+  currentPage.value = 1
+  fetchExams() 
+}
+
 const goToPreviousPage = () => {
-  if (!paginationState.value.hasPrev || currentPage.value === 1) return
+  if (!paginationState.value.hasPrev || currentPage.value === 1 || isLoading.value) return
   currentPage.value -= 1
   fetchExams()
 }
 
 const goToNextPage = () => {
-  if (!paginationState.value.hasNext) return
+  if (!paginationState.value.hasNext || isLoading.value) return
   currentPage.value += 1
   fetchExams()
 }
+
+const goToLastPage = () => { 
+  if (currentPage.value === paginationState.value.totalPages || isLoading.value) return
+  currentPage.value = paginationState.value.totalPages
+  fetchExams() 
+}
+
+const goToPage = (page) => {
+  if (page === currentPage.value || isLoading.value) return
+  if (page < 1 || page > paginationState.value.totalPages) return
+  currentPage.value = page
+  fetchExams()
+}
+
+const handlePageJump = () => {
+  if (!isValidJumpPage.value || isLoading.value) return
+  currentPage.value = jumpToPage.value
+  jumpToPage.value = null
+  fetchExams()
+}
+
+const onPageSizeChange = () => {
+  currentPage.value = 1
+  fetchExams()
+}
+
+// Computed property for visible page numbers
+const visiblePages = computed(() => {
+  const total = paginationState.value.totalPages
+  const current = currentPage.value
+  const pages = []
+  
+  if (total <= 7) {
+    // Show all pages if total <= 7
+    for (let i = 1; i <= total; i++) {
+      pages.push(i)
+    }
+  } else {
+    // Always show first page
+    pages.push(1)
+    
+    if (current > 3) {
+      pages.push('...')
+    }
+    
+    // Show pages around current page
+    const start = Math.max(2, current - 1)
+    const end = Math.min(total - 1, current + 1)
+    
+    for (let i = start; i <= end; i++) {
+      if (i !== 1 && i !== total) {
+        pages.push(i)
+      }
+    }
+    
+    if (current < total - 2) {
+      pages.push('...')
+    }
+    
+    // Always show last page
+    if (total > 1) {
+      pages.push(total)
+    }
+  }
+  
+  return pages.filter((p, i, arr) => {
+    // Remove duplicate ellipsis
+    if (p === '...' && arr[i - 1] === '...') return false
+    return true
+  })
+})
+
+const isValidJumpPage = computed(() => {
+  return jumpToPage.value >= 1 && jumpToPage.value <= paginationState.value.totalPages && jumpToPage.value !== currentPage.value
+})
 
 // activities array removed — activity log UI removed
 
@@ -878,6 +1064,10 @@ const editExam = (id) => {
   router.push(`/admin/exams/${id}/edit`)
 }
 
+const setTab = (tab) => {
+  currentTab.value = tab
+}
+
 const viewExam = async (id) => {
   isExamDetailVisible.value = true
   isExamDetailLoading.value = true
@@ -923,6 +1113,66 @@ const deleteExam = async (id) => {
     alert(error.response?.data?.detail || '刪除考卷失敗，請稍後再試。')
   } finally {
     deletingExamId.value = null
+  }
+}
+
+// Question management functions
+const addQuestion = () => {
+  // Trigger child component method via event or ref
+  const event = new CustomEvent('openCreateQuestion')
+  window.dispatchEvent(event)
+}
+
+const importQuestions = () => {
+  if (questionImportInput.value) {
+    questionImportInput.value.click()
+  }
+}
+
+const handleQuestionImportFile = async (event) => {
+  if (isImportingQuestions.value) return
+  const file = event.target.files && event.target.files[0]
+  if (!file) return
+  
+  isImportingQuestions.value = true
+  try {
+    const text = await file.text()
+    const parsed = JSON.parse(text)
+    const items = Array.isArray(parsed) ? parsed : (parsed.questions ? parsed.questions : [parsed])
+    
+    const payload = items.map(q => ({
+      subject: q.subject || '',
+      category: q.category || '',
+      question_type: q.question_type || '選擇題',
+      difficulty: q.difficulty || 'medium',
+      content: q.content || q.question_content || '',
+      explanation: q.explanation || '',
+      options: q.options || [],
+      tag_ids: q.tag_ids || []
+    }))
+
+    try {
+      await questionService.bulkCreateQuestions(payload)
+    } catch (err) {
+      for (const p of payload) {
+        try { 
+          await questionService.createQuestion(p) 
+        } catch (e) { 
+          console.error('create question fallback failed', e) 
+        }
+      }
+    }
+    
+    alert('題目匯入完成')
+    // Trigger child component to refresh
+    const refreshEvent = new CustomEvent('refreshQuestions')
+    window.dispatchEvent(refreshEvent)
+  } catch (err) {
+    console.error('Import questions failed', err)
+    alert('匯入題目失敗: ' + (err?.message || '格式錯誤'))
+  } finally {
+    isImportingQuestions.value = false
+    event.target.value = ''
   }
 }
 
@@ -1197,6 +1447,122 @@ tr:hover {
 
   .filter-select,
   .filter-input {
+    width: 100%;
+  }
+}
+
+.admin-tabs {
+  display:flex;
+  gap:8px;
+}
+.tab-btn {
+  background: #f1f5f9;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.tab-btn.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+/* Enhanced Pagination Styles */
+.pagination-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  flex-wrap: wrap;
+  margin-bottom: 30px;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-size-select {
+  width: auto;
+  min-width: 120px;
+}
+
+.pagination {
+  display: flex;
+  gap: 4px;
+}
+
+.page-link {
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  background-color: #fff;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.page-link:hover:not(:disabled) {
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.page-item.active .page-link {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
+  font-weight: 600;
+}
+
+.page-item.disabled .page-link {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.page-jumper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-jumper input {
+  width: 70px;
+  text-align: center;
+}
+
+.page-jumper .btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 992px) {
+  .pagination-wrapper {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pagination-info,
+  .pagination,
+  .page-jumper {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
+  }
+
+  .page-size-select {
     width: 100%;
   }
 }
