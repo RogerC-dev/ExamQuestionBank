@@ -3,6 +3,7 @@ import re
 import io
 
 import pdfplumber
+import wordninja
 
 
 class Flag(enum.Enum):
@@ -15,6 +16,24 @@ class Flag(enum.Enum):
 
 
 class PDFParser:
+
+    @staticmethod
+    def split_en_keep_zh(text: str):
+        tokens = re.findall(r'[\u4e00-\u9fff]+|[A-Za-z]+|[0-9]+|[^\w\s]|[\s]+', text)
+
+        result = []
+        for tok in tokens:
+            # 中文
+            if re.match(r'^[\u4e00-\u9fff]+$', tok):
+                result.append(tok)
+            # 英文
+            elif re.match(r'^[A-Za-z]+$', tok):
+                result.append(" ".join(wordninja.split(tok)))
+            # 其他
+            else:
+                result.append(tok)
+
+        return "".join(result)
 
     @staticmethod
     def parse_questions(file):
@@ -68,6 +87,9 @@ class PDFParser:
                             
                     if word['x0'] < 55: # 題號位置
                         if flag != Flag.BEGIN:
+                            temp["question"] = PDFParser.split_en_keep_zh(temp["question"])
+                            for index, option in enumerate(temp["options"]):
+                                temp["options"][index] = PDFParser.split_en_keep_zh(option)
                             questions.append(temp)
                             temp = {
                                 "question": "",
@@ -96,8 +118,13 @@ class PDFParser:
                         temp["question"] += word["text"]
                     else:
                         print(flag, word["text"])
-                        temp["options"][flag.value] += word["text"].lstrip(u"\ue18c\ue18d\ue18e\ue18f")
+                        option_content = word["text"].lstrip(u"\ue18c\ue18d\ue18e\ue18f")
+                        if option_content:
+                            temp["options"][flag.value] += option_content
 
+            temp["question"] = PDFParser.split_en_keep_zh(temp["question"])
+            for index, option in enumerate(temp["options"]):
+                temp["options"][index] = PDFParser.split_en_keep_zh(option)
             questions.append(temp)
         return {
             "level": level,
