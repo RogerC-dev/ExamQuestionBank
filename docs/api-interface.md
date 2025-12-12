@@ -168,3 +168,61 @@
 - `QuestionViewSet`、`ExamViewSet` 等預設支援標準 DRF 分頁、搜尋/排序（視 `settings.py` 中的全域設定）。
 - 若需要檢視即時 API schema，可至根路徑 `/swagger/` 或 `/redoc/`。
 
+
+
+---
+
+## 題目重複使用與自訂考卷
+
+題目（Question）在系統中是獨立的實體，可以被多個考卷重複使用。以下 API 支援從錯題、收藏或任意題目 ID 列表生成新的模擬考卷：
+
+### 從錯題生成考卷
+| Path | Method | 說明 | 權限 | 備註 |
+| --- | --- | --- | --- | --- |
+| `/mock-exams/from-wrong-questions/` | POST | 從錯題生成模擬考卷 | 登入 | body: `{name?, question_ids?, limit?, unreviewed_only?}`。可重複使用已存在的題目。
+
+Request body:
+```json
+{
+  "name": "錯題複習測驗",
+  "question_ids": [1, 2, 3],  // 可選，不提供則使用所有錯題
+  "limit": 20,                 // 可選，題目數量上限
+  "unreviewed_only": true      // 可選，僅使用未複習的錯題
+}
+```
+
+### 從收藏題目生成考卷
+| Path | Method | 說明 | 權限 | 備註 |
+| --- | --- | --- | --- | --- |
+| `/mock-exams/from-bookmarks/` | POST | 從收藏題目生成模擬考卷 | 登入 | body: `{name?, question_ids?, limit?}`。
+
+Request body:
+```json
+{
+  "name": "收藏題目測驗",
+  "question_ids": [1, 2, 3],  // 可選
+  "limit": 20                  // 可選
+}
+```
+
+### 從任意題目 ID 列表生成考卷
+| Path | Method | 說明 | 權限 | 備註 |
+| --- | --- | --- | --- | --- |
+| `/mock-exams/custom/` | POST | 從任意題目 ID 列表生成考卷 | 登入 | body: `{name?, question_ids, time_limit?}`。可自由組合題庫中的題目。
+
+Request body:
+```json
+{
+  "name": "自訂測驗",
+  "question_ids": [1, 2, 3, 4, 5],  // 必填
+  "time_limit": 30                   // 可選，分鐘
+}
+```
+
+### 使用場景
+1. **錯題複習**：考試後自動記錄錯題，之後可從錯題生成複習考卷
+2. **收藏題目練習**：將重要題目加入收藏，之後可從收藏生成練習考卷
+3. **自訂混合考卷**：從題庫中選擇任意題目組合成考卷，例如：
+   - 混合多個科目的題目
+   - 選擇特定難度的題目
+   - 根據標籤篩選題目後生成考卷
