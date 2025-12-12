@@ -25,11 +25,12 @@ class TagSerializer(serializers.ModelSerializer):
 class QuestionListSerializer(serializers.ModelSerializer):
     """簡化版Question序列化器，用於列表顯示"""
     created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
 
     class Meta:
         model = Question
         fields = [
-            'id', 'subject', 'category', 'question_type', 'difficulty', 'status', 'content', 'created_at', 'created_by_username'
+            'id', 'subject', 'category', 'question_type', 'difficulty', 'status', 'content', 'created_at', 'created_by_username', 'tags'
         ]
         read_only_fields = ['id', 'created_at']
 

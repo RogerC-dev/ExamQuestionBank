@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from django.db import transaction
+from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -142,10 +143,17 @@ class QuestionViewSet(viewsets.ModelViewSet):
         """支援 keyword 和 tags 篩選"""
         queryset = super().get_queryset()
         
-        # keyword 篩選（搜尋題目內容）
+        # keyword 篩選（搜尋題目內容、科目、分類，以及選項內容）
         keyword = self.request.query_params.get('keyword', '').strip()
         if keyword:
-            queryset = queryset.filter(content__icontains=keyword)
+            # Include search across content, subject, category and option content
+            q_filter = (
+                Q(content__icontains=keyword) |
+                Q(subject__icontains=keyword) |
+                Q(category__icontains=keyword) |
+                Q(options__content__icontains=keyword)
+            )
+            queryset = queryset.filter(q_filter).distinct()
         
         # tags 篩選（依標籤 ID，逗號分隔）
         tags_param = self.request.query_params.get('tags', '').strip()

@@ -6,7 +6,8 @@ from .models import Tag, Question
 
 class BulkQuestionAPITest(APITestCase):
 	def setUp(self):
-		self.user = get_user_model().objects.create_user(username='testuser', password='testpass')
+		# ensure unique email to satisfy custom User model constraints
+		self.user = get_user_model().objects.create_user(username='testuser', email='testuser@example.com', password='testpass')
 		self.client = APIClient()
 		self.client.force_authenticate(user=self.user)
 		# Create some tags
@@ -72,5 +73,18 @@ class BulkQuestionAPITest(APITestCase):
 		self.assertEqual(q.content, 'Updated content')
 		self.assertEqual(q.status, 'published')
 		self.assertTrue(self.tag2 in q.tags.all())
+
+	def test_search_by_keyword_and_tag(self):
+		# Create sample question that should match both keyword and tag
+		q = Question.objects.create(subject='Civil Law', category='contract', content='This question mentions liability and contract enforcement', question_type='選擇題', difficulty='medium', status='published', created_by=self.user)
+		q.tags.set([self.tag1])
+
+		# Query with both keyword and tag id
+		url = '/api/v1/question_bank/questions/'
+		response = self.client.get(url, data={'keyword': 'liability', 'tags': str(self.tag1.id)})
+		self.assertEqual(response.status_code, 200)
+		# When results are paginated they are in response.data['results']
+		results = response.data.get('results')
+		self.assertTrue(any(item['id'] == q.id for item in results), f"Expected question {q.id} in results, got {results}")
 
 # Create your tests here.
