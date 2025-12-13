@@ -1,46 +1,61 @@
 <template>
   <div class="question-editor">
-    <div class="editor-content">
-      <div class="editor-header" v-if="examQuestion">
-        <h3>{{ question ? '編輯題目' : '新增題目' }}</h3>
-        <button class="btn btn-sm btn-success" @click="handleSave" :disabled="saving || !isFormValid">
-          {{ saving ? '儲存中...' : '儲存' }}
-        </button>
-      </div>
-
+    <div class="editor-card">
       <div class="form-body">
         <form @submit.prevent="handleSave">
           <!-- 科目 -->
           <div class="form-group">
-            <label for="subject">科目 *</label>
+            <label for="subject" class="form-label">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+              <span>科目 <span class="required">*</span></span>
+            </label>
             <input
               id="subject"
               v-model="formData.subject"
               type="text"
               required
-              placeholder="例：民法、刑法"
+              placeholder="例：民法、刑法、公司法..."
               class="form-input"
             />
-            <div v-if="!formValidation.subject" style="color:#d32f2f; font-size:12px; margin-top:6px">科目為必填</div>
+            <div v-if="!formValidation.subject" class="form-error">科目為必填</div>
           </div>
   
           <!-- 題型分類 -->
           <div class="form-group">
-            <label for="category">題型分類 *</label>
+            <label for="category" class="form-label">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+              </svg>
+              <span>題型分類 <span class="required">*</span></span>
+            </label>
             <input
               id="category"
               v-model="formData.category"
               type="text"
               required
-              placeholder="例：選擇題、申論題"
+              placeholder="例：選擇題、申論題、綜合題型..."
               class="form-input"
             />
           </div>
 
           <!-- 題型 -->
           <div class="form-group">
-            <label for="question_type">題型</label>
-            <select id="question_type" v-model="formData.question_type" class="form-input">
+            <label for="question_type" class="form-label">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 11 12 14 22 4"></polyline>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+              <span>題型</span>
+            </label>
+            <select id="question_type" v-model="formData.question_type" class="form-select">
               <option value="選擇題">選擇題</option>
               <option value="多選題">多選題</option>
               <option value="是非題">是非題</option>
@@ -50,8 +65,13 @@
 
           <!-- 難度 -->
           <div class="form-group">
-            <label for="difficulty">難度</label>
-            <select id="difficulty" v-model="formData.difficulty" class="form-input">
+            <label for="difficulty" class="form-label">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              <span>難度</span>
+            </label>
+            <select id="difficulty" v-model="formData.difficulty" class="form-select">
               <option value="easy">容易</option>
               <option value="medium">中等</option>
               <option value="hard">困難</option>
@@ -60,34 +80,55 @@
   
           <!-- 題目內容 -->
           <div class="form-group">
-            <label for="content">題目內容 *</label>
+            <label for="content" class="form-label">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>題目內容 <span class="required">*</span></span>
+            </label>
             <textarea
               id="content"
               v-model="formData.content"
               rows="5"
               required
-              placeholder="請輸入題目內容"
-              class="form-input"
+              placeholder="請輸入完整的題目敘述與問題..."
+              class="form-textarea"
             ></textarea>
-            <div v-if="!formValidation.content" style="color:#d32f2f; font-size:12px; margin-top:6px">題目內容為必填</div>
+            <div v-if="!formValidation.content" class="form-error">題目內容為必填</div>
           </div>
   
           <!-- 解析 -->
           <div class="form-group">
-            <label for="explanation">解析</label>
+            <label for="explanation" class="form-label">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span>解析</span>
+            </label>
             <textarea
               id="explanation"
               v-model="formData.explanation"
               rows="4"
-              placeholder="請輸入題目解析"
-              class="form-input"
+              placeholder="請輸入題目解析、相關法條或重點說明..."
+              class="form-textarea"
             ></textarea>
           </div>
   
           <!-- 狀態 -->
           <div class="form-group">
-            <label for="status">狀態</label>
-            <select id="status" v-model="formData.status" class="form-input">
+            <label for="status" class="form-label">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span>狀態</span>
+            </label>
+            <select id="status" v-model="formData.status" class="form-select">
               <option value="draft">草稿</option>
               <option value="published">已發布</option>
             </select>
@@ -95,8 +136,14 @@
 
           <!-- 標籤 (Multiselect) -->
           <div class="form-group">
-            <label for="tags">標籤</label>
-            <div style="display:flex; gap:8px; align-items:center;">
+            <label for="tags" class="form-label">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                <line x1="7" y1="7" x2="7.01" y2="7"></line>
+              </svg>
+              <span>標籤</span>
+            </label>
+            <div class="tag-controls">
               <multiselect
                 v-model="selectedTags"
                 :options="tagOptions"
@@ -109,28 +156,45 @@
                 track-by="id"
                 label="name"
                 @search-change="onTagSearch"
-                style="flex:1"
+                class="tag-multiselect"
               />
-              <div style="display:flex; gap:8px; align-items:center">
+              <div class="tag-add-group">
                 <input id="new-tag" v-model="newTagName" class="form-input" placeholder="新增標籤" @keyup.enter="handleCreateTag" />
-                <button type="button" class="btn btn-sm btn-secondary" @click="handleCreateTag">新增</button>
+                <button type="button" class="btn-add-tag" @click="handleCreateTag">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  新增
+                </button>
               </div>
             </div>
           </div>
   
           <!-- 選項 -->
-          <div class="form-group">
-            <label>選項</label>
+          <div class="form-group options-section">
+            <label class="form-label">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+              </svg>
+              <span>選項</span>
+            </label>
             <div class="options-list">
               <div
                 v-for="(option, index) in formData.options"
                 :key="index"
                 class="option-item"
               >
+                <div class="option-number">{{ index + 1 }}</div>
                 <input
                   v-model="option.content"
                   type="text"
-                  placeholder="選項內容"
+                  :placeholder="`選項 ${index + 1} 內容`"
                   class="option-input"
                 />
                 <label class="checkbox-label">
@@ -138,28 +202,52 @@
                     v-model="option.is_correct"
                     type="checkbox"
                   />
-                  正確答案
+                  <span>正確答案</span>
                 </label>
                 <button
                   type="button"
                   class="btn-remove"
                   @click="removeOption(index)"
+                  :title="`刪除選項 ${index + 1}`"
                 >
-                  ×
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
                 </button>
               </div>
             </div>
-            <button type="button" class="btn btn-sm btn-secondary" @click="addOption">
-              + 新增選項
+            <button type="button" class="btn-add-option" @click="addOption">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              新增選項
             </button>
           </div>
   
           <!-- 考卷中的順序和配分 (如果是從考卷編輯進來的) -->
           <div v-if="examQuestion" class="exam-settings">
-            <h4>考卷設定</h4>
+            <div class="settings-header">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M12 1v6m0 6v6m9-9h-6m-6 0H3"></path>
+              </svg>
+              <h4>考卷設定</h4>
+            </div>
             <div class="form-row">
               <div class="form-group">
-                <label for="order">順序</label>
+                <label for="order" class="form-label">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+                  <span>順序</span>
+                </label>
                 <input
                   id="order"
                   v-model.number="examSettings.order"
@@ -169,7 +257,14 @@
                 />
               </div>
               <div class="form-group">
-                <label for="points">配分</label>
+                <label for="points" class="form-label">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <span>配分</span>
+                </label>
                 <input
                   id="points"
                   v-model.number="examSettings.points"
@@ -180,6 +275,17 @@
                 />
               </div>
             </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button type="submit" class="btn-save" :disabled="saving || !isFormValid">
+              <div v-if="saving" class="btn-spinner"></div>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>{{ saving ? '儲存中...' : '儲存' }}</span>
+            </button>
           </div>
         </form>
       </div>
@@ -430,118 +536,261 @@ const onTagSearch = (query) => {
 
 <style scoped>
 .question-editor {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.empty-state {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  text-align: center;
-  color: #999;
-}
-
-.editor-content {
-  flex: 1;
-  padding: 20px;
+.editor-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border, #CBD5E1);
   height: 100%;
-}
-
-.editor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #eee;
-}
-
-.editor-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-}
-
-.form-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  height: 85%;
-  overflow: scroll;
+  overflow: hidden;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 24px;
+  border-top: 2px solid var(--border, #CBD5E1);
+  margin-top: 8px;
+}
+
+.btn-save {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--primary, #476996);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: var(--primary-hover, #35527a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.25);
+}
+
+.btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(71, 105, 150, 0.3);
+  border-top-color: var(--primary, #476996);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Form Body */
+.form-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
 }
 
 form {
   display: flex;
   flex-direction: column;
-  
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 20px;
-    width: 100%;
-  }
-  
-  .form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: #555;
-    font-size: 14px;
-  }
-  
-  .form-input {
-    padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    transition: border-color 0.3s;
-  }
-  .form-input:focus {
-    outline: none;
-    border-color: #4CAF50;
-  }
+  gap: 24px;
 }
 
-textarea.form-input {
-  resize: vertical;
+/* Form Groups */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+  font-size: 14px;
+}
+
+.form-label svg {
+  color: var(--primary, #476996);
+  flex-shrink: 0;
+}
+
+.form-label .required {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+/* Form Inputs */
+.form-input,
+.form-select,
+.form-textarea {
+  padding: 12px 14px;
+  border: 2px solid var(--border, #CBD5E1);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text-primary, #1E293B);
+  background: white;
+  transition: all 0.2s ease;
   font-family: inherit;
 }
 
-select.form-input {
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--primary, #476996);
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.6;
+}
+
+.form-select {
   cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23476996' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.form-error {
+  color: #ef4444;
+  font-size: 13px;
+  margin-top: -4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Tag Controls */
+.tag-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tag-multiselect {
+  flex: 1;
+}
+
+.tag-add-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.tag-add-group .form-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-add-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 18px;
+  background: var(--primary, #476996);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-add-tag:hover {
+  background: var(--primary-hover, #35527a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(71, 105, 150, 0.25);
+}
+
+/* Options Section */
+.options-section {
+  background: white;
+  border: 2px solid var(--border, #CBD5E1);
+  border-radius: 12px;
+  padding: 20px;
 }
 
 .options-list {
-  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .option-item {
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-bottom: 12px;
+  background: var(--bg-page, #F8FAFC);
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.option-item:hover {
+  border-color: var(--primary, #476996);
+  background: white;
+}
+
+.option-number {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary, #476996);
+  color: white;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 .option-input {
   flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 10px 12px;
+  border: 2px solid var(--border, #CBD5E1);
+  border-radius: 8px;
   font-size: 14px;
+  transition: all 0.2s ease;
+  background: white;
 }
 
 .option-input:focus {
   outline: none;
-  border-color: #4CAF50;
+  border-color: var(--primary, #476996);
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
 }
 
 .checkbox-label {
@@ -549,87 +798,170 @@ select.form-input {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary, #64748B);
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid var(--border, #CBD5E1);
+  transition: all 0.2s ease;
+}
+
+.checkbox-label:hover {
+  border-color: var(--primary, #476996);
 }
 
 .checkbox-label input[type="checkbox"] {
   cursor: pointer;
+  width: 16px;
+  height: 16px;
 }
 
 .btn-remove {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border: none;
-  background: #f44336;
+  background: #ef4444;
   color: white;
-  border-radius: 50%;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-remove:hover {
-  background: #d32f2f;
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
 }
 
+.btn-add-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: white;
+  color: var(--primary, #476996);
+  border: 2px dashed var(--border, #CBD5E1);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btn-add-option:hover {
+  border-color: var(--primary, #476996);
+  background: var(--primary-soft, #EEF2FF);
+  color: var(--primary-hover, #35527a);
+}
+
+/* Exam Settings Section */
 .exam-settings {
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 2px solid #eee;
+  background: white;
+  border: 2px solid var(--border, #CBD5E1);
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 8px;
 }
 
-.exam-settings h4 {
-  margin: 0 0 16px 0;
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--border, #CBD5E1);
+}
+
+.settings-header svg {
+  color: var(--primary, #476996);
+}
+
+.settings-header h4 {
+  margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary, #1E293B);
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 20px;
 }
 
-.btn {
-  padding: 8px 16px;
-  border: none;
+/* Responsive Design */
+@media (max-width: 768px) {
+  .form-body {
+    padding: 16px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .btn-save {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .option-item {
+    flex-wrap: wrap;
+  }
+
+  .option-number {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  .checkbox-label {
+    flex: 1;
+  }
+
+  .tag-controls {
+    gap: 10px;
+  }
+
+  .tag-add-group {
+    flex-direction: column;
+  }
+
+  .btn-add-tag {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Scrollbar Styling */
+.form-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.form-body::-webkit-scrollbar-track {
+  background: var(--surface-muted, #E2E8F0);
   border-radius: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
 }
 
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.form-body::-webkit-scrollbar-thumb {
+  background: var(--border, #CBD5E1);
+  border-radius: 4px;
 }
 
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 13px;
-}
-
-.btn-success {
-  background: #4CAF50;
-  color: white;
-}
-
-.btn-success:hover:not(:disabled) {
-  background: #45a049;
-}
-
-.btn-secondary {
-  background: #f5f5f5;
-  color: #333;
-}
-
-.btn-secondary:hover {
-  background: #e0e0e0;
+.form-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary, #64748B);
 }
 </style>
