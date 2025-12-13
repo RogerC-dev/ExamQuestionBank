@@ -147,51 +147,51 @@ const handlePageJump = () => {
     justify-content: space-between;
     align-items: center;
     gap: 16px;
-    padding: 16px 24px;
+    padding: 20px;
     background: white;
     border-radius: 12px;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.05);
-    /* Enhanced shadow for floating effect */
-    border: 1px solid #e2e8f0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border, #CBD5E1);
     flex-wrap: wrap;
-    z-index: 99;
-    margin-top: 20px;
+    z-index: 100;
+    margin-top: 24px;
 }
 
 .pagination-info {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 14px;
+    flex-wrap: wrap;
 }
 
 .pagination-info .text-muted {
-    color: #64748b;
+    font-size: 14px;
+    color: var(--text-secondary, #64748B);
     font-weight: 500;
 }
 
 .page-size-select {
     width: auto;
-    min-width: 120px;
-    padding: 6px 32px 6px 12px;
-    border: 1px solid #e2e8f0;
+    min-width: 130px;
+    padding: 8px 32px 8px 12px;
+    border: 2px solid #e5e7eb;
     border-radius: 8px;
     font-size: 13px;
-    background-color: #f8fafc;
+    background: #f9fafb;
     cursor: pointer;
     transition: all 0.2s ease;
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
-    color: #334155;
+    color: var(--text-primary, #1E293B);
 }
 
 .page-size-select:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: var(--primary, #476996);
     background-color: white;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
 }
 
 .pagination {
@@ -211,13 +211,13 @@ const handlePageJump = () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 36px;
-    height: 36px;
-    padding: 0 6px;
-    color: #334155;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    color: var(--text-primary, #1E293B);
     text-decoration: none;
     background-color: white;
-    border: 1px solid #e2e8f0;
+    border: 2px solid #e5e7eb;
     border-radius: 8px;
     font-size: 14px;
     font-weight: 500;
@@ -226,65 +226,93 @@ const handlePageJump = () => {
 }
 
 .page-link:hover:not(:disabled) {
-    z-index: 2;
-    color: #3b82f6;
-    background-color: #eff6ff;
-    border-color: #bfdbfe;
+    background-color: var(--primary-soft, #EEF2FF);
+    border-color: var(--primary, #476996);
+    color: var(--primary, #476996);
     transform: translateY(-1px);
 }
 
 .page-item.active .page-link {
-    z-index: 3;
-    color: #fff;
-    background-color: #3b82f6;
-    border-color: #3b82f6;
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25);
+    background: var(--primary, #476996);
+    border-color: var(--primary, #476996);
+    color: white;
+    box-shadow: 0 2px 4px rgba(71, 105, 150, 0.2);
 }
 
 .page-item.disabled .page-link {
-    color: #94a3b8;
-    background-color: #f8fafc;
-    border-color: #e2e8f0;
-    pointer-events: none;
     cursor: not-allowed;
+    opacity: 0.4;
+    transform: none;
+    color: var(--text-secondary, #64748B);
+    background-color: #f9fafb;
+    border-color: #e5e7eb;
+    pointer-events: none;
 }
 
 .page-jumper {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #64748b;
+}
+
+.page-jumper .text-muted {
     font-size: 14px;
+    color: var(--text-secondary, #64748B);
 }
 
 .page-jumper input {
-    width: 60px;
+    width: 70px;
     text-align: center;
-    padding: 6px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
+    padding: 8px 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
     font-size: 14px;
     background-color: white;
-    color: #334155;
-    transition: all 0.2s;
+    color: var(--text-primary, #1E293B);
+    transition: all 0.2s ease;
 }
 
 .page-jumper input:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: var(--primary, #476996);
+    box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
+}
+
+.page-jumper .btn {
+    white-space: nowrap;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background: var(--primary, #476996);
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.page-jumper .btn:hover:not(:disabled) {
+    background: var(--primary-hover, #35527a);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
+}
+
+.page-jumper .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .pagination-wrapper {
-        position: static;
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
         padding: 16px;
     }
 
     .pagination-info,
+    .pagination,
     .page-jumper {
         width: 100%;
         justify-content: center;
@@ -292,7 +320,10 @@ const handlePageJump = () => {
 
     .pagination {
         flex-wrap: wrap;
-        justify-content: center;
+    }
+
+    .page-size-select {
+        width: 100%;
     }
 }
 </style>

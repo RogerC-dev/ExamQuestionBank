@@ -279,63 +279,8 @@
     </SelectionToolbar>
 
     <!-- Enhanced Pagination -->
-    <nav v-if="paginationState.totalPages > 0" class="pagination-wrapper">
-      <div class="pagination-info">
-        <span class="text-muted">
-          共 {{ paginationState.totalCount }} 筆 | 第 {{ currentPage }} / {{ paginationState.totalPages }} 頁
-        </span>
-        <select v-model="pageSize" class="form-select form-select-sm page-size-select" @change="onPageSizeChange">
-          <option :value="10">每頁 10 筆</option>
-          <option :value="20">每頁 20 筆</option>
-          <option :value="50">每頁 50 筆</option>
-          <option :value="100">每頁 100 筆</option>
-        </select>
-      </div>
-
-      <ul class="pagination mb-0">
-        <li class="page-item" :class="{ disabled: !paginationState.hasPrev || isLoading }">
-          <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToFirstPage"
-            title="第一頁">
-            <span aria-hidden="true">&laquo;</span>
-          </button>
-        </li>
-        <li class="page-item" :class="{ disabled: !paginationState.hasPrev || isLoading }">
-          <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToPreviousPage"
-            title="上一頁">
-            <span aria-hidden="true">&lsaquo;</span>
-          </button>
-        </li>
-
-        <!-- Page Numbers -->
-        <li v-for="page in visiblePages" :key="page" class="page-item"
-          :class="{ active: page === currentPage, disabled: isLoading }">
-          <button class="page-link" :disabled="isLoading" @click="typeof page === 'number' ? goToPage(page) : null">
-            {{ page }}
-          </button>
-        </li>
-
-        <li class="page-item" :class="{ disabled: !paginationState.hasNext || isLoading }">
-          <button class="page-link" :disabled="!paginationState.hasNext || isLoading" @click="goToNextPage" title="下一頁">
-            <span aria-hidden="true">&rsaquo;</span>
-          </button>
-        </li>
-        <li class="page-item" :class="{ disabled: !paginationState.hasNext || isLoading }">
-          <button class="page-link" :disabled="!paginationState.hasNext || isLoading" @click="goToLastPage"
-            title="最後一頁">
-            <span aria-hidden="true">&raquo;</span>
-          </button>
-        </li>
-      </ul>
-
-      <div class="page-jumper">
-        <span class="text-muted me-2">跳至</span>
-        <input v-model.number="jumpToPage" type="number" class="form-control form-control-sm" :min="1"
-          :max="paginationState.totalPages" @keyup.enter="handlePageJump" placeholder="頁碼" />
-        <button class="btn btn-sm btn-secondary" :disabled="isLoading || !isValidJumpPage" @click="handlePageJump">
-          前往
-        </button>
-      </div>
-    </nav>
+    <PaginationControl :pagination-state="paginationState" :current-page="currentPage" :page-size="pageSize"
+      :is-loading="isLoading" @page-change="handlePageChange" @size-change="handleSizeChange" />
 
     <div v-if="isEditorVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
       <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -697,6 +642,7 @@ import BulkTagEditor from '@/components/BulkTagEditor.vue'
 import BulkSubjectEditor from '@/components/BulkSubjectEditor.vue'
 import PdfUploadSection from '@/components/PdfUploadSection.vue'
 import SelectionToolbar from '@/components/common/SelectionToolbar.vue'
+import PaginationControl from '@/components/common/PaginationControl.vue'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import tagService from '@/services/tagService'
@@ -720,7 +666,6 @@ const paginationState = ref({
   totalPages: 0,
   totalCount: 0
 })
-const jumpToPage = ref(null)
 const deletingId = ref(null)
 const selectedIds = ref([])
 const pageSelectAllCheckbox = ref(null)
@@ -933,99 +878,18 @@ const fetchQuestions = async () => {
 const applyFilters = () => { currentPage.value = 1; fetchQuestions() }
 const resetFilters = () => { searchTerm.value = ''; selectedSearchTags.value = []; ordering.value = '-created_at'; currentPage.value = 1; fetchQuestions() }
 
-// Pagination functions
-const goToFirstPage = () => {
-  if (currentPage.value === 1 || isLoading.value) return
-  currentPage.value = 1
-  fetchQuestions()
-}
-
-const goToPreviousPage = () => {
-  if (!paginationState.value.hasPrev || currentPage.value === 1 || isLoading.value) return
-  currentPage.value -= 1
-  fetchQuestions()
-}
-
-const goToNextPage = () => {
-  if (!paginationState.value.hasNext || isLoading.value) return
-  currentPage.value += 1
-  fetchQuestions()
-}
-
-const goToLastPage = () => {
-  if (currentPage.value === paginationState.value.totalPages || isLoading.value) return
-  currentPage.value = paginationState.value.totalPages
-  fetchQuestions()
-}
-
-const goToPage = (page) => {
-  if (page === currentPage.value || isLoading.value) return
-  if (page < 1 || page > paginationState.value.totalPages) return
-  currentPage.value = page
-  fetchQuestions()
-}
-
-const handlePageJump = () => {
-  if (!isValidJumpPage.value || isLoading.value) return
-  currentPage.value = jumpToPage.value
-  jumpToPage.value = null
-  fetchQuestions()
-}
-
-const onPageSizeChange = () => {
-  currentPage.value = 1
-  fetchQuestions()
-}
-
-// Computed property for visible page numbers
-const visiblePages = computed(() => {
-  const total = paginationState.value.totalPages
-  const current = currentPage.value
-  const pages = []
-
-  if (total <= 7) {
-    // Show all pages if total <= 7
-    for (let i = 1; i <= total; i++) {
-      pages.push(i)
-    }
-  } else {
-    // Always show first page
-    pages.push(1)
-
-    if (current > 3) {
-      pages.push('...')
-    }
-
-    // Show pages around current page
-    const start = Math.max(2, current - 1)
-    const end = Math.min(total - 1, current + 1)
-
-    for (let i = start; i <= end; i++) {
-      if (i !== 1 && i !== total) {
-        pages.push(i)
-      }
-    }
-
-    if (current < total - 2) {
-      pages.push('...')
-    }
-
-    // Always show last page
-    if (total > 1) {
-      pages.push(total)
-    }
+const handlePageChange = (page) => {
+  if (page !== currentPage.value && page >= 1 && page <= paginationState.value.totalPages) {
+    currentPage.value = page
+    fetchQuestions()
   }
+}
 
-  return pages.filter((p, i, arr) => {
-    // Remove duplicate ellipsis
-    if (p === '...' && arr[i - 1] === '...') return false
-    return true
-  })
-})
-
-const isValidJumpPage = computed(() => {
-  return jumpToPage.value >= 1 && jumpToPage.value <= paginationState.value.totalPages && jumpToPage.value !== currentPage.value
-})
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  fetchQuestions()
+}
 
 // load tags
 const loadTags = async () => {
@@ -2228,208 +2092,6 @@ tbody tr:hover {
 
 tbody tr:last-child td {
   border-bottom: none;
-}
-
-/* Pagination */
-.pagination-wrapper {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--border, #CBD5E1);
-  flex-wrap: wrap;
-  z-index: 100;
-  margin-top: 24px;
-}
-
-.pagination-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.pagination-info .text-muted {
-  font-size: 14px;
-  color: var(--text-secondary, #64748B);
-  font-weight: 500;
-}
-
-.page-size-select {
-  width: auto;
-  min-width: 130px;
-  padding: 8px 32px 8px 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 13px;
-  background: #f9fafb;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-}
-
-.page-size-select:focus {
-  outline: none;
-  border-color: var(--primary, #476996);
-  background-color: white;
-  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
-}
-
-.pagination {
-  display: flex;
-  gap: 6px;
-}
-
-.page-link {
-  min-width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  color: var(--text-primary, #1E293B);
-  background-color: white;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.page-link:hover:not(:disabled) {
-  background-color: var(--primary-soft, #EEF2FF);
-  border-color: var(--primary, #476996);
-  color: var(--primary, #476996);
-  transform: translateY(-1px);
-}
-
-.page-item.active .page-link {
-  background: var(--primary, #476996);
-  border-color: var(--primary, #476996);
-  color: white;
-  box-shadow: 0 2px 4px rgba(71, 105, 150, 0.2);
-}
-
-.page-item.disabled .page-link {
-  cursor: not-allowed;
-  opacity: 0.4;
-  transform: none;
-}
-
-.page-jumper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.page-jumper .text-muted {
-  font-size: 14px;
-  color: var(--text-secondary, #64748B);
-}
-
-.page-jumper input {
-  width: 70px;
-  text-align: center;
-  padding: 8px 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.page-jumper input:focus {
-  outline: none;
-  border-color: var(--primary, #476996);
-  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
-}
-
-.page-jumper .btn {
-  white-space: nowrap;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  background: var(--primary, #476996);
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.page-jumper .btn:hover:not(:disabled) {
-  background: var(--primary-hover, #35527a);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
-}
-
-.page-jumper .btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .question-admin {
-    padding: 0;
-  }
-
-  .question-filters {
-    flex-direction: column;
-    padding: 16px;
-  }
-
-  .filter-search,
-  .filter-tags-wrapper,
-  .filter-select-wrapper {
-    display: flex;
-    height: fit-content;
-    width: 100%;
-    min-width: auto;
-  }
-
-  .filter-btn {
-    flex: 1;
-  }
-
-  .question-table {
-    overflow-x: auto;
-  }
-
-  table {
-    min-width: 800px;
-  }
-
-  .pagination-wrapper {
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
-  }
-
-  .pagination-info,
-  .pagination,
-  .page-jumper {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .pagination {
-    flex-wrap: wrap;
-  }
-
-  .page-size-select {
-    width: 100%;
-  }
 }
 
 /* Modern Modal Styles */
