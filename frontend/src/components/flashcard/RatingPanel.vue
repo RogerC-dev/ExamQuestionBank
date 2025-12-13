@@ -2,56 +2,40 @@
   <div v-if="visible" class="rating-section">
     <p class="rating-prompt">你記得這題嗎？</p>
     <div class="rating-buttons">
-      <button 
-        class="rating-btn again" 
-        @click="$emit('rate', 1)" 
-        :disabled="disabled"
-        data-testid="rating-btn-1"
-      >
-        <span class="rating-icon"><i class="bi bi-emoji-frown"></i></span>
-        <span class="rating-text">完全忘記</span>
-        <span class="rating-interval">{{ calculateInterval(1) }}天後</span>
-      </button>
-      <button 
-        class="rating-btn hard" 
-        @click="$emit('rate', 2)" 
-        :disabled="disabled"
-        data-testid="rating-btn-2"
-      >
-        <span class="rating-icon"><i class="bi bi-emoji-neutral"></i></span>
-        <span class="rating-text">很難想起</span>
-        <span class="rating-interval">{{ calculateInterval(2) }}天後</span>
-      </button>
-      <button 
-        class="rating-btn good" 
-        @click="$emit('rate', 3)" 
-        :disabled="disabled"
-        data-testid="rating-btn-3"
-      >
-        <span class="rating-icon"><i class="bi bi-emoji-expressionless"></i></span>
-        <span class="rating-text">想了一下</span>
-        <span class="rating-interval">{{ calculateInterval(3) }}天後</span>
-      </button>
-      <button 
-        class="rating-btn easy" 
-        @click="$emit('rate', 4)" 
-        :disabled="disabled"
-        data-testid="rating-btn-4"
-      >
-        <span class="rating-icon"><i class="bi bi-emoji-smile"></i></span>
-        <span class="rating-text">還記得</span>
-        <span class="rating-interval">{{ calculateInterval(4) }}天後</span>
-      </button>
-      <button 
-        class="rating-btn perfect" 
-        @click="$emit('rate', 5)" 
-        :disabled="disabled"
-        data-testid="rating-btn-5"
-      >
-        <span class="rating-icon"><i class="bi bi-emoji-laughing"></i></span>
-        <span class="rating-text">非常熟悉</span>
-        <span class="rating-interval">{{ calculateInterval(5) }}天後</span>
-      </button>
+      <template v-if="practiceMode">
+        <button class="rating-btn next" @click="$emit('rate', 0)" :disabled="disabled" data-testid="rating-btn-next">
+          <span class="rating-icon"><i class="bi bi-arrow-right-circle"></i></span>
+          <span class="rating-text">下一張</span>
+          <span class="rating-interval">不計入複習進度</span>
+        </button>
+      </template>
+      <template v-else>
+        <button class="rating-btn again" @click="$emit('rate', 1)" :disabled="disabled" data-testid="rating-btn-1">
+          <span class="rating-icon"><i class="bi bi-emoji-frown"></i></span>
+          <span class="rating-text">完全忘記</span>
+          <span class="rating-interval">{{ calculateInterval(1) }}天後</span>
+        </button>
+        <button class="rating-btn hard" @click="$emit('rate', 2)" :disabled="disabled" data-testid="rating-btn-2">
+          <span class="rating-icon"><i class="bi bi-emoji-neutral"></i></span>
+          <span class="rating-text">很難想起</span>
+          <span class="rating-interval">{{ calculateInterval(2) }}天後</span>
+        </button>
+        <button class="rating-btn good" @click="$emit('rate', 3)" :disabled="disabled" data-testid="rating-btn-3">
+          <span class="rating-icon"><i class="bi bi-emoji-expressionless"></i></span>
+          <span class="rating-text">想了一下</span>
+          <span class="rating-interval">{{ calculateInterval(3) }}天後</span>
+        </button>
+        <button class="rating-btn easy" @click="$emit('rate', 4)" :disabled="disabled" data-testid="rating-btn-4">
+          <span class="rating-icon"><i class="bi bi-emoji-smile"></i></span>
+          <span class="rating-text">還記得</span>
+          <span class="rating-interval">{{ calculateInterval(4) }}天後</span>
+        </button>
+        <button class="rating-btn perfect" @click="$emit('rate', 5)" :disabled="disabled" data-testid="rating-btn-5">
+          <span class="rating-icon"><i class="bi bi-emoji-laughing"></i></span>
+          <span class="rating-text">非常熟悉</span>
+          <span class="rating-interval">{{ calculateInterval(5) }}天後</span>
+        </button>
+      </template>
     </div>
   </div>
 </template>
@@ -61,12 +45,14 @@ interface Props {
   visible?: boolean
   disabled?: boolean
   currentInterval?: number
+  practiceMode?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   visible: false,
   disabled: false,
-  currentInterval: 1
+  currentInterval: 1,
+  practiceMode: false
 })
 
 defineEmits<{
@@ -177,6 +163,13 @@ function calculateInterval(rating: number): number {
   border: 1px solid #e8dff8;
 }
 
+.rating-btn.next {
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+
 .rating-btn:hover:not(:disabled) {
   transform: translateY(-4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -187,7 +180,7 @@ function calculateInterval(rating: number): number {
   .rating-buttons {
     gap: 10px;
   }
-  
+
   .rating-btn {
     min-width: 90px;
     padding: 14px 16px;
@@ -200,13 +193,13 @@ function calculateInterval(rating: number): number {
     font-size: 16px;
     margin-bottom: 16px;
   }
-  
+
   .rating-buttons {
     flex-direction: column;
     gap: 8px;
     width: 100%;
   }
-  
+
   .rating-btn {
     width: 100%;
     min-width: auto;
@@ -214,15 +207,15 @@ function calculateInterval(rating: number): number {
     justify-content: space-between;
     padding: 12px 16px;
   }
-  
+
   .rating-icon {
     font-size: 24px;
   }
-  
+
   .rating-text {
     font-size: 14px;
   }
-  
+
   .rating-interval {
     font-size: 12px;
   }
@@ -241,7 +234,7 @@ function calculateInterval(rating: number): number {
     flex-direction: row;
     flex-wrap: wrap;
   }
-  
+
   .rating-btn {
     flex: 1;
     min-width: calc(50% - 4px);

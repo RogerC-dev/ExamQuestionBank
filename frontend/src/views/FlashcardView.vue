@@ -34,13 +34,13 @@
 
         <!-- Swiper with Cards Effect for all flashcards -->
         <div class="flashcard-swiper-container">
-          <Swiper v-if="reviewCards.length > 0" :modules="swiperModules" :effect="'cards'" :grabCursor="false"
+          <Swiper v-if="reviewCards.length > 0" :modules="swiperModules" :effect="'cards'" :grabCursor="isPracticeMode"
             :cardsEffect="{
               perSlideOffset: 8,
               perSlideRotate: 2,
               rotate: true,
               slideShadows: true,
-            }" :allowTouchMove="false" :lazy="{
+            }" :allowTouchMove="isPracticeMode" :lazy="{
               loadPrevNext: true,
               loadPrevNextAmount: 2,
             }" :preloadImages="false" class="flashcard-swiper" @swiper="onSwiperInit" @slideChange="onSlideChange">
@@ -52,7 +52,7 @@
         </div>
 
         <RatingPanel :visible="isCardFlipped && swiperActiveIndex < reviewCards.length" :disabled="isRating"
-          :current-interval="currentCard?.interval || 1" @rate="rateCard" />
+          :current-interval="currentCard?.interval || 1" :practice-mode="isPracticeMode" @rate="rateCard" />
       </div>
 
       <!-- Dashboard Mode -->
@@ -83,6 +83,15 @@
         <!-- Selection Toolbar (Sticky) -->
         <SelectionToolbar :selected-count="selectedFlashcardCount" item-unit="張快閃卡" @clear="clearSelection">
           <div class="toolbar-divider"></div>
+
+          <button class="toolbar-btn toolbar-btn-info" @click="startPracticeSelected" title="練習選取項目">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+            </svg>
+            <span>練習選取</span>
+          </button>
 
           <button class="toolbar-btn toolbar-btn-danger" @click="deleteSelectedFlashcards"
             :disabled="isDeletingSelected" title="批量刪除">
@@ -145,6 +154,7 @@ const reviewCards = ref([])
 const swiperActiveIndex = ref(0)
 const isCardFlipped = ref(false)
 const isRating = ref(false)
+const isPracticeMode = ref(false)
 const cardOptions = ref({}) // Store options for each card by card.id
 
 const currentCard = computed(() => reviewCards.value[swiperActiveIndex.value])
@@ -161,15 +171,20 @@ const setCardRef = (el, index) => {
   }
 }
 
+// Load state tracking
+const fetchedCardIds = ref(new Set())
+
 // Swiper event handlers
 const onSwiperInit = (swiper) => {
   swiperInstance.value = swiper
+  loadSurroundingOptions(swiper.activeIndex)
 }
 
 const onSlideChange = () => {
   if (swiperInstance.value) {
     swiperActiveIndex.value = swiperInstance.value.activeIndex
     isCardFlipped.value = false
+    loadSurroundingOptions(swiperActiveIndex.value)
   }
 }
 
@@ -249,68 +264,111 @@ const loadDueFlashcards = async () => {
   }
 }
 
-// Review functions
-const startReview = async () => {
-  try {
-    await loadDueFlashcards()
-    if (dueFlashcards.value.length === 0) {
-      showError('沒有待複習的卡片')
-      return
+const loadSurroundingOptions = async (currentIndex) => {
+  // Load current card and next 2 cards
+  for (let i = 0; i < 3; i++) {
+    const targetIndex = currentIndex + i
+    if (targetIndex >= reviewCards.value.length) continue
+
+    const card = reviewCards.value[targetIndex]
+
+    // Skip if already fetched or currently fetching (we can use the set)
+    if (fetchedCardIds.value.has(card.id)) continue
+
+    // Mark as fetched/fetching to prevent duplicate requests
+    fetchedCardIds.value.add(card.id)
+
+    try {
+      // Non-blocking fetch (don't await loop iteration)
+      questionService.getQuestion(card.question).then(({ data }) => {
+        cardOptions.value = {
+          ...cardOptions.value,
+          [card.id]: data.options || []
+        }
+      }).catch(() => {
+        cardOptions.value = {
+          ...cardOptions.value,
+          [card.id]: []
+        }
+      })
+    } catch (e) {
+      console.error(e)
     }
-    reviewCards.value = [...dueFlashcards.value]
+  }
+}
+
+// Review functions
+const startReview = async (isPractice = false) => {
+  try {
+    isPracticeMode.value = isPractice
+
+    if (isPractice) {
+      if (flashcards.value.length === 0) {
+        showError('沒有可供複習的卡片')
+        return
+      }
+      reviewCards.value = [...flashcards.value]
+    } else {
+      await loadDueFlashcards()
+      if (dueFlashcards.value.length === 0) {
+        showError('沒有待複習的卡片')
+        return
+      }
+      reviewCards.value = [...dueFlashcards.value]
+    }
+
     swiperActiveIndex.value = 0
     isCardFlipped.value = false
     cardRefs.value = []
-
-    // Load options for all cards
-    await loadAllCardOptions()
+    fetchedCardIds.value.clear()
+    cardOptions.value = {}
 
     reviewMode.value = true
   } catch (e) {
-    showError(e.message, startReview)
+    showError(e.message, () => startReview(isPractice))
   }
 }
 
-// Load options for all review cards (optimized for lazy loading)
-const loadAllCardOptions = async () => {
-  const optionsMap = {}
-  // Only load first 5 cards initially for better performance
-  const cardsToLoad = reviewCards.value.slice(0, Math.min(5, reviewCards.value.length))
+const startPracticeSelected = async () => {
+  if (selectedFlashcardIds.value.length === 0) return
 
-  for (const card of cardsToLoad) {
-    try {
-      const { data } = await questionService.getQuestion(card.question)
-      optionsMap[card.id] = data.options || []
-    } catch (e) {
-      optionsMap[card.id] = []
+  try {
+    isPracticeMode.value = true
+
+    // Filter currently loaded flashcards by selection
+    const selectedCards = flashcards.value.filter(card =>
+      selectedFlashcardIds.value.includes(card.id)
+    )
+
+    if (selectedCards.length === 0) {
+      showError('無法載入選取的卡片')
+      return
     }
-  }
-  cardOptions.value = optionsMap
 
-  // Load remaining cards in background
-  if (reviewCards.value.length > 5) {
-    loadRemainingOptions()
+    reviewCards.value = selectedCards
+    swiperActiveIndex.value = 0
+    isCardFlipped.value = false
+    cardRefs.value = []
+    fetchedCardIds.value.clear()
+    cardOptions.value = {}
+
+    reviewMode.value = true
+  } catch (e) {
+    showError(e.message, startPracticeSelected)
   }
 }
 
-// Load remaining card options in background
-const loadRemainingOptions = async () => {
-  const remainingCards = reviewCards.value.slice(5)
-  for (const card of remainingCards) {
-    try {
-      const { data } = await questionService.getQuestion(card.question)
-      cardOptions.value[card.id] = data.options || []
-    } catch (e) {
-      cardOptions.value[card.id] = []
-    }
-  }
-}
+
 
 const rateCard = async (rating) => {
   if (!currentCard.value || isRating.value) return
   isRating.value = true
+
   try {
-    await flashcardService.reviewFlashcard(currentCard.value.id, rating)
+    // Only call API if not in practice mode and rating > 0
+    if (!isPracticeMode.value && rating > 0) {
+      await flashcardService.reviewFlashcard(currentCard.value.id, rating)
+    }
 
     // Check if there are more cards
     if (swiperActiveIndex.value < reviewCards.value.length - 1) {
@@ -321,7 +379,10 @@ const rateCard = async (rating) => {
       }
     } else {
       // Finished all cards
-      showSuccess(`🎉 完成！複習了 ${reviewCards.value.length} 張卡片`)
+      showSuccess(isPracticeMode.value
+        ? `🎉 完成！練習了 ${reviewCards.value.length} 張卡片`
+        : `🎉 完成！複習了 ${reviewCards.value.length} 張卡片`
+      )
       exitReview()
     }
   } catch (e) {
@@ -732,5 +793,17 @@ onMounted(() => {
   .page-header h2 {
     font-size: 20px;
   }
+}
+
+/* Toolbar Info Button */
+.toolbar-btn-info {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.toolbar-btn-info:hover {
+  background: #bae6fd;
+  color: #0284c7;
+  transform: translateY(-1px);
 }
 </style>

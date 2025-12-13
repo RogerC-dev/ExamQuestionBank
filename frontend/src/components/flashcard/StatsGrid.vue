@@ -10,17 +10,12 @@
         <span v-else class="stat-value" data-testid="due-cards-value">{{ stats.due_cards }}</span>
         <span class="stat-label">今日待複習</span>
       </div>
-      <button 
-        v-if="stats.due_cards > 0" 
-        class="btn-start" 
-        data-testid="start-review-button"
-        @click="$emit('start-review')"
-        :disabled="loading"
-      >
+      <button v-if="stats.due_cards > 0" class="btn-start" data-testid="start-review-button"
+        @click="$emit('start-review', false)" :disabled="loading">
         開始複習 →
       </button>
     </div>
-    
+
     <!-- Total cards -->
     <div class="stat-card" data-testid="stat-card-total">
       <div class="stat-icon"><i class="bi bi-bullseye"></i></div>
@@ -31,8 +26,12 @@
         <span v-else class="stat-value" data-testid="total-cards-value">{{ stats.total_cards }}</span>
         <span class="stat-label">總卡片數</span>
       </div>
+      <button v-if="stats.total_cards > 0" class="btn-secondary-action" data-testid="practice-all-button"
+        @click="$emit('start-review', true)" :disabled="loading">
+        <i class="bi bi-play-circle me-1"></i>練習全部
+      </button>
     </div>
-    
+
     <!-- Review streak -->
     <div class="stat-card" data-testid="stat-card-streak">
       <div class="stat-icon"><i class="bi bi-fire"></i></div>
@@ -44,7 +43,7 @@
         <span class="stat-label">連續天數</span>
       </div>
     </div>
-    
+
     <!-- Completion percentage -->
     <div class="stat-card" data-testid="stat-card-completion">
       <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
@@ -72,7 +71,7 @@ withDefaults(defineProps<Props>(), {
 })
 
 defineEmits<{
-  (e: 'start-review'): void
+  (e: 'start-review', isPracticeMode: boolean): void
 }>()
 </script>
 
@@ -192,6 +191,38 @@ defineEmits<{
 
 .btn-start:disabled {
   opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-start:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary-action {
+  margin-top: 8px;
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--primary, #3b82f6);
+  color: var(--primary, #3b82f6);
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.btn-secondary-action:hover:not(:disabled) {
+  background: var(--primary-soft, #EEF2FF);
+  transform: translateY(-1px);
+}
+
+.btn-secondary-action:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
