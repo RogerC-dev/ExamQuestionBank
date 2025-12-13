@@ -234,79 +234,49 @@
     </div>
 
     <!-- Selection Toolbar (Sticky) -->
-    <transition name="slide-up">
-      <div class="selection-toolbar-wrapper" v-if="selectedCount > 0">
-        <div class="selection-toolbar">
-          <div class="toolbar-content">
-            <div class="toolbar-info">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="9 11 12 14 22 4"></polyline>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-              </svg>
-              <span class="toolbar-text">已選取</span>
-              <span class="toolbar-count">{{ selectedCount }}</span>
-              <span class="toolbar-text">個題目</span>
-            </div>
+    <SelectionToolbar :selected-count="selectedCount" item-unit="個題目" @clear="clearSelection">
+      <button class="toolbar-btn toolbar-btn-primary" @click="openAddToExamModal" title="加入到考卷">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="12" y1="18" x2="12" y2="12"></line>
+          <line x1="9" y1="15" x2="15" y2="15"></line>
+        </svg>
+        <span>加入考卷</span>
+      </button>
 
-            <div class="toolbar-divider"></div>
+      <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkTagModal" title="批次編輯標籤">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+          <line x1="7" y1="7" x2="7.01" y2="7"></line>
+        </svg>
+        <span>編輯標籤</span>
+      </button>
 
-            <div class="toolbar-actions">
-              <button class="toolbar-btn toolbar-btn-secondary" @click="clearSelection" title="清除選取">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-                <span>清除</span>
-              </button>
+      <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkSubjectModal" title="批次編輯科目">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        <span>編輯科目</span>
+      </button>
 
-              <button class="toolbar-btn toolbar-btn-primary" @click="openAddToExamModal" title="加入到考卷">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="12" y1="18" x2="12" y2="12"></line>
-                  <line x1="9" y1="15" x2="15" y2="15"></line>
-                </svg>
-                <span>加入考卷</span>
-              </button>
+      <div class="toolbar-divider"></div>
 
-              <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkTagModal" title="批次編輯標籤">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                  <line x1="7" y1="7" x2="7.01" y2="7"></line>
-                </svg>
-                <span>編輯標籤</span>
-              </button>
-
-              <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkSubjectModal" title="批次編輯科目">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                </svg>
-                <span>編輯科目</span>
-              </button>
-
-              <div class="toolbar-divider"></div>
-
-              <button class="toolbar-btn toolbar-btn-danger" @click="deleteSelectedQuestions" :disabled="isDeleting"
-                title="批量刪除">
-                <div v-if="isDeleting" class="toolbar-spinner"></div>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
-                <span>{{ isDeleting ? '刪除中...' : '刪除' }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </transition>
+      <button class="toolbar-btn toolbar-btn-danger" @click="deleteSelectedQuestions" :disabled="isDeleting"
+        title="批量刪除">
+        <div v-if="isDeleting" class="toolbar-spinner"></div>
+        <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        <span>{{ isDeleting ? '刪除中...' : '刪除' }}</span>
+      </button>
+    </SelectionToolbar>
 
     <!-- Enhanced Pagination -->
     <nav v-if="paginationState.totalPages > 0" class="pagination-wrapper">
@@ -726,6 +696,7 @@ import QuestionEditor from '@/components/QuestionEditor.vue'
 import BulkTagEditor from '@/components/BulkTagEditor.vue'
 import BulkSubjectEditor from '@/components/BulkSubjectEditor.vue'
 import PdfUploadSection from '@/components/PdfUploadSection.vue'
+import SelectionToolbar from '@/components/common/SelectionToolbar.vue'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import tagService from '@/services/tagService'
@@ -2203,149 +2174,6 @@ td:nth-child(9) {
 .slide-up-leave-to {
   opacity: 0;
   transform: translateY(-20px);
-}
-
-.selection-toolbar-wrapper {
-  position: fixed;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  width: calc(100% - 48px);
-  max-width: 1200px;
-}
-
-.selection-toolbar {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--border, #CBD5E1);
-}
-
-.toolbar-content {
-  display: flex;
-  align-items: center;
-  padding: 16px 24px;
-  gap: 16px;
-}
-
-.toolbar-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  background: var(--primary-soft, #EEF2FF);
-  border-radius: 10px;
-}
-
-.toolbar-info svg {
-  color: var(--primary, #476996);
-  flex-shrink: 0;
-}
-
-.toolbar-text {
-  font-size: 14px;
-  color: var(--text-secondary, #64748B);
-  font-weight: 500;
-}
-
-.toolbar-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 10px;
-  background: var(--primary, #476996);
-  color: white;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.toolbar-divider {
-  width: 1px;
-  height: 32px;
-  background: #e5e7eb;
-}
-
-.toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-}
-
-.toolbar-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.toolbar-btn svg {
-  flex-shrink: 0;
-}
-
-.toolbar-btn-secondary {
-  background: #f3f4f6;
-  color: var(--text-secondary, #64748B);
-}
-
-.toolbar-btn-secondary:hover {
-  background: #e5e7eb;
-  color: var(--text-primary, #1E293B);
-  transform: translateY(-1px);
-}
-
-.toolbar-btn-primary {
-  background: var(--primary, #476996);
-  color: white;
-}
-
-.toolbar-btn-primary:hover {
-  background: var(--primary-hover, #35527a);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
-}
-
-.toolbar-btn-danger {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.toolbar-btn-danger:hover:not(:disabled) {
-  background: #fee2e2;
-  color: #b91c1c;
-  transform: translateY(-1px);
-}
-
-.toolbar-btn-danger:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.toolbar-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(220, 38, 38, 0.3);
-  border-top-color: #dc2626;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* Responsive */

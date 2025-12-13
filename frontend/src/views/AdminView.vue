@@ -224,63 +224,32 @@
         </div>
 
         <!-- Selection Toolbar (Sticky) -->
-        <transition name="slide-up">
-          <div class="selection-toolbar-wrapper" v-if="selectedExamCount > 0">
-            <div class="selection-toolbar">
-              <div class="toolbar-content">
-                <div class="toolbar-info">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 11 12 14 22 4"></polyline>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                  </svg>
-                  <span class="toolbar-text">已選取</span>
-                  <span class="toolbar-count">{{ selectedExamCount }}</span>
-                  <span class="toolbar-text">張考卷</span>
-                </div>
+        <SelectionToolbar :selected-count="selectedExamCount" item-unit="張考卷" @clear="clearExamSelection">
+          <button class="toolbar-btn toolbar-btn-primary" @click="exportSelectedExams" :disabled="isExporting"
+            title="匯出選取的考卷">
+            <svg v-if="!isExporting" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <div v-else class="toolbar-spinner"></div>
+            <span>{{ isExporting ? '匯出中...' : '匯出' }}</span>
+          </button>
 
-                <div class="toolbar-divider"></div>
+          <div class="toolbar-divider"></div>
 
-                <div class="toolbar-actions">
-                  <button class="toolbar-btn toolbar-btn-secondary" @click="clearExamSelection" title="清除選取">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                    <span>清除</span>
-                  </button>
-
-                  <button class="toolbar-btn toolbar-btn-primary" @click="exportSelectedExams" :disabled="isExporting"
-                    title="匯出選取的考卷">
-                    <svg v-if="!isExporting" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    <div v-else class="toolbar-spinner"></div>
-                    <span>{{ isExporting ? '匯出中...' : '匯出' }}</span>
-                  </button>
-
-                  <div class="toolbar-divider"></div>
-
-                  <button class="toolbar-btn toolbar-btn-danger" @click="deleteSelectedExams"
-                    :disabled="isDeletingSelected" title="批量刪除">
-                    <div v-if="isDeletingSelected" class="toolbar-spinner"></div>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                    <span>{{ isDeletingSelected ? '刪除中...' : '刪除' }}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </transition>
+          <button class="toolbar-btn toolbar-btn-danger" @click="deleteSelectedExams" :disabled="isDeletingSelected"
+            title="批量刪除">
+            <div v-if="isDeletingSelected" class="toolbar-spinner"></div>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>{{ isDeletingSelected ? '刪除中...' : '刪除' }}</span>
+          </button>
+        </SelectionToolbar>
       </div>
 
       <div v-else>
@@ -515,6 +484,7 @@ import ExamDetailModal from '@/components/ExamDetailModal.vue'
 import { usePdfImportStore } from '@/stores/pdfImport'
 import examService from '@/services/examService'
 import AdminQuestionManagement from '@/components/AdminQuestionManagement.vue'
+import SelectionToolbar from '@/components/common/SelectionToolbar.vue'
 
 const exams = ref([])
 const isLoading = ref(false)
@@ -863,56 +833,68 @@ const batchImport = () => {
   }
 }
 
-const exportExams = async () => {
-  if (isExporting.value) return
-  isExporting.value = true
-  // Export all currently listed exams as JSON (only question IDs)
-  try {
-    const fetches = exams.value.map((e) => examService.getExam(e.id).catch(() => null))
-    const responses = await Promise.all(fetches)
-    const exportData = []
-    for (const res of responses) {
-      if (!res || !res.data) continue
-      const item = res.data
-      // Only export question IDs, order, and points
-      const examQuestions = []
-      if (Array.isArray(item.exam_questions)) {
-        for (const eq of item.exam_questions) {
-          if (eq.question) {
-            examQuestions.push({
-              question_id: eq.question,
-              order: eq.order,
-              points: eq.points
-            })
-          }
-        }
-      }
-      exportData.push({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        time_limit: item.time_limit,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        exam_questions: examQuestions
-      })
-    }
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `selected_exams_${new Date().toISOString().slice(0, 19).replaceAll(':', '-')}.json`
-    a.click()
-    URL.revokeObjectURL(url)
+// const exportExams = async () => {
+//   if (isExporting.value) return
+//   isExporting.value = true
+//   // Export all currently listed exams as JSON (only question IDs)
+//   try {
+//     const fetches = exams.value.map((e) => examService.getExam(e.id).catch(() => null))
+//     const responses = await Promise.all(fetches)
+//     const exportData = []
+//     for (const res of responses) {
+//       if (!res || !res.data) continue
+//       const item = res.data
+//       // Only export question IDs, order, and points
+//       const examQuestions = []
+//       if (Array.isArray(item.exam_questions)) {
+//         for (const eq of item.exam_questions) {
+//           // Robustly get question ID
+//           let qId = null
+//           if (eq.question) {
+//             qId = typeof eq.question === 'object' ? eq.question.id : eq.question
+//           } else if (eq.question_id) {
+//             qId = eq.question_id
+//           }
 
-    alert(`成功匯出 ${exportData.length} 張考卷`)
-  } catch (error) {
-    console.error('Bulk export failed', error)
-    alert('批量匯出失敗')
-  } finally {
-    isExporting.value = false
-  }
-}
+//           if (qId) {
+//             examQuestions.push({
+//               question_id: qId,
+//               order: eq.order,
+//               points: eq.points
+//             })
+//           }
+//         }
+//       }
+//       exportData.push({
+//         id: item.id,
+//         name: item.name,
+//         description: item.description,
+//         time_limit: item.time_limit,
+//         created_at: item.created_at,
+//         updated_at: item.updated_at,
+//         exam_questions: examQuestions
+//       })
+//     }
+//     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+//     const url = URL.createObjectURL(blob)
+//     const a = document.createElement('a')
+//     a.href = url
+//     a.download = `selected_exams_${new Date().toISOString().slice(0, 19).replaceAll(':', '-')}.json`
+//     document.body.appendChild(a)
+//     a.click()
+//     setTimeout(() => {
+//       document.body.removeChild(a)
+//       URL.revokeObjectURL(url)
+//     }, 100)
+
+//     alert(`成功匯出 ${exportData.length} 張考卷`)
+//   } catch (error) {
+//     console.error('Bulk export failed', error)
+//     alert('批量匯出失敗')
+//   } finally {
+//     isExporting.value = false
+//   }
+// }
 
 
 /**
@@ -943,9 +925,17 @@ const exportExam = async (examId) => {
     // Only export question IDs, order, and points
     if (Array.isArray(data.exam_questions)) {
       for (const eq of data.exam_questions) {
+        // Robustly get question ID
+        let qId = null
         if (eq.question) {
+          qId = typeof eq.question === 'object' ? eq.question.id : eq.question
+        } else if (eq.question_id) {
+          qId = eq.question_id
+        }
+
+        if (qId) {
           exportItem.exam_questions.push({
-            question_id: eq.question,
+            question_id: qId,
             order: eq.order,
             points: eq.points
           })
@@ -961,8 +951,12 @@ const exportExam = async (examId) => {
     const a = document.createElement('a')
     a.href = url
     a.download = `exam_${exportItem.id || 'export'}.json`
+    document.body.appendChild(a)
     a.click()
-    URL.revokeObjectURL(url)
+    setTimeout(() => {
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }, 100)
 
     exportProgress.value = 100
     exportProgressText.value = '匯出完成'
@@ -1364,8 +1358,12 @@ const exportSelectedExams = async () => {
     const a = document.createElement('a')
     a.href = url
     a.download = `selected_exams_${new Date().toISOString().slice(0, 19).replaceAll(':', '-')}.json`
+    document.body.appendChild(a)
     a.click()
-    URL.revokeObjectURL(url)
+    setTimeout(() => {
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }, 100)
 
     alert(`成功匯出 ${exportData.length} 張考卷`)
   } catch (error) {
@@ -2232,197 +2230,6 @@ tbody tr:last-child td {
 
   .page-size-select {
     width: 100%;
-  }
-}
-
-/* Selection Toolbar Styles */
-.selection-toolbar-wrapper {
-  position: fixed;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  width: calc(100% - 48px);
-  max-width: 1200px;
-}
-
-.selection-toolbar {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--border, #CBD5E1);
-}
-
-.toolbar-content {
-  display: flex;
-  align-items: center;
-  padding: 16px 24px;
-  gap: 16px;
-}
-
-.toolbar-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  background: var(--primary-soft, #EEF2FF);
-  border-radius: 10px;
-}
-
-.toolbar-info svg {
-  color: var(--primary, #476996);
-  flex-shrink: 0;
-}
-
-.toolbar-text {
-  font-size: 14px;
-  color: var(--text-secondary, #64748B);
-  font-weight: 500;
-}
-
-.toolbar-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 10px;
-  background: var(--primary, #476996);
-  color: white;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.toolbar-divider {
-  width: 1px;
-  height: 32px;
-  background: #e5e7eb;
-}
-
-.toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-}
-
-.toolbar-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.toolbar-btn svg {
-  flex-shrink: 0;
-}
-
-.toolbar-btn-secondary {
-  background: #f3f4f6;
-  color: var(--text-secondary, #64748B);
-}
-
-.toolbar-btn-secondary:hover {
-  background: #e5e7eb;
-  color: var(--text-primary, #1E293B);
-  transform: translateY(-1px);
-}
-
-.toolbar-btn-primary {
-  background: var(--primary, #476996);
-  color: white;
-}
-
-.toolbar-btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover, #35527a);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
-}
-
-.toolbar-btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.toolbar-btn-danger {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.toolbar-btn-danger:hover:not(:disabled) {
-  background: #fee2e2;
-  color: #b91c1c;
-  transform: translateY(-1px);
-}
-
-.toolbar-btn-danger:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.toolbar-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(220, 38, 38, 0.3);
-  border-top-color: #dc2626;
-  border-radius: 50%;
-  animation: toolbar-spin 0.8s linear infinite;
-}
-
-@keyframes toolbar-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Slide up animation */
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.slide-up-enter-from {
-  opacity: 0;
-  transform: translateX(-50%) translateY(20px);
-}
-
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translateX(-50%) translateY(20px);
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .toolbar-content {
-    flex-wrap: wrap;
-    padding: 12px 16px;
-  }
-
-  .toolbar-actions {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .toolbar-btn span {
-    display: none;
-  }
-
-  .toolbar-btn {
-    padding: 8px 12px;
-  }
-
-  .toolbar-divider {
-    display: none;
   }
 }
 </style>
