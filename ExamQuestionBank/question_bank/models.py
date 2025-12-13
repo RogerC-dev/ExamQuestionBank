@@ -258,6 +258,24 @@ class Subject(models.Model):
         return self.name
 
 
+class EssayAnalysisChat(models.Model):
+    """申論解析聊天記錄"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='essay_analysis_chats')
+    question_text = models.TextField(verbose_name="申論題目")
+    analysis_response = models.TextField(verbose_name="AI 解析回應")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'essay_analysis_chat'
+        verbose_name = '申論解析記錄'
+        verbose_name_plural = '申論解析記錄'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.question_text[:30]}"
+
+
+
 class UserProgress(models.Model):
     """使用者學習進度追蹤"""
     MASTERY_LEVEL_CHOICES = [
