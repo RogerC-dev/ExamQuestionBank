@@ -34,23 +34,25 @@
         </button>
       </div>
 
-      <div class="chat-input-container">
+      <div class="chat-input-container" :style="{ minHeight: inputContainerHeight + 'px' }">
+        <div class="resize-handle-top" @mousedown="startResize" @touchstart="startResize"></div>
         <textarea
           ref="chatInputRef"
           v-model="inputMessage"
           @keydown.enter.exact.prevent="handleSend"
-          @keydown.enter.shift.exact="inputMessage += '\n'"
+          @keydown.enter.shift.exact.prevent="insertNewline"
+          @keydown.ctrl.enter.prevent="handleSend"
           placeholder="輸入您的問題..."
           class="chat-input"
-          rows="3"
           :disabled="isLoading"
         ></textarea>
         <button
           @click="handleSend"
           class="btn-send"
           :disabled="!inputMessage.trim() || isLoading"
+          title="發送"
         >
-          發送
+          <i class="bi bi-send-fill"></i>
         </button>
       </div>
     </div>
@@ -182,6 +184,55 @@ const reuseHistory = (entry) => {
 
 const refreshHistory = () => {
   chatStore.refreshHistory()
+}
+
+// Insert newline for Shift+Enter
+const insertNewline = () => {
+  const textarea = chatInputRef.value
+  if (!textarea) return
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const value = inputMessage.value
+  inputMessage.value = value.substring(0, start) + '\n' + value.substring(end)
+  nextTick(() => {
+    textarea.selectionStart = textarea.selectionEnd = start + 1
+  })
+}
+
+// Resize handle for input container
+const inputContainerHeight = ref(120)
+const isResizing = ref(false)
+const startY = ref(0)
+const startHeight = ref(0)
+
+const startResize = (e) => {
+  isResizing.value = true
+  startY.value = e.touches ? e.touches[0].clientY : e.clientY
+  startHeight.value = inputContainerHeight.value
+  document.body.style.cursor = 'ns-resize'
+  document.body.style.userSelect = 'none'
+  document.addEventListener('mousemove', onResize)
+  document.addEventListener('mouseup', stopResize)
+  document.addEventListener('touchmove', onResize)
+  document.addEventListener('touchend', stopResize)
+}
+
+const onResize = (e) => {
+  if (!isResizing.value) return
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY
+  const delta = startY.value - clientY  // Dragging up increases height
+  const newHeight = Math.max(80, Math.min(400, startHeight.value + delta))
+  inputContainerHeight.value = newHeight
+}
+
+const stopResize = () => {
+  isResizing.value = false
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  document.removeEventListener('mousemove', onResize)
+  document.removeEventListener('mouseup', stopResize)
+  document.removeEventListener('touchmove', onResize)
+  document.removeEventListener('touchend', stopResize)
 }
 
 onMounted(() => {
@@ -354,26 +405,74 @@ onMounted(() => {
 
 .chat-input-container {
   display: flex;
-  gap: 12px;
-  padding: 16px 20px;
+  flex-direction: column;
+  padding: 8px 16px 16px;
   border-top: 1px solid #e5e7eb;
   background: #ffffff;
-  border-radius: 0;
+  position: relative;
 }
 
-.chat-input {
+.resize-handle-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  background: transparent;
+  transition: background 0.2s;
+  z-index: 2;
+}
+
+.resize-handle-top:hover {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.15), transparent);
+}
+
+.resize-handle-top::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: #d1d5db;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.resize-handle-top:hover::after {
+  background: #3b82f6;
+}
+
+.chat-input-wrapper {
+  position: relative;
   flex: 1;
+  display: flex;
+}
+
+.chat-input-container > .chat-input {
+  flex: 1;
+  width: 100%;
   padding: 14px;
+  padding-right: 60px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   font-size: 15px;
   font-family: inherit;
   resize: none;
   outline: none;
-  transition: all 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   background: var(--surface);
   color: var(--text-primary);
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
+}
+
+.chat-input-container > .btn-send {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1;
 }
 
 .chat-input:focus {
@@ -388,27 +487,33 @@ onMounted(() => {
 }
 
 .btn-send {
-  padding: 12px 24px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   background: var(--primary);
   color: white;
   border: none;
-  border-radius: var(--radius);
-  font-size: 14px;
+  border-radius: 50%;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  white-space: nowrap;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 
 .btn-send:hover:not(:disabled) {
   background: var(--primary-hover);
-  transform: translateY(-1px);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
 }
 
 .btn-send:disabled {
   background: #ccc;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .history-panel {
