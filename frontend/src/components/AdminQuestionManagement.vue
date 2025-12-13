@@ -3,40 +3,29 @@
     <!-- Question Filters -->
     <div class="question-filters">
       <div class="filter-search">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" class="search-icon">
           <circle cx="11" cy="11" r="8"></circle>
           <path d="m21 21-4.35-4.35"></path>
         </svg>
-        <input 
-          v-model="searchTerm" 
-          type="text" 
-          class="filter-input" 
-          placeholder="搜尋題目內容、科目..."
-          @keyup.enter="applyFilters" 
-        />
+        <input v-model="searchTerm" type="text" class="filter-input" placeholder="搜尋題目內容、科目..."
+          @keyup.enter="applyFilters" />
       </div>
 
       <div class="filter-tags-wrapper">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tags-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" class="tags-icon">
           <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
           <line x1="7" y1="7" x2="7.01" y2="7"></line>
         </svg>
-        <multiselect
-          v-model="selectedSearchTags"
-          :options="tagOptions"
-          :multiple="true"
-          :close-on-select="false"
-          :clear-on-select="false"
-          :preserve-search="true"
-          placeholder="選擇標籤..."
-          track-by="id"
-          label="name"
-          class="tag-multiselect"
-        />
+        <multiselect v-model="selectedSearchTags" :options="tagOptions" :multiple="true" :close-on-select="false"
+          :clear-on-select="false" :preserve-search="true" placeholder="選擇標籤..." track-by="id" label="name"
+          class="tag-multiselect" />
       </div>
 
       <div class="filter-select-wrapper">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="select-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" class="select-icon">
           <line x1="4" y1="21" x2="4" y2="14"></line>
           <line x1="4" y1="10" x2="4" y2="3"></line>
           <line x1="12" y1="21" x2="12" y2="12"></line>
@@ -56,14 +45,16 @@
       </div>
 
       <button class="filter-btn filter-btn-reset" @click="resetFilters">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
           <polyline points="1 4 1 10 7 10"></polyline>
           <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
         </svg>
         <span>重設</span>
       </button>
       <button class="filter-btn filter-btn-search" @click="applyFilters">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"></circle>
           <path d="m21 21-4.35-4.35"></path>
         </svg>
@@ -75,13 +66,8 @@
     <div v-if="pendingQuestions.length > 0" class="pending-section">
       <div class="pending-header">
         <div class="header-icon">
-          <input 
-            type="checkbox" 
-            :checked="isAllPendingSelected"
-            @change="toggleSelectAllPending"
-            title="全選/取消全選"
-            style="width: 18px; height: 18px; cursor: pointer;"
-          />
+          <input type="checkbox" :checked="isAllPendingSelected" @change="toggleSelectAllPending" title="全選/取消全選"
+            style="width: 18px; height: 18px; cursor: pointer;" />
         </div>
         <div class="header-content">
           <h3 class="pending-title">暫存題目</h3>
@@ -91,39 +77,35 @@
           </p>
         </div>
         <div class="header-actions">
-          <button 
-            v-if="selectedPendingIds.length > 0" 
-            class="btn-bulk-edit-pending" 
-            @click="openBulkSubjectModalForPending"
-            title="批量編輯科目"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button v-if="selectedPendingIds.length > 0" class="btn-bulk-edit-pending"
+            @click="openBulkSubjectModalForPending" title="批量編輯科目">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
             </svg>
             編輯科目
           </button>
-          <button 
-            v-if="selectedPendingIds.length > 0" 
-            class="btn-bulk-edit-pending" 
-            @click="openBulkTagModalForPending"
-            title="批量編輯標籤"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button v-if="selectedPendingIds.length > 0" class="btn-bulk-edit-pending" @click="openBulkTagModalForPending"
+            title="批量編輯標籤">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
               <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
               <line x1="7" y1="7" x2="7.01" y2="7"></line>
             </svg>
             編輯標籤
           </button>
           <button class="btn-clear-pending" @click="clearPendingQuestions">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
             清除全部
           </button>
           <button class="btn-save-pending" @click="savePendingQuestions" :disabled="isSavingPending">
-            <svg v-if="!isSavingPending" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg v-if="!isSavingPending" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
             <div v-else class="pending-spinner"></div>
@@ -131,19 +113,11 @@
           </button>
         </div>
       </div>
-      
+
       <div class="pending-list">
-        <div
-          v-for="(item, index) in pendingQuestions"
-          :key="`pending-${index}`"
-          class="pending-item"
-        >
-          <input 
-            type="checkbox" 
-            :checked="selectedPendingIds.includes(index)"
-            @change="toggleSelectPending(index, $event.target.checked)"
-            class="pending-checkbox"
-          />
+        <div v-for="(item, index) in pendingQuestions" :key="`pending-${index}`" class="pending-item">
+          <input type="checkbox" :checked="selectedPendingIds.includes(index)"
+            @change="toggleSelectPending(index, $event.target.checked)" class="pending-checkbox" />
           <div class="pending-number">{{ index + 1 }}</div>
           <div class="pending-content">
             <div class="pending-text">{{ item.content }}</div>
@@ -156,13 +130,15 @@
           </div>
           <div class="pending-actions">
             <button class="btn-edit-pending" @click="editPendingQuestion(index)" title="編輯">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
             </button>
             <button class="btn-remove-pending" @click="removePendingQuestion(index)" title="移除">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
@@ -177,15 +153,9 @@
         <thead>
           <tr>
             <th style="width:4%">
-              <input
-                ref="pageSelectAllCheckbox"
-                type="checkbox"
-                :checked="isPageAllSelected"
-                :indeterminate="selectedCount > 0 && !isPageAllSelected"
-                :disabled="isLoading"
-                @change="toggleSelectAll"
-                aria-label="選取全部"
-              />
+              <input ref="pageSelectAllCheckbox" type="checkbox" :checked="isPageAllSelected"
+                :indeterminate="selectedCount > 0 && !isPageAllSelected" :disabled="isLoading" @change="toggleSelectAll"
+                aria-label="選取全部" />
             </th>
             <th>ID</th>
             <th>科目</th>
@@ -206,13 +176,8 @@
           </tr>
           <tr v-else v-for="q in questions" :key="q.id">
             <td>
-              <input
-                type="checkbox"
-                :checked="isRowSelected(q.id)"
-                :disabled="isLoading || deletingId === q.id"
-                @change="toggleSelect(q.id, $event.target.checked)"
-                aria-label="選取題目"
-              />
+              <input type="checkbox" :checked="isRowSelected(q.id)" :disabled="isLoading || deletingId === q.id"
+                @change="toggleSelect(q.id, $event.target.checked)" aria-label="選取題目" />
             </td>
             <td>{{ q.id }}</td>
             <td>
@@ -228,13 +193,8 @@
             <td>{{ q.updatedAt }}</td>
             <td>
               <div class="dropdown">
-                <button
-                  class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                  type="button"
-                  :id="`dropdownQuestion${q.id}`"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                >
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                  :id="`dropdownQuestion${q.id}`" data-bs-toggle="dropdown" aria-expanded="false">
                   操作
                 </button>
                 <ul class="dropdown-menu" :aria-labelledby="`dropdownQuestion${q.id}`">
@@ -253,16 +213,14 @@
                       查看關聯考卷
                     </button>
                   </li>
-                  <li><hr class="dropdown-divider" /></li>
                   <li>
-                    <button
-                      class="dropdown-item text-danger"
-                      type="button"
-                      :disabled="deletingId === q.id"
-                      :aria-disabled="deletingId === q.id"
-                      @click="deleteQuestion(q.id)"
-                    >
-                      <span v-if="deletingId === q.id" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <hr class="dropdown-divider" />
+                  </li>
+                  <li>
+                    <button class="dropdown-item text-danger" type="button" :disabled="deletingId === q.id"
+                      :aria-disabled="deletingId === q.id" @click="deleteQuestion(q.id)">
+                      <span v-if="deletingId === q.id" class="spinner-border spinner-border-sm me-2" role="status"
+                        aria-hidden="true"></span>
                       <span v-if="!deletingId || deletingId !== q.id">刪除</span>
                       <span v-else>刪除中...</span>
                     </button>
@@ -281,7 +239,8 @@
         <div class="selection-toolbar">
           <div class="toolbar-content">
             <div class="toolbar-info">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="9 11 12 14 22 4"></polyline>
                 <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
               </svg>
@@ -289,20 +248,22 @@
               <span class="toolbar-count">{{ selectedCount }}</span>
               <span class="toolbar-text">個題目</span>
             </div>
-            
+
             <div class="toolbar-divider"></div>
-            
+
             <div class="toolbar-actions">
               <button class="toolbar-btn toolbar-btn-secondary" @click="clearSelection" title="清除選取">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
                 <span>清除</span>
               </button>
-              
+
               <button class="toolbar-btn toolbar-btn-primary" @click="openAddToExamModal" title="加入到考卷">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                   <polyline points="14 2 14 8 20 8"></polyline>
                   <line x1="12" y1="18" x2="12" y2="12"></line>
@@ -310,28 +271,32 @@
                 </svg>
                 <span>加入考卷</span>
               </button>
-              
+
               <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkTagModal" title="批次編輯標籤">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
                   <line x1="7" y1="7" x2="7.01" y2="7"></line>
                 </svg>
                 <span>編輯標籤</span>
               </button>
-              
+
               <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkSubjectModal" title="批次編輯科目">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                   <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                 </svg>
                 <span>編輯科目</span>
               </button>
-              
+
               <div class="toolbar-divider"></div>
-              
-              <button class="toolbar-btn toolbar-btn-danger" @click="deleteSelectedQuestions" :disabled="isDeleting" title="批量刪除">
+
+              <button class="toolbar-btn toolbar-btn-danger" @click="deleteSelectedQuestions" :disabled="isDeleting"
+                title="批量刪除">
                 <div v-if="isDeleting" class="toolbar-spinner"></div>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                 </svg>
@@ -359,28 +324,22 @@
 
       <ul class="pagination mb-0">
         <li class="page-item" :class="{ disabled: !paginationState.hasPrev || isLoading }">
-          <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToFirstPage" title="第一頁">
+          <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToFirstPage"
+            title="第一頁">
             <span aria-hidden="true">&laquo;</span>
           </button>
         </li>
         <li class="page-item" :class="{ disabled: !paginationState.hasPrev || isLoading }">
-          <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToPreviousPage" title="上一頁">
+          <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToPreviousPage"
+            title="上一頁">
             <span aria-hidden="true">&lsaquo;</span>
           </button>
         </li>
 
         <!-- Page Numbers -->
-        <li 
-          v-for="page in visiblePages" 
-          :key="page" 
-          class="page-item" 
-          :class="{ active: page === currentPage, disabled: isLoading }"
-        >
-          <button 
-            class="page-link" 
-            :disabled="isLoading"
-            @click="typeof page === 'number' ? goToPage(page) : null"
-          >
+        <li v-for="page in visiblePages" :key="page" class="page-item"
+          :class="{ active: page === currentPage, disabled: isLoading }">
+          <button class="page-link" :disabled="isLoading" @click="typeof page === 'number' ? goToPage(page) : null">
             {{ page }}
           </button>
         </li>
@@ -391,7 +350,8 @@
           </button>
         </li>
         <li class="page-item" :class="{ disabled: !paginationState.hasNext || isLoading }">
-          <button class="page-link" :disabled="!paginationState.hasNext || isLoading" @click="goToLastPage" title="最後一頁">
+          <button class="page-link" :disabled="!paginationState.hasNext || isLoading" @click="goToLastPage"
+            title="最後一頁">
             <span aria-hidden="true">&raquo;</span>
           </button>
         </li>
@@ -399,20 +359,9 @@
 
       <div class="page-jumper">
         <span class="text-muted me-2">跳至</span>
-        <input 
-          v-model.number="jumpToPage" 
-          type="number" 
-          class="form-control form-control-sm" 
-          :min="1" 
-          :max="paginationState.totalPages"
-          @keyup.enter="handlePageJump"
-          placeholder="頁碼"
-        />
-        <button 
-          class="btn btn-sm btn-secondary" 
-          :disabled="isLoading || !isValidJumpPage"
-          @click="handlePageJump"
-        >
+        <input v-model.number="jumpToPage" type="number" class="form-control form-control-sm" :min="1"
+          :max="paginationState.totalPages" @keyup.enter="handlePageJump" placeholder="頁碼" />
+        <button class="btn btn-sm btn-secondary" :disabled="isLoading || !isValidJumpPage" @click="handlePageJump">
           前往
         </button>
       </div>
@@ -423,7 +372,8 @@
         <div class="modal-content modern-modal">
           <div class="modern-modal-header">
             <div class="header-icon-wrapper">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
@@ -433,25 +383,21 @@
               <p class="modern-modal-subtitle">{{ currentQuestion ? '修改題目資訊' : '填寫題目資訊並選擇儲存方式' }}</p>
             </div>
             <button type="button" class="modern-close-btn" @click="closeEditor" :disabled="saving">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
           </div>
           <div class="modal-body modern-modal-body">
-            <QuestionEditor 
-              ref="questionEditorRef" 
-              :question="currentQuestion" 
-              :saving="saving" 
-              @save="handleSave" 
-              @save-pending="handleSaveToPendingFromEditor"
-              @save-direct="handleSaveDirectlyFromEditor"
-            />
+            <QuestionEditor ref="questionEditorRef" :question="currentQuestion" :saving="saving" @save="handleSave"
+              @save-pending="handleSaveToPendingFromEditor" @save-direct="handleSaveDirectlyFromEditor" />
           </div>
           <div class="modern-modal-footer" v-if="!currentQuestion">
             <div class="footer-info">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
@@ -460,22 +406,27 @@
             </div>
             <div class="footer-actions">
               <button class="footer-btn footer-btn-secondary" @click="closeEditor" :disabled="saving">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
                 取消
               </button>
-              <button class="footer-btn footer-btn-pending" @click="handleSaveToPending" :disabled="saving || !isEditorFormValid">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button class="footer-btn footer-btn-pending" @click="handleSaveToPending"
+                :disabled="saving || !isEditorFormValid">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                   <polyline points="17 21 17 13 7 13 7 21"></polyline>
                   <polyline points="7 3 7 8 15 8"></polyline>
                 </svg>
                 加入暫存
               </button>
-              <button class="footer-btn footer-btn-primary" @click="handleSaveDirectly" :disabled="saving || !isEditorFormValid">
-                <svg v-if="!saving" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button class="footer-btn footer-btn-primary" @click="handleSaveDirectly"
+                :disabled="saving || !isEditorFormValid">
+                <svg v-if="!saving" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
                 <div v-else class="btn-spinner-small"></div>
@@ -544,17 +495,8 @@
             </div>
             <div class="mb-3">
               <label class="form-label">選擇考卷</label>
-              <multiselect
-                v-model="selectedExams"
-                :options="availableExams"
-                :loading="isLoadingExams"
-                :multiple="true"
-                :close-on-select="false"
-                placeholder="搜尋或選擇考卷..."
-                track-by="id"
-                label="name"
-                :searchable="true"
-              />
+              <multiselect v-model="selectedExams" :options="availableExams" :loading="isLoadingExams" :multiple="true"
+                :close-on-select="false" placeholder="搜尋或選擇考卷..." track-by="id" label="name" :searchable="true" />
             </div>
             <div v-if="selectedExams.length > 0" class="alert alert-secondary small">
               <div><strong>已選擇 {{ selectedExams.length }} 個考卷：</strong></div>
@@ -567,13 +509,10 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" @click="closeAddToExamModal">取消</button>
-            <button 
-              type="button" 
-              class="btn btn-primary" 
-              @click="addQuestionsToExam"
-              :disabled="selectedExams.length === 0 || isAddingToExam"
-            >
-              <span v-if="isAddingToExam" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <button type="button" class="btn btn-primary" @click="addQuestionsToExam"
+              :disabled="selectedExams.length === 0 || isAddingToExam">
+              <span v-if="isAddingToExam" class="spinner-border spinner-border-sm me-2" role="status"
+                aria-hidden="true"></span>
               {{ isAddingToExam ? '加入中...' : '確認加入' }}
             </button>
           </div>
@@ -582,25 +521,17 @@
     </div>
 
     <!-- Bulk Edit Modals -->
-    <BulkTagEditor
-      v-if="showBulkTagModal"
-      :questions="bulkEditMode === 'list' ? questions : []"
+    <BulkTagEditor v-if="showBulkTagModal" :questions="bulkEditMode === 'list' ? questions : []"
       :pendingQuestions="bulkEditMode === 'pending' ? pendingQuestions : []"
       :preselectedIds="bulkEditMode === 'list' ? selectedIds : []"
-      :preselectedPendingIds="bulkEditMode === 'pending' ? selectedPendingIds : []"
-      @close="closeBulkTagModal"
-      @applied="handleBulkTagsApplied"
-    />
+      :preselectedPendingIds="bulkEditMode === 'pending' ? selectedPendingIds : []" @close="closeBulkTagModal"
+      @applied="handleBulkTagsApplied" />
 
-    <BulkSubjectEditor
-      v-if="showBulkSubjectModal"
-      :questions="bulkEditMode === 'list' ? questions : []"
+    <BulkSubjectEditor v-if="showBulkSubjectModal" :questions="bulkEditMode === 'list' ? questions : []"
       :pendingQuestions="bulkEditMode === 'pending' ? pendingQuestions : []"
       :preselectedIds="bulkEditMode === 'list' ? selectedIds : []"
-      :preselectedPendingIds="bulkEditMode === 'pending' ? selectedPendingIds : []"
-      @close="closeBulkSubjectModal"
-      @applied="handleBulkSubjectApplied"
-    />
+      :preselectedPendingIds="bulkEditMode === 'pending' ? selectedPendingIds : []" @close="closeBulkSubjectModal"
+      @applied="handleBulkSubjectApplied" />
 
     <!-- Delete Confirmation Modal -->
     <div v-if="isDeleteConfirmModalVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
@@ -635,13 +566,10 @@
             <button type="button" class="btn btn-secondary" @click="closeDeleteConfirmModal" :disabled="isDeleting">
               取消
             </button>
-            <button 
-              type="button" 
-              class="btn btn-danger" 
-              @click="confirmDelete"
-              :disabled="isDeleting || isLoadingAffectedExams"
-            >
-              <span v-if="isDeleting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <button type="button" class="btn btn-danger" @click="confirmDelete"
+              :disabled="isDeleting || isLoadingAffectedExams">
+              <span v-if="isDeleting" class="spinner-border spinner-border-sm me-2" role="status"
+                aria-hidden="true"></span>
               {{ isDeleting ? '刪除中...' : '確認刪除' }}
             </button>
           </div>
@@ -655,7 +583,8 @@
         <div class="modal-content modern-modal">
           <div class="modern-modal-header">
             <div class="header-icon-wrapper">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -666,7 +595,8 @@
               <p class="modern-modal-subtitle">選擇匯入方式並上傳檔案</p>
             </div>
             <button type="button" class="modern-close-btn" @click="closeImportModal">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
@@ -676,7 +606,8 @@
             <div class="import-options">
               <div class="import-option" @click="selectImportType('json')">
                 <div class="option-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
                     <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
                     <polyline points="13 2 13 9 20 9"></polyline>
                   </svg>
@@ -687,7 +618,8 @@
                   <div class="option-hint">支援格式: .json</div>
                 </div>
                 <div class="option-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
                     <polyline points="9 18 15 12 9 6"></polyline>
                   </svg>
                 </div>
@@ -695,7 +627,8 @@
 
               <div class="import-option" @click="selectImportType('pdf')">
                 <div class="option-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                     <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -709,7 +642,8 @@
                   <div class="option-hint">支援格式: .pdf</div>
                 </div>
                 <div class="option-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
                     <polyline points="9 18 15 12 9 6"></polyline>
                   </svg>
                 </div>
@@ -718,24 +652,29 @@
 
             <!-- JSON Import Section -->
             <div v-if="importType === 'json'" class="import-section">
-              <div class="upload-zone" @click="$refs.jsonFileInput.click()" @dragover.prevent @drop.prevent="handleJsonDrop">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <div class="upload-zone" @click="$refs.jsonFileInput.click()" @dragover.prevent
+                @drop.prevent="handleJsonDrop">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="17 8 12 3 7 8"></polyline>
                   <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
                 <p class="upload-text">點擊或拖放檔案至此</p>
                 <p class="upload-hint">支援 JSON 格式檔案</p>
-                <input ref="jsonFileInput" type="file" accept=".json,application/json" style="display: none" @change="handleJsonFileSelect" />
+                <input ref="jsonFileInput" type="file" accept=".json,application/json" style="display: none"
+                  @change="handleJsonFileSelect" />
               </div>
               <div v-if="selectedJsonFile" class="selected-file">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
                   <polyline points="13 2 13 9 20 9"></polyline>
                 </svg>
                 <span>{{ selectedJsonFile.name }}</span>
                 <button @click="clearJsonFile" class="btn-clear-file">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>
@@ -750,7 +689,8 @@
           </div>
           <div class="modern-modal-footer" v-if="importType === 'json' && selectedJsonFile">
             <div class="footer-info">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
@@ -762,7 +702,8 @@
                 取消
               </button>
               <button class="footer-btn footer-btn-primary" @click="processJsonImport" :disabled="isImporting">
-                <svg v-if="!isImporting" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-if="!isImporting" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
                 <div v-else class="btn-spinner-small"></div>
@@ -802,11 +743,11 @@ const tagOptions = ref([])
 const ordering = ref('-created_at')
 const currentPage = ref(1)
 const pageSize = ref(20)
-const paginationState = ref({ 
-  hasNext: false, 
-  hasPrev: false, 
-  totalPages: 0, 
-  totalCount: 0 
+const paginationState = ref({
+  hasNext: false,
+  hasPrev: false,
+  totalPages: 0,
+  totalCount: 0
 })
 const jumpToPage = ref(null)
 const deletingId = ref(null)
@@ -978,7 +919,7 @@ const formatDateTime = (value) => {
 const fetchQuestions = async () => {
   isLoading.value = true
   try {
-    const params = { 
+    const params = {
       page: currentPage.value,
       page_size: pageSize.value
     }
@@ -991,20 +932,20 @@ const fetchQuestions = async () => {
     const { data } = await questionService.getQuestions(params)
     const list = Array.isArray(data) ? data : data.results || []
     questions.value = list.map(normalize)
-    
+
     // Update pagination state
     if (Array.isArray(data)) {
-      paginationState.value = { 
-        hasNext: false, 
-        hasPrev: false, 
-        totalPages: 1, 
-        totalCount: data.length 
+      paginationState.value = {
+        hasNext: false,
+        hasPrev: false,
+        totalPages: 1,
+        totalCount: data.length
       }
     } else {
       const count = data.count || 0
       const totalPages = Math.ceil(count / pageSize.value)
-      paginationState.value = { 
-        hasNext: Boolean(data.next), 
+      paginationState.value = {
+        hasNext: Boolean(data.next),
         hasPrev: Boolean(data.previous) || currentPage.value > 1,
         totalPages: totalPages || 1,
         totalCount: count
@@ -1022,28 +963,28 @@ const applyFilters = () => { currentPage.value = 1; fetchQuestions() }
 const resetFilters = () => { searchTerm.value = ''; selectedSearchTags.value = []; ordering.value = '-created_at'; currentPage.value = 1; fetchQuestions() }
 
 // Pagination functions
-const goToFirstPage = () => { 
+const goToFirstPage = () => {
   if (currentPage.value === 1 || isLoading.value) return
   currentPage.value = 1
-  fetchQuestions() 
+  fetchQuestions()
 }
 
-const goToPreviousPage = () => { 
+const goToPreviousPage = () => {
   if (!paginationState.value.hasPrev || currentPage.value === 1 || isLoading.value) return
   currentPage.value -= 1
-  fetchQuestions() 
+  fetchQuestions()
 }
 
-const goToNextPage = () => { 
+const goToNextPage = () => {
   if (!paginationState.value.hasNext || isLoading.value) return
   currentPage.value += 1
-  fetchQuestions() 
+  fetchQuestions()
 }
 
-const goToLastPage = () => { 
+const goToLastPage = () => {
   if (currentPage.value === paginationState.value.totalPages || isLoading.value) return
   currentPage.value = paginationState.value.totalPages
-  fetchQuestions() 
+  fetchQuestions()
 }
 
 const goToPage = (page) => {
@@ -1070,7 +1011,7 @@ const visiblePages = computed(() => {
   const total = paginationState.value.totalPages
   const current = currentPage.value
   const pages = []
-  
+
   if (total <= 7) {
     // Show all pages if total <= 7
     for (let i = 1; i <= total; i++) {
@@ -1079,31 +1020,31 @@ const visiblePages = computed(() => {
   } else {
     // Always show first page
     pages.push(1)
-    
+
     if (current > 3) {
       pages.push('...')
     }
-    
+
     // Show pages around current page
     const start = Math.max(2, current - 1)
     const end = Math.min(total - 1, current + 1)
-    
+
     for (let i = start; i <= end; i++) {
       if (i !== 1 && i !== total) {
         pages.push(i)
       }
     }
-    
+
     if (current < total - 2) {
       pages.push('...')
     }
-    
+
     // Always show last page
     if (total > 1) {
       pages.push(total)
     }
   }
-  
+
   return pages.filter((p, i, arr) => {
     // Remove duplicate ellipsis
     if (p === '...' && arr[i - 1] === '...') return false
@@ -1127,10 +1068,10 @@ const loadTags = async () => {
   }
 }
 
-onMounted(() => { 
+onMounted(() => {
   fetchQuestions()
   loadTags()
-  
+
   // Listen for events from parent component
   window.addEventListener('openCreateQuestion', openCreateQuestion)
   window.addEventListener('refreshQuestions', fetchQuestions)
@@ -1198,7 +1139,7 @@ const handleSaveToPending = () => {
 const handleSaveDirectlyFromEditor = async ({ questionData }) => {
   try {
     saving.value = true
-    
+
     // 如果是編輯暫存題目
     if (editingPendingIndex.value !== null) {
       pendingQuestions.value[editingPendingIndex.value] = questionData
@@ -1207,7 +1148,7 @@ const handleSaveDirectlyFromEditor = async ({ questionData }) => {
       editingPendingIndex.value = null
       return
     }
-    
+
     await questionService.createQuestion(questionData)
     alert('題目建立成功')
     closeEditor()
@@ -1267,7 +1208,7 @@ const loadAvailableExams = async () => {
 
 const addQuestionsToExam = async () => {
   if (selectedExams.value.length === 0 || selectedCount.value === 0) return
-  
+
   isAddingToExam.value = true
   try {
     // Add each question to each selected exam
@@ -1281,7 +1222,7 @@ const addQuestionsToExam = async () => {
         })
       }
     }
-    
+
     const examNames = selectedExams.value.map(e => e.name).join('、')
     alert(`成功將 ${selectedCount.value} 題加入到考卷「${examNames}」`)
     closeAddToExamModal()
@@ -1345,7 +1286,7 @@ const deleteQuestion = async (id) => {
 
 const deleteSelectedQuestions = async () => {
   if (selectedCount.value === 0) return
-  
+
   // Load affected exams first
   isLoadingAffectedExams.value = true
   try {
@@ -1359,7 +1300,7 @@ const deleteSelectedQuestions = async () => {
   } finally {
     isLoadingAffectedExams.value = false
   }
-  
+
   // Show confirmation modal
   isDeleteConfirmModalVisible.value = true
 }
@@ -1374,7 +1315,7 @@ const confirmDelete = async () => {
     const idsToDelete = [...selectedIds.value]
     let successCount = 0
     let failCount = 0
-    
+
     for (const id of idsToDelete) {
       try {
         await questionService.deleteQuestion(id)
@@ -1384,17 +1325,17 @@ const confirmDelete = async () => {
         failCount++
       }
     }
-    
+
     selectedIds.value = []
     affectedExamsForDelete.value = []
     isDeleteConfirmModalVisible.value = false
-    
+
     if (failCount === 0) {
       alert(`成功刪除 ${successCount} 題`)
     } else {
       alert(`成功刪除 ${successCount} 題，失敗 ${failCount} 題`)
     }
-    
+
     fetchQuestions()
   } catch (err) {
     console.error('Batch delete failed', err)
@@ -1407,7 +1348,7 @@ const confirmDelete = async () => {
 // Handlers for Bulk Tag/Subject modals
 const handleBulkTagsApplied = ({ successCount, errors, pendingUpdates }) => {
   let totalUpdated = successCount
-  
+
   // 處理暫存題目的更新
   if (pendingUpdates && pendingUpdates.length > 0) {
     pendingUpdates.forEach(update => {
@@ -1421,10 +1362,10 @@ const handleBulkTagsApplied = ({ successCount, errors, pendingUpdates }) => {
       }
     })
   }
-  
+
   if (totalUpdated > 0) alert(`成功更新 ${totalUpdated} 題標籤`)
   if (errors && errors.length > 0) alert(`有 ${errors.length} 題更新失敗，請查看 console`)
-  
+
   closeBulkTagModal()
   if (bulkEditMode.value === 'pending') {
     selectedPendingIds.value = []
@@ -1436,7 +1377,7 @@ const handleBulkTagsApplied = ({ successCount, errors, pendingUpdates }) => {
 
 const handleBulkSubjectApplied = ({ successCount, errors, pendingUpdates }) => {
   let totalUpdated = successCount
-  
+
   // 處理暫存題目的更新
   if (pendingUpdates && pendingUpdates.length > 0) {
     pendingUpdates.forEach(update => {
@@ -1454,10 +1395,10 @@ const handleBulkSubjectApplied = ({ successCount, errors, pendingUpdates }) => {
       }
     })
   }
-  
+
   if (totalUpdated > 0) alert(`成功更新 ${totalUpdated} 題科目`)
   if (errors && errors.length > 0) alert(`有 ${errors.length} 題更新失敗，請查看 console`)
-  
+
   closeBulkSubjectModal()
   if (bulkEditMode.value === 'pending') {
     selectedPendingIds.value = []
@@ -1474,11 +1415,11 @@ const addPendingQuestion = (questionData) => {
 
 const getCorrectAnswer = (question) => {
   if (!question.options || !Array.isArray(question.options)) return ''
-  
+
   const correctOptions = question.options
     .map((opt, idx) => opt.is_correct ? String.fromCharCode(65 + idx) : null)
     .filter(Boolean)
-  
+
   return correctOptions.join(', ')
 }
 
@@ -1502,23 +1443,23 @@ const clearPendingQuestions = () => {
 
 const savePendingQuestions = async () => {
   if (pendingQuestions.value.length === 0) return
-  
+
   if (!confirm(`即將儲存 ${pendingQuestions.value.length} 個題目到題庫，確定要繼續嗎？`)) {
     return
   }
-  
+
   isSavingPending.value = true
   savingPendingProgress.value = 0
-  
+
   let successCount = 0
   let failCount = 0
   const errors = []
-  
+
   try {
     for (let i = 0; i < pendingQuestions.value.length; i++) {
       const questionData = pendingQuestions.value[i]
       savingPendingProgress.value = i + 1
-      
+
       try {
         await questionService.createQuestion(questionData)
         successCount++
@@ -1528,18 +1469,18 @@ const savePendingQuestions = async () => {
         errors.push({ index: i + 1, error: err })
       }
     }
-    
+
     // Clear pending questions after save
     pendingQuestions.value = []
     savingPendingProgress.value = 0
-    
+
     // Show result
     if (failCount === 0) {
       alert(`成功儲存 ${successCount} 題到題庫`)
     } else {
       alert(`成功儲存 ${successCount} 題，失敗 ${failCount} 題`)
     }
-    
+
     // Refresh question list
     fetchQuestions()
   } catch (err) {
@@ -1596,12 +1537,12 @@ const clearJsonFile = () => {
 
 const processJsonImport = async () => {
   if (!selectedJsonFile.value) return
-  
+
   isImporting.value = true
   try {
     const fileContent = await selectedJsonFile.value.text()
     const data = JSON.parse(fileContent)
-    
+
     // Check if data is array of questions
     let questionsToImport = []
     if (Array.isArray(data)) {
@@ -1611,13 +1552,13 @@ const processJsonImport = async () => {
     } else {
       throw new Error('JSON 格式不正確，應為題目陣列或包含 questions 屬性的物件')
     }
-    
+
     // Add to pending questions
     const validQuestions = questionsToImport.filter(q => q.content && q.question_type)
     if (validQuestions.length === 0) {
       throw new Error('沒有找到有效的題目數據')
     }
-    
+
     pendingQuestions.value.push(...validQuestions)
     alert(`成功匯入 ${validQuestions.length} 題到暫存區`)
     closeImportModal()
@@ -1636,7 +1577,7 @@ const handlePdfImportSuccess = (data) => {
       // 將選項陣列轉換為對象格式，並標記正確答案
       const correctAnswer = q.correct_answer || ''
       let formattedOptions = []
-      
+
       if (q.options && Array.isArray(q.options) && q.options.length > 0) {
         formattedOptions = q.options.map((optionText, index) => {
           // 選項標籤: A, B, C, D...
@@ -1647,7 +1588,7 @@ const handlePdfImportSuccess = (data) => {
           }
         })
       }
-      
+
       return {
         content: q.question || q.content || '',
         subject: data.examData?.subject || '',
@@ -1661,7 +1602,7 @@ const handlePdfImportSuccess = (data) => {
         tag_ids: []
       }
     })
-    
+
     pendingQuestions.value.push(...formattedQuestions)
     alert(`成功從 PDF 解析 ${formattedQuestions.length} 題到暫存區`)
     closeImportModal()
@@ -2125,20 +2066,20 @@ defineExpose({
 }
 
 /* Table */
-.question-table { 
-  background: white; 
-  border-radius: 12px; 
-  padding: 0; 
+.question-table {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   border: 1px solid var(--border, #CBD5E1);
   margin-bottom: 24px;
 }
 
-.table-status { 
-  text-align: center; 
+.table-status {
+  text-align: center;
   color: var(--text-secondary, #64748B);
-  font-size: 14px; 
+  font-size: 14px;
   padding: 60px 20px !important;
 }
 
@@ -2193,15 +2134,60 @@ th input[type="checkbox"] {
   accent-color: var(--primary, #476996);
 }
 
-th:nth-child(1), td:nth-child(1) { width: 4%; }        /* 選取欄 */
-th:nth-child(2), td:nth-child(2) { width: 8%; }        /* ID */
-th:nth-child(3), td:nth-child(3) { width: 18%; }       /* 科目 */
-th:nth-child(4), td:nth-child(4) { width: 22%; }       /* 內容 */
-th:nth-child(5), td:nth-child(5) { width: 12%; }       /* 題型 */
-th:nth-child(6), td:nth-child(6) { width: 10%; }       /* 難度 */
-th:nth-child(7), td:nth-child(7) { width: 12%; }       /* 建立時間 */
-th:nth-child(8), td:nth-child(8) { width: 12%; }       /* 更新時間 */
-th:nth-child(9), td:nth-child(9) { width: 5%; }        /* 操作 */
+th:nth-child(1),
+td:nth-child(1) {
+  width: 4%;
+}
+
+/* 選取欄 */
+th:nth-child(2),
+td:nth-child(2) {
+  width: 8%;
+}
+
+/* ID */
+th:nth-child(3),
+td:nth-child(3) {
+  width: 18%;
+}
+
+/* 科目 */
+th:nth-child(4),
+td:nth-child(4) {
+  width: 22%;
+}
+
+/* 內容 */
+th:nth-child(5),
+td:nth-child(5) {
+  width: 12%;
+}
+
+/* 題型 */
+th:nth-child(6),
+td:nth-child(6) {
+  width: 10%;
+}
+
+/* 難度 */
+th:nth-child(7),
+td:nth-child(7) {
+  width: 12%;
+}
+
+/* 建立時間 */
+th:nth-child(8),
+td:nth-child(8) {
+  width: 12%;
+}
+
+/* 更新時間 */
+th:nth-child(9),
+td:nth-child(9) {
+  width: 5%;
+}
+
+/* 操作 */
 
 /* Selection Toolbar Animations */
 .slide-up-enter-active,
@@ -2221,7 +2207,7 @@ th:nth-child(9), td:nth-child(9) { width: 5%; }        /* 操作 */
 
 .selection-toolbar-wrapper {
   position: fixed;
-  bottom: 24px;
+  bottom: 100px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
@@ -2357,7 +2343,9 @@ th:nth-child(9), td:nth-child(9) { width: 5%; }        /* 操作 */
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive */
@@ -2366,20 +2354,20 @@ th:nth-child(9), td:nth-child(9) { width: 5%; }        /* 操作 */
     flex-wrap: wrap;
     padding: 12px 16px;
   }
-  
+
   .toolbar-actions {
     width: 100%;
     flex-wrap: wrap;
   }
-  
+
   .toolbar-btn span {
     display: none;
   }
-  
+
   .toolbar-btn {
     padding: 8px 12px;
   }
-  
+
   .toolbar-divider {
     display: none;
   }
@@ -2416,6 +2404,8 @@ tbody tr:last-child td {
 
 /* Pagination */
 .pagination-wrapper {
+  position: sticky;
+  bottom: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2423,9 +2413,11 @@ tbody tr:last-child td {
   padding: 20px;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.05);
   border: 1px solid var(--border, #CBD5E1);
   flex-wrap: wrap;
+  z-index: 100;
+  margin-top: 24px;
 }
 
 .pagination-info {
@@ -2802,25 +2794,25 @@ tbody tr:last-child td {
   .modern-modal-header {
     padding: 20px;
   }
-  
+
   .modern-modal-title {
     font-size: 18px;
   }
-  
+
   .modern-modal-footer {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .footer-info {
     order: -1;
   }
-  
+
   .footer-actions {
     width: 100%;
     flex-direction: column;
   }
-  
+
   .footer-btn {
     width: 100%;
   }
