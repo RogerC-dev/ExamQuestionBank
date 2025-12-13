@@ -80,7 +80,10 @@ class ExamViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        exam = serializer.save()
+        
+        # 自動設定 created_by_admin
+        is_admin = request.user.is_staff or request.user.is_superuser
+        exam = serializer.save(created_by_admin=is_admin)
 
         # 使用 ExamDetailSerializer 回傳完整資訊
         response_serializer = ExamDetailSerializer(exam)

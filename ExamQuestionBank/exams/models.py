@@ -50,6 +50,7 @@ class Exam(models.Model):
     name = models.CharField(max_length=200, verbose_name="考卷名稱")
     description = models.TextField(blank=True, verbose_name="考試說明")
     time_limit = models.IntegerField(null=True, blank=True, verbose_name="考試時間限制(分鐘)")
+    created_by_admin = models.BooleanField(default=False, verbose_name="是否為管理員建立")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="建立時間")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="修改時間")
 
