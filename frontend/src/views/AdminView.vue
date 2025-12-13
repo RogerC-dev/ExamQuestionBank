@@ -220,7 +220,7 @@
       </div>
 
       <div v-else>
-        <AdminQuestionManagement />
+        <AdminQuestionManagement ref="adminQuestionManagementRef" />
       </div>
 
       <!-- Enhanced Pagination -->
@@ -417,6 +417,7 @@ const completedImportQuestions = ref(0)
 const questionImportInput = ref(null)
 const isImportingQuestions = ref(false)
 const questionManagementRef = ref(null)
+const adminQuestionManagementRef = ref(null)
 
 const filteredExams = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
@@ -1190,8 +1191,8 @@ const addQuestion = () => {
 }
 
 const importQuestions = () => {
-  if (questionImportInput.value) {
-    questionImportInput.value.click()
+  if (adminQuestionManagementRef.value && adminQuestionManagementRef.value.showImportModal) {
+    adminQuestionManagementRef.value.showImportModal()
   }
 }
 

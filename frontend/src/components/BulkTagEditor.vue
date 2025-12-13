@@ -141,6 +141,41 @@
               :disabled="processing"
             />
           </div>
+          
+          <!-- 新增標籤區塊 -->
+          <div class="new-tag-section">
+            <label class="section-label-small">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              新增標籤
+            </label>
+            <div class="new-tag-input-group">
+              <input 
+                v-model="newTagName" 
+                type="text" 
+                class="new-tag-input" 
+                placeholder="輸入新標籤名稱" 
+                @keyup.enter="handleCreateTag"
+                :disabled="processing"
+              />
+              <button 
+                type="button" 
+                class="btn-create-tag" 
+                @click="handleCreateTag"
+                :disabled="processing || !newTagName.trim()"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                建立
+              </button>
+            </div>
+          </div>
+          
+          <!-- 預覽變更 -->
           <div v-if="selectedTags.length > 0" class="preview-section">
             <div class="preview-header">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -200,6 +235,7 @@ const selectedTags = ref([])
 const selectedQuestionIds = ref([...props.preselectedIds])
 const selectedPendingIndices = ref([...props.preselectedPendingIds])
 const processing = ref(false)
+const newTagName = ref('')
 
 onMounted(async () => {
   console.log('BulkTagEditor mounted. preselectedIds=', props.preselectedIds)
@@ -244,6 +280,36 @@ const selectAll = () => {
 const deselectAll = () => {
   selectedQuestionIds.value = []
   selectedPendingIndices.value = []
+}
+
+const handleCreateTag = async () => {
+  const name = newTagName.value?.trim()
+  if (!name) return
+  
+  try {
+    const resp = await tagService.createTag({ name })
+    const createdTag = resp.data
+    if (!createdTag || !createdTag.id) {
+      throw new Error('Invalid tag returned')
+    }
+    
+    // Add to local options if not exists
+    if (!tagOptions.value.find(t => t.id === createdTag.id)) {
+      tagOptions.value.push(createdTag)
+      // sort by name
+      tagOptions.value.sort((a, b) => a.name.localeCompare(b.name))
+    }
+    
+    // Add to selectedTags
+    if (!selectedTags.value.find(t => t.id === createdTag.id)) {
+      selectedTags.value.push(createdTag)
+    }
+    
+    newTagName.value = ''
+  } catch (err) {
+    console.error('建立標籤失敗:', err)
+    alert('建立標籤失敗')
+  }
 }
 
 const apply = async () => {
@@ -773,12 +839,91 @@ const close = () => emit('close')
   border-radius: 12px;
   padding: 12px;
   transition: all 0.2s ease;
+  margin-bottom: 16px;
 }
 
 .tags-input-card:focus-within {
   border-color: var(--primary, #476996);
   background: white;
   box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
+}
+
+/* New Tag Section */
+.new-tag-section {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+}
+
+.section-label-small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #64748B);
+  margin-bottom: 10px;
+}
+
+.section-label-small svg {
+  color: var(--primary, #476996);
+}
+
+.new-tag-input-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.new-tag-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text-primary, #1E293B);
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.new-tag-input:focus {
+  outline: none;
+  border-color: var(--primary, #476996);
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
+}
+
+.new-tag-input::placeholder {
+  color: #94a3b8;
+}
+
+.btn-create-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: var(--primary, #476996);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-create-tag:hover:not(:disabled) {
+  background: var(--primary-hover, #35527a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(71, 105, 150, 0.25);
+}
+
+.btn-create-tag:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* Multiselect styling */
