@@ -11,7 +11,8 @@
             <template v-if="currentTab === 'exams'">
               <button class="action-btn action-btn-secondary" @click="batchImport" :disabled="isImporting">
                 <div v-if="isImporting" class="btn-spinner"></div>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -19,18 +20,21 @@
                 <span>{{ isImporting ? '匯入中...' : '匯入考卷' }}</span>
               </button>
               <button class="action-btn action-btn-primary" @click="addExam">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
                 <span>新增考卷</span>
               </button>
-              <input ref="jsonImportInput" type="file" accept="application/json" style="display:none" @change="handleImportFile" />
+              <input ref="jsonImportInput" type="file" accept="application/json" style="display:none"
+                @change="handleImportFile" />
             </template>
             <template v-else>
               <button class="action-btn action-btn-secondary" @click="importQuestions" :disabled="isImportingQuestions">
                 <div v-if="isImportingQuestions" class="btn-spinner"></div>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -38,26 +42,30 @@
                 <span>{{ isImportingQuestions ? '匯入中...' : '匯入題目' }}</span>
               </button>
               <button class="action-btn action-btn-primary" @click="addQuestion">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
                 <span>新增題目</span>
               </button>
-              <input ref="questionImportInput" type="file" accept="application/json" style="display:none" @change="handleQuestionImportFile" />
+              <input ref="questionImportInput" type="file" accept="application/json" style="display:none"
+                @change="handleQuestionImportFile" />
             </template>
           </div>
         </div>
         <div class="admin-tabs">
           <button :class="['tab-btn', { active: currentTab === 'exams' }]" @click="setTab('exams')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
             </svg>
             <span>考卷管理</span>
           </button>
           <button :class="['tab-btn', { active: currentTab === 'questions' }]" @click="setTab('questions')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"></circle>
               <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
               <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -72,21 +80,18 @@
         <!-- Exam Filters -->
         <div class="exam-filters">
           <div class="filter-search">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" class="search-icon">
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.35-4.35"></path>
             </svg>
-            <input
-              v-model="searchTerm"
-              type="text"
-              class="filter-input"
-              placeholder="搜尋考卷名稱或說明..."
-              @keyup.enter="applyFilters"
-            />
+            <input v-model="searchTerm" type="text" class="filter-input" placeholder="搜尋考卷名稱或說明..."
+              @keyup.enter="applyFilters" />
           </div>
 
           <div class="filter-select-wrapper">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="select-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" class="select-icon">
               <line x1="4" y1="21" x2="4" y2="14"></line>
               <line x1="4" y1="10" x2="4" y2="3"></line>
               <line x1="12" y1="21" x2="12" y2="12"></line>
@@ -105,14 +110,16 @@
           </div>
 
           <button class="filter-btn filter-btn-reset" @click="resetFilters">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
               <polyline points="1 4 1 10 7 10"></polyline>
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
             </svg>
             <span>重設</span>
           </button>
           <button class="filter-btn filter-btn-search" @click="applyFilters">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.35-4.35"></path>
             </svg>
@@ -133,90 +140,147 @@
         </div>
         <!-- Exam Table -->
         <div class="exam-table">
-        <table class="table table-striped table-hover">
-          <thead>
-            <tr>
-              <th>考卷 ID</th>
-              <th>考卷名稱</th>
-              <th>考試說明</th>
-              <th>題數</th>
-              <th>時間限制 (分)</th>
-              <th>建立時間</th>
-              <th>更新時間</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="isLoading">
-              <td colspan="8" class="table-status">考卷資料載入中...</td>
-            </tr>
-            <tr v-else-if="!filteredExams.length">
-              <td colspan="8" class="table-status">暫無符合條件的考卷</td>
-            </tr>
-            <tr v-else v-for="exam in filteredExams" :key="exam.id">
-              <td>{{ exam.id }}</td>
-              <td>{{ exam.name }}</td>
-              <td>{{ exam.description }}</td>
-              <td>{{ exam.questionCount }}</td>
-              <td>{{ exam.timeLimit != null ? exam.timeLimit : '-' }}</td>
-              <td>{{ exam.createdAt }}</td>
-              <td>{{ exam.updatedAt }}</td>
-              <td>
-                <div class="dropdown">
-                  <button
-                    class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                    type="button"
-                    :id="`dropdownExam${exam.id}`"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                  >
-                    操作
-                  </button>
-                  <ul class="dropdown-menu" :aria-labelledby="`dropdownExam${exam.id}`">
-                    <li>
-                      <button class="dropdown-item" type="button" @click="editExam(exam.id)">
-                        編輯
-                      </button>
-                    </li>
-                    <li>
-                      <button class="dropdown-item" type="button" @click="viewExam(exam.id)">
-                        檢視
-                      </button>
-                    </li>
-                    <li><hr class="dropdown-divider" /></li>
-                    <li>
-                      <button
-                        class="dropdown-item"
-                        type="button"
-                        :disabled="exportingExams[exam.id]"
-                        :aria-disabled="exportingExams[exam.id]"
-                        @click="exportExam(exam.id)"
-                      >
-                        <span v-if="exportingExams[exam.id]" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        <span v-if="!exportingExams[exam.id]">匯出</span>
-                        <span v-else>匯出中...</span>
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        class="dropdown-item text-danger"
-                        type="button"
-                        :disabled="deletingExamId === exam.id"
-                        :aria-disabled="deletingExamId === exam.id"
-                        @click="deleteExam(exam.id)"
-                      >
-                        <span v-if="deletingExamId === exam.id" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        <span v-if="!deletingExamId || deletingExamId !== exam.id">刪除</span>
-                        <span v-else>刪除中...</span>
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          <table class="table table-striped table-hover">
+            <thead>
+              <tr>
+                <th style="width:4%">
+                  <input type="checkbox" :checked="isPageAllSelected" :disabled="isLoading"
+                    @change="toggleSelectAllExams" aria-label="選取全部" />
+                </th>
+                <th style="width:8%">考卷 ID</th>
+                <th style="width:18%">考卷名稱</th>
+                <th style="width:28%">考試說明</th>
+                <th style="width:8%">題數</th>
+                <th style="width:10%">時間限制 (分)</th>
+                <th style="width:12%">建立時間</th>
+                <th style="width:12%">更新時間</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="isLoading">
+                <td colspan="9" class="table-status">考卷資料載入中...</td>
+              </tr>
+              <tr v-else-if="!filteredExams.length">
+                <td colspan="9" class="table-status">暫無符合條件的考卷</td>
+              </tr>
+              <tr v-else v-for="exam in filteredExams" :key="exam.id">
+                <td>
+                  <input type="checkbox" :checked="isExamSelected(exam.id)"
+                    :disabled="isLoading || deletingExamId === exam.id"
+                    @change="toggleSelectExam(exam.id, $event.target.checked)" aria-label="選取考卷" />
+                </td>
+                <td>{{ exam.id }}</td>
+                <td>{{ exam.name }}</td>
+                <td>{{ exam.description }}</td>
+                <td>{{ exam.questionCount }}</td>
+                <td>{{ exam.timeLimit != null ? exam.timeLimit : '-' }}</td>
+                <td>{{ exam.createdAt }}</td>
+                <td>{{ exam.updatedAt }}</td>
+                <td>
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                      :id="`dropdownExam${exam.id}`" data-bs-toggle="dropdown" aria-expanded="false">
+                      操作
+                    </button>
+                    <ul class="dropdown-menu" :aria-labelledby="`dropdownExam${exam.id}`">
+                      <li>
+                        <button class="dropdown-item" type="button" @click="editExam(exam.id)">
+                          編輯
+                        </button>
+                      </li>
+                      <li>
+                        <button class="dropdown-item" type="button" @click="viewExam(exam.id)">
+                          檢視
+                        </button>
+                      </li>
+                      <li>
+                        <hr class="dropdown-divider" />
+                      </li>
+                      <li>
+                        <button class="dropdown-item" type="button" :disabled="exportingExams[exam.id]"
+                          :aria-disabled="exportingExams[exam.id]" @click="exportExam(exam.id)">
+                          <span v-if="exportingExams[exam.id]" class="spinner-border spinner-border-sm me-2"
+                            role="status" aria-hidden="true"></span>
+                          <span v-if="!exportingExams[exam.id]">匯出</span>
+                          <span v-else>匯出中...</span>
+                        </button>
+                      </li>
+                      <li>
+                        <button class="dropdown-item text-danger" type="button" :disabled="deletingExamId === exam.id"
+                          :aria-disabled="deletingExamId === exam.id" @click="deleteExam(exam.id)">
+                          <span v-if="deletingExamId === exam.id" class="spinner-border spinner-border-sm me-2"
+                            role="status" aria-hidden="true"></span>
+                          <span v-if="!deletingExamId || deletingExamId !== exam.id">刪除</span>
+                          <span v-else>刪除中...</span>
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+
+        <!-- Selection Toolbar (Sticky) -->
+        <transition name="slide-up">
+          <div class="selection-toolbar-wrapper" v-if="selectedExamCount > 0">
+            <div class="selection-toolbar">
+              <div class="toolbar-content">
+                <div class="toolbar-info">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 11 12 14 22 4"></polyline>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                  </svg>
+                  <span class="toolbar-text">已選取</span>
+                  <span class="toolbar-count">{{ selectedExamCount }}</span>
+                  <span class="toolbar-text">張考卷</span>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-actions">
+                  <button class="toolbar-btn toolbar-btn-secondary" @click="clearExamSelection" title="清除選取">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    <span>清除</span>
+                  </button>
+
+                  <button class="toolbar-btn toolbar-btn-primary" @click="exportSelectedExams" :disabled="isExporting"
+                    title="匯出選取的考卷">
+                    <svg v-if="!isExporting" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <div v-else class="toolbar-spinner"></div>
+                    <span>{{ isExporting ? '匯出中...' : '匯出' }}</span>
+                  </button>
+
+                  <div class="toolbar-divider"></div>
+
+                  <button class="toolbar-btn toolbar-btn-danger" @click="deleteSelectedExams"
+                    :disabled="isDeletingSelected" title="批量刪除">
+                    <div v-if="isDeletingSelected" class="toolbar-spinner"></div>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    <span>{{ isDeletingSelected ? '刪除中...' : '刪除' }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
       </div>
 
       <div v-else>
@@ -239,39 +303,35 @@
 
         <ul class="pagination mb-0">
           <li class="page-item" :class="{ disabled: !paginationState.hasPrev || isLoading }">
-            <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToFirstPage" title="第一頁">
+            <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToFirstPage"
+              title="第一頁">
               <span aria-hidden="true">&laquo;</span>
             </button>
           </li>
           <li class="page-item" :class="{ disabled: !paginationState.hasPrev || isLoading }">
-            <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToPreviousPage" title="上一頁">
+            <button class="page-link" :disabled="!paginationState.hasPrev || isLoading" @click="goToPreviousPage"
+              title="上一頁">
               <span aria-hidden="true">&lsaquo;</span>
             </button>
           </li>
 
           <!-- Page Numbers -->
-          <li 
-            v-for="page in visiblePages" 
-            :key="page" 
-            class="page-item" 
-            :class="{ active: page === currentPage, disabled: isLoading }"
-          >
-            <button 
-              class="page-link" 
-              :disabled="isLoading"
-              @click="goToPage(page)"
-            >
+          <li v-for="page in visiblePages" :key="page" class="page-item"
+            :class="{ active: page === currentPage, disabled: isLoading }">
+            <button class="page-link" :disabled="isLoading" @click="goToPage(page)">
               {{ page }}
             </button>
           </li>
 
           <li class="page-item" :class="{ disabled: !paginationState.hasNext || isLoading }">
-            <button class="page-link" :disabled="!paginationState.hasNext || isLoading" @click="goToNextPage" title="下一頁">
+            <button class="page-link" :disabled="!paginationState.hasNext || isLoading" @click="goToNextPage"
+              title="下一頁">
               <span aria-hidden="true">&rsaquo;</span>
             </button>
           </li>
           <li class="page-item" :class="{ disabled: !paginationState.hasNext || isLoading }">
-            <button class="page-link" :disabled="!paginationState.hasNext || isLoading" @click="goToLastPage" title="最後一頁">
+            <button class="page-link" :disabled="!paginationState.hasNext || isLoading" @click="goToLastPage"
+              title="最後一頁">
               <span aria-hidden="true">&raquo;</span>
             </button>
           </li>
@@ -279,20 +339,9 @@
 
         <div class="page-jumper">
           <span class="text-muted me-2">跳至</span>
-          <input 
-            v-model.number="jumpToPage" 
-            type="number" 
-            class="form-control form-control-sm" 
-            :min="1" 
-            :max="paginationState.totalPages"
-            @keyup.enter="handlePageJump"
-            placeholder="頁碼"
-          />
-          <button 
-            class="btn btn-sm btn-secondary" 
-            :disabled="isLoading || !isValidJumpPage"
-            @click="handlePageJump"
-          >
+          <input v-model.number="jumpToPage" type="number" class="form-control form-control-sm" :min="1"
+            :max="paginationState.totalPages" @keyup.enter="handlePageJump" placeholder="頁碼" />
+          <button class="btn btn-sm btn-secondary" :disabled="isLoading || !isValidJumpPage" @click="handlePageJump">
             前往
           </button>
         </div>
@@ -301,13 +350,8 @@
       <!-- Activity Log removed -->
     </div>
 
-    <ExamDetailModal
-      :visible="isExamDetailVisible"
-      :exam="selectedExamDetail"
-      :loading="isExamDetailLoading"
-      :error="examDetailError"
-      @close="closeExamDetail"
-    />
+    <ExamDetailModal :visible="isExamDetailVisible" :exam="selectedExamDetail" :loading="isExamDetailLoading"
+      :error="examDetailError" @close="closeExamDetail" />
 
     <!-- Export Progress Modal -->
     <div v-if="isExportProgressVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
@@ -320,14 +364,9 @@
             <div class="mb-3">
               <p class="mb-2">正在匯出考卷...</p>
               <div class="progress">
-                <div
-                  class="progress-bar progress-bar-striped progress-bar-animated"
-                  role="progressbar"
-                  :style="{ width: exportProgress + '%' }"
-                  :aria-valuenow="exportProgress"
-                  aria-valuemin="0"
-                  aria-valuemax="100"
-                >
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                  :style="{ width: exportProgress + '%' }" :aria-valuenow="exportProgress" aria-valuemin="0"
+                  aria-valuemax="100">
                   {{ exportProgress }}%
                 </div>
               </div>
@@ -349,19 +388,117 @@
             <div class="mb-3">
               <p class="mb-2">正在匯入考卷...</p>
               <div class="progress">
-                <div
-                  class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-                  role="progressbar"
-                  :style="{ width: importProgress + '%' }"
-                  :aria-valuenow="importProgress"
-                  aria-valuemin="0"
-                  aria-valuemax="100"
-                >
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar"
+                  :style="{ width: importProgress + '%' }" :aria-valuenow="importProgress" aria-valuemin="0"
+                  aria-valuemax="100">
                   {{ importProgress }}%
                 </div>
               </div>
             </div>
             <p class="text-muted small">{{ importProgressText }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import Result Modal -->
+    <div v-if="isImportResultVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">匯入結果</h5>
+            <button type="button" class="btn-close" @click="isImportResultVisible = false" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <!-- Summary Statistics -->
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <div class="card bg-light">
+                  <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">考卷匯入</h6>
+                    <p class="card-text fs-4 mb-0">
+                      <span class="text-success fw-bold">{{ importResultData.successCount }}</span> / {{
+                        importResultData.totalExams }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card bg-light">
+                  <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">題目加入</h6>
+                    <p class="card-text fs-4 mb-0">
+                      <span class="text-success fw-bold">{{ importResultData.successfulQuestions }}</span> / {{
+                        importResultData.totalQuestions }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Deleted Questions Warning -->
+            <div v-if="importResultData.deletedQuestions.length > 0" class="alert alert-warning">
+              <h6 class="alert-heading">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                已刪除的題目 ({{ importResultData.deletedQuestions.length }})
+              </h6>
+              <p class="mb-2">以下題目 ID 在資料庫中找不到，可能已被刪除：</p>
+              <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                <table class="table table-sm table-striped">
+                  <thead>
+                    <tr>
+                      <th>題目 ID</th>
+                      <th>順序</th>
+                      <th>配分</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(q, index) in importResultData.deletedQuestions" :key="index">
+                      <td>{{ q.question_id }}</td>
+                      <td>{{ q.order || '-' }}</td>
+                      <td>{{ q.points || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Failed Additions -->
+            <div v-if="importResultData.failedAdds.length > 0" class="alert alert-danger">
+              <h6 class="alert-heading">
+                <i class="bi bi-x-circle-fill me-2"></i>
+                加入失敗的題目 ({{ importResultData.failedAdds.length }})
+              </h6>
+              <p class="mb-2">以下題目無法加入考卷：</p>
+              <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                <table class="table table-sm table-striped">
+                  <thead>
+                    <tr>
+                      <th>題目 ID</th>
+                      <th>順序</th>
+                      <th>配分</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(q, index) in importResultData.failedAdds" :key="index">
+                      <td>{{ q.question_id }}</td>
+                      <td>{{ q.order || '-' }}</td>
+                      <td>{{ q.points || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Success Message -->
+            <div v-if="importResultData.deletedQuestions.length === 0 && importResultData.failedAdds.length === 0"
+              class="alert alert-success">
+              <i class="bi bi-check-circle-fill me-2"></i>
+              所有考卷和題目都已成功匯入！
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" @click="isImportResultVisible = false">關閉</button>
           </div>
         </div>
       </div>
@@ -387,11 +524,11 @@ const searchTerm = ref('')
 const ordering = ref('-created_at')
 const currentPage = ref(1)
 const pageSize = ref(20)
-const paginationState = ref({ 
-  hasNext: false, 
-  hasPrev: false, 
-  totalPages: 0, 
-  totalCount: 0 
+const paginationState = ref({
+  hasNext: false,
+  hasPrev: false,
+  totalPages: 0,
+  totalCount: 0
 })
 const jumpToPage = ref(null)
 const selectedExamDetail = ref(null)
@@ -411,7 +548,21 @@ const importProgress = ref(0)
 const importProgressText = ref('')
 const totalImportQuestions = ref(0)
 const completedImportQuestions = ref(0)
+// Import result modal
+const isImportResultVisible = ref(false)
+const importResultData = ref({
+  successCount: 0,
+  totalExams: 0,
+  totalQuestions: 0,
+  successfulQuestions: 0,
+  deletedQuestions: [],
+  failedAdds: []
+})
 // showActivityLog removed — no longer used
+
+// Exam selection state
+const selectedExamIds = ref([])
+const isDeletingSelected = ref(false)
 
 // Question management refs
 const questionImportInput = ref(null)
@@ -475,6 +626,55 @@ const normalizeExam = (exam) => ({
   updatedAt: formatDateTime(exam.updated_at)
 })
 
+// Selection computed properties
+const selectedExamCount = computed(() => selectedExamIds.value.length)
+const isPageAllSelected = computed(() => {
+  if (exams.value.length === 0) return false
+  return exams.value.every(exam => selectedExamIds.value.includes(exam.id))
+})
+
+// Selection functions
+const toggleSelectExam = (examId, checked) => {
+  if (checked) {
+    if (!selectedExamIds.value.includes(examId)) {
+      selectedExamIds.value.push(examId)
+    }
+  } else {
+    const index = selectedExamIds.value.indexOf(examId)
+    if (index > -1) {
+      selectedExamIds.value.splice(index, 1)
+    }
+  }
+}
+
+const toggleSelectAllExams = () => {
+  if (isPageAllSelected.value) {
+    // Deselect all on current page
+    exams.value.forEach(exam => {
+      const index = selectedExamIds.value.indexOf(exam.id)
+      if (index > -1) {
+        selectedExamIds.value.splice(index, 1)
+      }
+    })
+  } else {
+    // Select all on current page
+    exams.value.forEach(exam => {
+      if (!selectedExamIds.value.includes(exam.id)) {
+        selectedExamIds.value.push(exam.id)
+      }
+    })
+  }
+}
+
+const isExamSelected = (examId) => {
+  return selectedExamIds.value.includes(examId)
+}
+
+const clearExamSelection = () => {
+  selectedExamIds.value = []
+}
+
+
 const normalizeExamDetail = (exam) => ({
   id: exam.id,
   name: exam.name,
@@ -497,7 +697,7 @@ const fetchExams = async () => {
   errorMessage.value = ''
 
   try {
-    const params = { 
+    const params = {
       page: currentPage.value,
       page_size: pageSize.value
     }
@@ -518,11 +718,11 @@ const fetchExams = async () => {
 
     // Update pagination state
     if (Array.isArray(data)) {
-      paginationState.value = { 
-        hasNext: false, 
-        hasPrev: false, 
-        totalPages: 1, 
-        totalCount: data.length 
+      paginationState.value = {
+        hasNext: false,
+        hasPrev: false,
+        totalPages: 1,
+        totalCount: data.length
       }
     } else {
       const count = data.count || 0
@@ -554,10 +754,10 @@ const resetFilters = () => {
   fetchExams()
 }
 
-const goToFirstPage = () => { 
+const goToFirstPage = () => {
   if (currentPage.value === 1 || isLoading.value) return
   currentPage.value = 1
-  fetchExams() 
+  fetchExams()
 }
 
 const goToPreviousPage = () => {
@@ -572,10 +772,10 @@ const goToNextPage = () => {
   fetchExams()
 }
 
-const goToLastPage = () => { 
+const goToLastPage = () => {
   if (currentPage.value === paginationState.value.totalPages || isLoading.value) return
   currentPage.value = paginationState.value.totalPages
-  fetchExams() 
+  fetchExams()
 }
 
 const goToPage = (page) => {
@@ -602,7 +802,7 @@ const visiblePages = computed(() => {
   const total = paginationState.value.totalPages
   const current = currentPage.value
   const pages = []
-  
+
   if (total <= 7) {
     // Show all pages if total <= 7
     for (let i = 1; i <= total; i++) {
@@ -611,31 +811,31 @@ const visiblePages = computed(() => {
   } else {
     // Always show first page
     pages.push(1)
-    
+
     if (current > 3) {
       pages.push('...')
     }
-    
+
     // Show pages around current page
     const start = Math.max(2, current - 1)
     const end = Math.min(total - 1, current + 1)
-    
+
     for (let i = start; i <= end; i++) {
       if (i !== 1 && i !== total) {
         pages.push(i)
       }
     }
-    
+
     if (current < total - 2) {
       pages.push('...')
     }
-    
+
     // Always show last page
     if (total > 1) {
       pages.push(total)
     }
   }
-  
+
   return pages.filter((p, i, arr) => {
     // Remove duplicate ellipsis
     if (p === '...' && arr[i - 1] === '...') return false
@@ -666,7 +866,7 @@ const batchImport = () => {
 const exportExams = async () => {
   if (isExporting.value) return
   isExporting.value = true
-  // Export all currently listed exams as JSON (fetch full details)
+  // Export all currently listed exams as JSON (only question IDs)
   try {
     const fetches = exams.value.map((e) => examService.getExam(e.id).catch(() => null))
     const responses = await Promise.all(fetches)
@@ -674,23 +874,16 @@ const exportExams = async () => {
     for (const res of responses) {
       if (!res || !res.data) continue
       const item = res.data
-      // fetch full question data for each question
-      const detailedQuestions = []
+      // Only export question IDs, order, and points
+      const examQuestions = []
       if (Array.isArray(item.exam_questions)) {
         for (const eq of item.exam_questions) {
-          const qId = eq.question
-          if (qId) {
-            try {
-              const qRes = await questionService.getQuestion(qId)
-              detailedQuestions.push({
-                order: eq.order,
-                points: eq.points,
-                question: qRes.data
-              })
-            } catch (err) {
-              // fallback: include minimal info
-              detailedQuestions.push({ order: eq.order, points: eq.points, question: { id: qId, content: eq.question_content } })
-            }
+          if (eq.question) {
+            examQuestions.push({
+              question_id: eq.question,
+              order: eq.order,
+              points: eq.points
+            })
           }
         }
       }
@@ -701,23 +894,26 @@ const exportExams = async () => {
         time_limit: item.time_limit,
         created_at: item.created_at,
         updated_at: item.updated_at,
-        exam_questions: detailedQuestions
+        exam_questions: examQuestions
       })
     }
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `exams_export_${new Date().toISOString().slice(0, 19).replaceAll(':', '-')}.json`
+    a.download = `selected_exams_${new Date().toISOString().slice(0, 19).replaceAll(':', '-')}.json`
     a.click()
     URL.revokeObjectURL(url)
+
+    alert(`成功匯出 ${exportData.length} 張考卷`)
   } catch (error) {
-    console.error('Export failed', error)
-    alert('匯出失敗，請檢查系統日誌')
+    console.error('Bulk export failed', error)
+    alert('批量匯出失敗')
   } finally {
     isExporting.value = false
   }
 }
+
 
 /**
  * Export single exam (for export button next to each exam)
@@ -728,12 +924,12 @@ const exportExam = async (examId) => {
   isExportProgressVisible.value = true
   exportProgress.value = 0
   exportProgressText.value = '取得考卷資訊...'
-  
+
   try {
     const { data } = await examService.getExam(examId)
-    exportProgress.value = 20
-    exportProgressText.value = '讀取題目...'
-    
+    exportProgress.value = 50
+    exportProgressText.value = '準備匯出資料...'
+
     const exportItem = {
       id: data.id,
       name: data.name,
@@ -743,22 +939,17 @@ const exportExam = async (examId) => {
       updated_at: data.updated_at,
       exam_questions: []
     }
-    
+
+    // Only export question IDs, order, and points
     if (Array.isArray(data.exam_questions)) {
-      const totalQuestions = data.exam_questions.length
-      for (let i = 0; i < data.exam_questions.length; i++) {
-        const eq = data.exam_questions[i]
+      for (const eq of data.exam_questions) {
         if (eq.question) {
-          try {
-            const qRes = await questionService.getQuestion(eq.question)
-            exportItem.exam_questions.push({ order: eq.order, points: eq.points, question: qRes.data })
-          } catch (err) {
-            exportItem.exam_questions.push({ order: eq.order, points: eq.points, question: { id: eq.question, content: eq.question_content } })
-          }
+          exportItem.exam_questions.push({
+            question_id: eq.question,
+            order: eq.order,
+            points: eq.points
+          })
         }
-        // Update progress: 20-80% for fetching questions
-        exportProgress.value = 20 + Math.floor((i + 1) / totalQuestions * 60)
-        exportProgressText.value = `已讀取 ${i + 1}/${totalQuestions} 題...`
       }
     }
 
@@ -772,10 +963,10 @@ const exportExam = async (examId) => {
     a.download = `exam_${exportItem.id || 'export'}.json`
     a.click()
     URL.revokeObjectURL(url)
-    
+
     exportProgress.value = 100
     exportProgressText.value = '匯出完成'
-    
+
     // Close modal after 1 second
     setTimeout(() => {
       isExportProgressVisible.value = false
@@ -808,7 +999,7 @@ const handleImportFile = async (event) => {
   importProgressText.value = '解析檔案中...'
   totalImportQuestions.value = 0
   completedImportQuestions.value = 0
-  
+
   const file = event.target.files && event.target.files[0]
   if (!file) {
     isImporting.value = false
@@ -820,10 +1011,10 @@ const handleImportFile = async (event) => {
     const parsed = JSON.parse(text)
     importProgress.value = 10
     importProgressText.value = '準備匯入...'
-    
+
     // allow both array (multiple exams) or single object
     const items = Array.isArray(parsed) ? parsed : [parsed]
-    
+
     // First pass: count total questions
     let totalQuestions = 0
     for (const item of items) {
@@ -833,44 +1024,68 @@ const handleImportFile = async (event) => {
     }
     totalImportQuestions.value = totalQuestions
     completedImportQuestions.value = 0
-    
+
     const summaries = []
-    
+
     for (let i = 0; i < items.length; i++) {
       const onQuestionProgress = (completed, total) => {
-        completedImportQuestions.value = completed
+        completedImportQuestions.value += 1
         const percentage = totalQuestions > 0 ? Math.floor((completedImportQuestions.value / totalQuestions) * 80) : 0
         importProgress.value = 10 + percentage
         importProgressText.value = `已匯入 ${completedImportQuestions.value}/${totalQuestions} 題...`
       }
-      
+
       const result = await importExamFromJson(items[i], onQuestionProgress)
       summaries.push(result)
       // Update progress: 10-90% for processing exams
       importProgress.value = 10 + Math.floor((i + 1) / items.length * 80)
-      importProgressText.value = `已完成 ${i + 1}/${items.length} 張考卷，共 ${completedImportQuestions.value}/${totalQuestions} 題`
+      importProgressText.value = `已完成 ${i + 1}/${items.length} 張考卷`
     }
-    
+
     importProgress.value = 95
     importProgressText.value = '整理資料中...'
-    
-    // summarize results
+
+    // Summarize results
     const successCount = summaries.filter(s => s && s.newExamId).length
-    const createdQuestionTotal = summaries.reduce((acc, s) => acc + (s.createdQuestionCount || 0), 0)
-    const totalFailedAdds = summaries.reduce((acc, s) => acc + (s.failedAdds?.length || 0), 0)
-    
+    const totalDeletedQuestions = summaries.reduce((acc, s) => {
+      if (s.deletedQuestions && Array.isArray(s.deletedQuestions)) {
+        return acc.concat(s.deletedQuestions)
+      }
+      return acc
+    }, [])
+    const totalSuccessfulQuestions = summaries.reduce((acc, s) => acc + (s.successfulAdds || 0), 0)
+    const totalFailedAdds = summaries.reduce((acc, s) => {
+      if (s.failedAdds && Array.isArray(s.failedAdds)) {
+        return acc.concat(s.failedAdds)
+      }
+      return acc
+    }, [])
+
     importProgress.value = 100
     importProgressText.value = '匯入完成'
-    
-    // Close modal after 1 second
+
+    // Close progress modal and show result modal
     setTimeout(() => {
       isImportProgressVisible.value = false
       importProgress.value = 0
       importProgressText.value = ''
       totalImportQuestions.value = 0
       completedImportQuestions.value = 0
-      alert(`匯入完成：建立 ${successCount} 張考卷，新增題目 ${createdQuestionTotal} 題，加入考卷失敗 ${totalFailedAdds} 筆`)
-      // refresh listing
+
+      // Set import result data
+      importResultData.value = {
+        successCount: successCount,
+        totalExams: items.length,
+        totalQuestions: totalQuestions,
+        successfulQuestions: totalSuccessfulQuestions,
+        deletedQuestions: totalDeletedQuestions,
+        failedAdds: totalFailedAdds
+      }
+
+      // Show result modal
+      isImportResultVisible.value = true
+
+      // Refresh listing
       fetchExams()
     }, 1000)
   } catch (error) {
@@ -892,7 +1107,8 @@ const importExamFromJson = async (payload, onProgressUpdate) => {
   if (!payload || !payload.name) {
     throw new Error('JSON 格式錯誤，缺少 exam.name')
   }
-  // create exam
+
+  // Create exam
   const examData = {
     name: payload.name,
     description: payload.description || '',
@@ -902,220 +1118,94 @@ const importExamFromJson = async (payload, onProgressUpdate) => {
   const newExamId = res.data?.id
   if (!newExamId) throw new Error('建立考卷失敗')
 
-  // prepare questions
-  const toCreate = []
-  const toUseExisting = []
+  // Track import results
+  const deletedQuestions = [] // Questions that were deleted (ID not found)
+  const validQuestions = [] // Questions that exist and will be added
+  const totalQuestions = Array.isArray(payload.exam_questions) ? payload.exam_questions.length : 0
+
+  // Process questions - new format uses question_id
   if (Array.isArray(payload.exam_questions)) {
-      for (const eq of payload.exam_questions) {
-      if (eq.question && eq.question.id && (!eq.question.content && !eq.question.options)) {
-        // reference to existing question
-        // Verify existence of question id before adding
+    for (const eq of payload.exam_questions) {
+      // Handle new format: { question_id: 123, order: 1, points: 10 }
+      if (eq.question_id) {
         try {
-          const exists = await questionService.getQuestion(eq.question.id).catch(() => null)
+          const exists = await questionService.getQuestion(eq.question_id).catch(() => null)
           if (exists && exists.data) {
-            toUseExisting.push({ question: eq.question.id, order: eq.order, points: eq.points })
+            validQuestions.push({
+              question: eq.question_id,
+              order: eq.order,
+              points: eq.points
+            })
           } else {
-            console.warn('Referenced question id not found; skipping', eq.question.id)
-            // if we have embedded content fallback, try to create later
-            if (eq.question && (eq.question.content || eq.question.options)) {
-              const q = eq.question
-              // Clean up options: remove id field and ensure proper order
-              const cleanedOptions = (q.options || []).map((opt, idx) => {
-                // Ensure order is unique and sequential
-                const order = Array.isArray(q.options) && q.options.every(o => o.order === 0 || o.order === undefined) 
-                  ? idx 
-                  : (typeof opt.order === 'number' && opt.order !== undefined ? opt.order : idx)
-                return {
-                  content: opt.content || '',
-                  is_correct: opt.is_correct === true,
-                  order: order
-                }
-              })
-              const qPayload = {
-                subject: q.subject || '',
-                question_type: q.question_type || '選擇題',
-                difficulty: q.difficulty || 'medium',
-                content: q.content || q.question_content || '',
-                options: cleanedOptions
-              }
-              // Only add optional fields if they have meaningful values
-              if (q.explanation || q.explain) {
-                qPayload.explanation = q.explanation || q.explain
-              }
-              if (q.category && q.category.trim()) {
-                qPayload.category = q.category
-              }
-              if (q.tag_ids && q.tag_ids.length > 0) {
-                qPayload.tag_ids = q.tag_ids.filter(id => id)
-              }
-              if (q.status && q.status !== 'draft') {
-                qPayload.status = q.status
-              }
-              console.log('Fallback qPayload:', qPayload)
-              toCreate.push({ qPayload, order: eq.order, points: eq.points })
-            }
+            console.warn('Question ID not found (deleted):', eq.question_id)
+            deletedQuestions.push({
+              question_id: eq.question_id,
+              order: eq.order,
+              points: eq.points
+            })
           }
         } catch (err) {
-          console.error('Failed to verify referenced question id', err)
-        }
-      } else if (eq.question) {
-        // has embedded question object with full data
-        // prepare create payload for question service
-        const q = eq.question
-        // Clean up options: remove id field and ensure proper order
-        const cleanedOptions = (q.options || []).map((opt, idx) => {
-          // Ensure order is unique and sequential
-          const order = Array.isArray(q.options) && q.options.every(o => o.order === 0 || o.order === undefined) 
-            ? idx 
-            : (typeof opt.order === 'number' && opt.order !== undefined ? opt.order : idx)
-          return {
-            content: opt.content || '',
-            is_correct: opt.is_correct === true,
-            order: order
-          }
-        })
-        const qPayload = {
-          subject: q.subject || '',
-          question_type: q.question_type || '選擇題',
-          difficulty: q.difficulty || 'medium',
-          content: q.content || q.question_content || '',
-          options: cleanedOptions
-        }
-        // Only add optional fields if they have meaningful values
-        if (q.explanation || q.explain) {
-          qPayload.explanation = q.explanation || q.explain
-        }
-        if (q.category && q.category.trim()) {
-          qPayload.category = q.category
-        }
-        if (q.tag_ids && q.tag_ids.length > 0) {
-          qPayload.tag_ids = q.tag_ids.filter(id => id)
-        }
-        if (q.status && q.status !== 'draft') {
-          qPayload.status = q.status
-        }
-        toCreate.push({ qPayload, order: eq.order, points: eq.points })
-      }
-    }
-  }
-
-  const totalQuestions = toCreate.length + toUseExisting.length
-  console.log(`importExamFromJson: totalQuestions=${totalQuestions}, toCreate=${toCreate.length}, toUseExisting=${toUseExisting.length}`)
-
-  // create questions in bulk
-  const createdQuestionIds = []
-  if (toCreate.length > 0) {
-    const payloadForBulk = toCreate.map(t => t.qPayload)
-    try {
-        const createRes = await questionService.bulkCreateQuestions(payloadForBulk)
-        const results = createRes.data?.results || createRes.data || []
-        console.log(`bulkCreateQuestions results:`, results)
-        const failedIndices = []
-        for (let i = 0; i < results.length; i++) {
-          const r = results[i]
-          if (r && r.success && r.id) {
-            createdQuestionIds.push({ id: r.id, order: toCreate[i].order, points: toCreate[i].points })
-            console.log(`Created question ${i}: id=${r.id}`)
-            if (onProgressUpdate) {
-              onProgressUpdate(createdQuestionIds.length + toUseExisting.length, totalQuestions)
-            }
-          } else {
-            // collect failed indices for retry
-            failedIndices.push(i)
-            console.log(`Failed to create question ${i}:`, r)
-          }
-        }
-        // retry failures one by one with stripped tag_ids to avoid missing tag errors
-        for (const idx of failedIndices) {
-          const original = toCreate[idx]
-          const attemptPayload = { ...original.qPayload }
-          // remove tag_ids if present
-          if (attemptPayload.tag_ids) delete attemptPayload.tag_ids
-          try {
-            const singleRes = await questionService.createQuestion(attemptPayload)
-            if (singleRes?.data?.id) {
-              createdQuestionIds.push({ id: singleRes.data.id, order: original.order, points: original.points })
-              console.log(`Retry created question ${idx}: id=${singleRes.data.id}`)
-              if (onProgressUpdate) {
-                onProgressUpdate(createdQuestionIds.length + toUseExisting.length, totalQuestions)
-              }
-            }
-          } catch (retryErr) {
-            console.error('Retry create question failed (stripped tags), skipping index', idx, retryErr)
-          }
-        }
-      } catch (err) {
-      console.error('bulkCreateQuestions failed, falling back to single create', err)
-      // fallback to single create
-      for (let i = 0; i < toCreate.length; i++) {
-        try {
-          const createRes = await questionService.createQuestion(toCreate[i].qPayload)
-          createdQuestionIds.push({ id: createRes.data.id, order: toCreate[i].order, points: toCreate[i].points })
-          console.log(`Single created question ${i}: id=${createRes.data.id}`)
-          if (onProgressUpdate) {
-            onProgressUpdate(createdQuestionIds.length + toUseExisting.length, totalQuestions)
-          }
-        } catch (err2) {
-          console.error('Failed to create question, attempting fallback without tags', err2)
-          // try fallback without tags and category
-          try {
-            const fallback = { ...toCreate[i].qPayload }
-            if (fallback.tag_ids) delete fallback.tag_ids
-            if (fallback.category) delete fallback.category
-            console.log(`Fallback payload:`, fallback)
-            const fallbackRes = await questionService.createQuestion(fallback)
-            createdQuestionIds.push({ id: fallbackRes.data.id, order: toCreate[i].order, points: toCreate[i].points })
-            console.log(`Fallback created question ${i}: id=${fallbackRes.data.id}`)
-            if (onProgressUpdate) {
-              onProgressUpdate(createdQuestionIds.length + toUseExisting.length, totalQuestions)
-            }
-          } catch (fallbackErr) {
-            console.error('Fallback create failed too', fallbackErr, 'Payload was:', toCreate[i].qPayload)
-          }
+          console.error('Failed to verify question ID', eq.question_id, err)
+          deletedQuestions.push({
+            question_id: eq.question_id,
+            order: eq.order,
+            points: eq.points
+          })
         }
       }
     }
   }
 
-  // add existing and created questions to exam
-  const adds = []
-  for (const ex of toUseExisting) adds.push(ex)
-  for (const c of createdQuestionIds) adds.push({ question: c.id, order: c.order, points: c.points })
-  console.log(`Attempting to add ${adds.length} questions to exam ${newExamId}`)
+  console.log(`importExamFromJson: total=${totalQuestions}, valid=${validQuestions.length}, deleted=${deletedQuestions.length}`)
+
+  // Add valid questions to exam
   const failedAdds = []
   let successfulAdds = 0
-  for (let i = 0; i < adds.length; i++) {
-    const add = adds[i]
+
+  for (let i = 0; i < validQuestions.length; i++) {
+    const add = validQuestions[i]
     try {
-      const res = await examService.addQuestionToExam(newExamId, add)
+      await examService.addQuestionToExam(newExamId, add)
       successfulAdds++
       console.log(`Added question ${i} (id=${add.question}) to exam, successful=${successfulAdds}`)
       if (onProgressUpdate) {
-        onProgressUpdate(successfulAdds, totalQuestions)
+        onProgressUpdate(successfulAdds, validQuestions.length)
       }
     } catch (err) {
       console.error('Failed to add question to exam', err)
-      // if failure due to duplicate order, try without order
+      // Try without order if duplicate order error
       try {
         if (typeof add.order !== 'undefined') {
           const addNoOrder = { question: add.question, points: add.points }
-          const res = await examService.addQuestionToExam(newExamId, addNoOrder)
+          await examService.addQuestionToExam(newExamId, addNoOrder)
           successfulAdds++
           console.log(`Added question ${i} (id=${add.question}) to exam without order, successful=${successfulAdds}`)
           if (onProgressUpdate) {
-            onProgressUpdate(successfulAdds, totalQuestions)
+            onProgressUpdate(successfulAdds, validQuestions.length)
           }
           continue
         }
       } catch (err2) {
         console.error('Failed to add without order fallback', err2)
       }
-      failedAdds.push({ add, error: err })
+      failedAdds.push({
+        question_id: add.question,
+        order: add.order,
+        points: add.points,
+        error: err
+      })
     }
   }
-  console.log(`importExamFromJson finished: newExamId=${newExamId}, createdQuestions=${createdQuestionIds.length}, successfulAdds=${successfulAdds}, failedAdds=${failedAdds.length}`)
 
-  return { newExamId, createdQuestionCount: createdQuestionIds.length, failedAdds }
+  console.log(`importExamFromJson finished: newExamId=${newExamId}, successfulAdds=${successfulAdds}, deletedQuestions=${deletedQuestions.length}, failedAdds=${failedAdds.length}`)
+
+  return {
+    newExamId,
+    totalQuestions,
+    successfulAdds,
+    deletedQuestions,
+    failedAdds
+  }
 }
 
 const router = useRouter()
@@ -1183,6 +1273,110 @@ const deleteExam = async (id) => {
   }
 }
 
+// Bulk delete selected exams
+const deleteSelectedExams = async () => {
+  if (selectedExamIds.value.length === 0) return
+
+  const confirmMessage = `確定要刪除選取的 ${selectedExamIds.value.length} 張考卷嗎？此操作無法復原。`
+  if (!confirm(confirmMessage)) return
+
+  isDeletingSelected.value = true
+  const idsToDelete = [...selectedExamIds.value]
+  let successCount = 0
+  let failCount = 0
+
+  for (const id of idsToDelete) {
+    try {
+      await examService.deleteExam(id)
+      successCount++
+      // Remove from selection
+      const index = selectedExamIds.value.indexOf(id)
+      if (index > -1) {
+        selectedExamIds.value.splice(index, 1)
+      }
+    } catch (error) {
+      console.error(`Failed to delete exam ${id}`, error)
+      failCount++
+    }
+  }
+
+  isDeletingSelected.value = false
+
+  // Show result
+  if (failCount === 0) {
+    alert(`成功刪除 ${successCount} 張考卷`)
+  } else {
+    alert(`刪除完成：成功 ${successCount} 張，失敗 ${failCount} 張`)
+  }
+
+  // Refresh list
+  fetchExams()
+}
+
+// Bulk export selected exams
+const exportSelectedExams = async () => {
+  if (selectedExamIds.value.length === 0) return
+  if (isExporting.value) return
+
+  isExporting.value = true
+
+  try {
+    const exportData = []
+
+    for (const examId of selectedExamIds.value) {
+      try {
+        const { data } = await examService.getExam(examId)
+
+        const examQuestions = []
+        if (Array.isArray(data.exam_questions)) {
+          for (const eq of data.exam_questions) {
+            if (eq.question) {
+              examQuestions.push({
+                question_id: eq.question,
+                order: eq.order,
+                points: eq.points
+              })
+            }
+          }
+        }
+
+        exportData.push({
+          id: data.id,
+          name: data.name,
+          description: data.description,
+          time_limit: data.time_limit,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          exam_questions: examQuestions
+        })
+      } catch (error) {
+        console.error(`Failed to export exam ${examId}`, error)
+      }
+    }
+
+    if (exportData.length === 0) {
+      alert('沒有可匯出的考卷')
+      return
+    }
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `selected_exams_${new Date().toISOString().slice(0, 19).replaceAll(':', '-')}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+
+    alert(`成功匯出 ${exportData.length} 張考卷`)
+  } catch (error) {
+    console.error('Bulk export failed', error)
+    alert('批量匯出失敗')
+  } finally {
+    isExporting.value = false
+  }
+}
+
+
 // Question management functions
 const addQuestion = () => {
   // Trigger child component method via event or ref
@@ -1200,13 +1394,13 @@ const handleQuestionImportFile = async (event) => {
   if (isImportingQuestions.value) return
   const file = event.target.files && event.target.files[0]
   if (!file) return
-  
+
   isImportingQuestions.value = true
   try {
     const text = await file.text()
     const parsed = JSON.parse(text)
     const items = Array.isArray(parsed) ? parsed : (parsed.questions ? parsed.questions : [parsed])
-    
+
     const payload = items.map(q => ({
       subject: q.subject || '',
       category: q.category || '',
@@ -1222,14 +1416,14 @@ const handleQuestionImportFile = async (event) => {
       await questionService.bulkCreateQuestions(payload)
     } catch (err) {
       for (const p of payload) {
-        try { 
-          await questionService.createQuestion(p) 
-        } catch (e) { 
-          console.error('create question fallback failed', e) 
+        try {
+          await questionService.createQuestion(p)
+        } catch (e) {
+          console.error('create question fallback failed', e)
         }
       }
     }
-    
+
     alert('題目匯入完成')
     // Trigger child component to refresh
     const refreshEvent = new CustomEvent('refreshQuestions')
@@ -1351,7 +1545,9 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Tabs */
@@ -1582,8 +1778,48 @@ onMounted(() => {
 .table-status {
   text-align: center;
   color: var(--text-secondary, #64748B);
-  font-size: 14px;
-  padding: 60px 20px !important;
+  padding: 48px 24px;
+  font-size: 15px;
+}
+
+/* Table cell spacing */
+.table th,
+.table td {
+  padding: 14px 16px;
+  vertical-align: middle;
+}
+
+.table th:first-child,
+.table td:first-child {
+  padding-left: 20px;
+}
+
+.table th:last-child,
+.table td:last-child {
+  padding-right: 20px;
+}
+
+.table th {
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+  background-color: #f8fafc;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.table td {
+  color: var(--text-secondary, #64748B);
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.table input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  margin: 0;
 }
 
 table {
@@ -1607,14 +1843,54 @@ th {
 }
 
 /* 設定各欄位寬度 */
-th:nth-child(1), td:nth-child(1) { width: 8%; }        /* 考卷 ID */
-th:nth-child(2), td:nth-child(2) { width: 15%; }       /* 考卷名稱 */
-th:nth-child(3), td:nth-child(3) { width: 25%; }       /* 考試說明 */
-th:nth-child(4), td:nth-child(4) { width: 8%; }        /* 題數 */
-th:nth-child(5), td:nth-child(5) { width: 12%; }       /* 時間限制 */
-th:nth-child(6), td:nth-child(6) { width: 15%; }       /* 建立時間 */
-th:nth-child(7), td:nth-child(7) { width: 15%; }       /* 更新時間 */
-th:nth-child(8), td:nth-child(8) { width: 2%; }        /* 操作 */
+th:nth-child(1),
+td:nth-child(1) {
+  width: 8%;
+}
+
+/* 考卷 ID */
+th:nth-child(2),
+td:nth-child(2) {
+  width: 15%;
+}
+
+/* 考卷名稱 */
+th:nth-child(3),
+td:nth-child(3) {
+  width: 25%;
+}
+
+/* 考試說明 */
+th:nth-child(4),
+td:nth-child(4) {
+  width: 8%;
+}
+
+/* 題數 */
+th:nth-child(5),
+td:nth-child(5) {
+  width: 12%;
+}
+
+/* 時間限制 */
+th:nth-child(6),
+td:nth-child(6) {
+  width: 15%;
+}
+
+/* 建立時間 */
+th:nth-child(7),
+td:nth-child(7) {
+  width: 15%;
+}
+
+/* 更新時間 */
+th:nth-child(8),
+td:nth-child(8) {
+  width: 2%;
+}
+
+/* 操作 */
 
 td {
   padding: 16px;
@@ -1698,7 +1974,7 @@ tbody tr:last-child td {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .admin-actions {
     justify-content: flex-start;
   }
@@ -1770,9 +2046,10 @@ tbody tr:last-child td {
 }
 
 .admin-tabs {
-  display:flex;
-  gap:8px;
+  display: flex;
+  gap: 8px;
 }
+
 .tab-btn {
   background: #f1f5f9;
   border: 1px solid #d1d5db;
@@ -1781,6 +2058,7 @@ tbody tr:last-child td {
   border-radius: 6px;
   cursor: pointer;
 }
+
 .tab-btn.active {
   background: #007bff;
   color: white;
@@ -1796,7 +2074,7 @@ tbody tr:last-child td {
   padding: 16px;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   flex-wrap: wrap;
   margin-bottom: 30px;
 }
@@ -1882,6 +2160,197 @@ tbody tr:last-child td {
 
   .page-size-select {
     width: 100%;
+  }
+}
+
+/* Selection Toolbar Styles */
+.selection-toolbar-wrapper {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: calc(100% - 48px);
+  max-width: 1200px;
+}
+
+.selection-toolbar {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border, #CBD5E1);
+}
+
+.toolbar-content {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  gap: 16px;
+}
+
+.toolbar-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: var(--primary-soft, #EEF2FF);
+  border-radius: 10px;
+}
+
+.toolbar-info svg {
+  color: var(--primary, #476996);
+  flex-shrink: 0;
+}
+
+.toolbar-text {
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+  font-weight: 500;
+}
+
+.toolbar-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 10px;
+  background: var(--primary, #476996);
+  color: white;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 32px;
+  background: #e5e7eb;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.toolbar-btn svg {
+  flex-shrink: 0;
+}
+
+.toolbar-btn-secondary {
+  background: #f3f4f6;
+  color: var(--text-secondary, #64748B);
+}
+
+.toolbar-btn-secondary:hover {
+  background: #e5e7eb;
+  color: var(--text-primary, #1E293B);
+  transform: translateY(-1px);
+}
+
+.toolbar-btn-primary {
+  background: var(--primary, #476996);
+  color: white;
+}
+
+.toolbar-btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover, #35527a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
+}
+
+.toolbar-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.toolbar-btn-danger {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.toolbar-btn-danger:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.toolbar-btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.toolbar-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(220, 38, 38, 0.3);
+  border-top-color: #dc2626;
+  border-radius: 50%;
+  animation: toolbar-spin 0.8s linear infinite;
+}
+
+@keyframes toolbar-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Slide up animation */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
+
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .toolbar-content {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+  }
+
+  .toolbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-btn span {
+    display: none;
+  }
+
+  .toolbar-btn {
+    padding: 8px 12px;
+  }
+
+  .toolbar-divider {
+    display: none;
   }
 }
 </style>
