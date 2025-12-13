@@ -76,7 +76,7 @@
 
         <StatsGrid :stats="stats" :loading="isStatsLoading" @start-review="startReview" />
 
-        <CardList ref="cardListRef" :cards="flashcards" :loading="isListLoading" :status-filter="statusFilter"
+        <CardList ref="cardListRef" :cards="paginatedFlashcards" :loading="isListLoading" :status-filter="statusFilter"
           :selected-ids="selectedFlashcardIds" @delete="handleDelete" @filter-change="handleFilterChange"
           @selection-change="handleSelectionChange" />
 
@@ -104,6 +104,11 @@
             <span>{{ isDeletingSelected ? '刪除中...' : '刪除' }}</span>
           </button>
         </SelectionToolbar>
+
+        <!-- Pagination -->
+        <PaginationControl v-if="!isListLoading && allFlashcards.length > 0" :pagination-state="paginationState"
+          :current-page="currentPage" :page-size="pageSize" :is-loading="isListLoading" @page-change="handlePageChange"
+          @size-change="handleSizeChange" class="mt-4" />
       </div>
     </div>
   </div>
@@ -117,6 +122,7 @@ import flashcardService from '@/services/flashcardService'
 import questionService from '@/services/questionService'
 import { StatsGrid, CardList, FlashcardDisplay, RatingPanel } from '@/components/flashcard'
 import SelectionToolbar from '@/components/common/SelectionToolbar.vue'
+import PaginationControl from '@/components/common/PaginationControl.vue'
 
 // Import Swiper styles
 import 'swiper/css'
@@ -136,6 +142,30 @@ const flashcards = ref([])
 const dueFlashcards = ref([])
 const statusFilter = ref('all')
 const isListLoading = ref(false)
+
+// Pagination state (client-side)
+const currentPage = ref(1)
+const pageSize = ref(20)
+const allFlashcards = ref([])
+
+// Computed: paginated flashcards for display
+const paginatedFlashcards = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return allFlashcards.value.slice(start, end)
+})
+
+// Computed: pagination state for the control
+const paginationState = computed(() => {
+  const total = allFlashcards.value.length
+  return {
+    hasNext: currentPage.value * pageSize.value < total,
+    hasPrev: currentPage.value > 1,
+    totalPages: Math.ceil(total / pageSize.value) || 1,
+    totalCount: total
+  }
+})
+
 const isStatsLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
@@ -248,12 +278,22 @@ const loadFlashcards = async () => {
   try {
     isListLoading.value = true
     const params = statusFilter.value !== 'all' ? { status: statusFilter.value } : {}
-    flashcards.value = await flashcardService.getFlashcards(params)
+    allFlashcards.value = await flashcardService.getFlashcards(params)
+    currentPage.value = 1 // Reset to first page on reload
   } catch (e) {
     showError(e.message, loadFlashcards)
   } finally {
     isListLoading.value = false
   }
+}
+
+const handlePageChange = (page) => {
+  currentPage.value = page
+}
+
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
 }
 
 const loadDueFlashcards = async () => {
@@ -486,7 +526,7 @@ onMounted(() => {
 
 <style scoped>
 .container {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
 }
@@ -670,20 +710,15 @@ onMounted(() => {
   margin: 0 0 16px 0;
 }
 
-
-
 .flashcard-swiper {
   width: 100%;
   height: 600px;
   padding: 60px 30px;
 }
 
-
-
-
-
-
-
+.selection-toolbar-wrapper {
+  bottom: 100px;
+}
 
 /* ========== RESPONSIVE DESIGN ========== */
 
