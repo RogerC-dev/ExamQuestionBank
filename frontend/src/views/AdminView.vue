@@ -2065,18 +2065,22 @@ tbody tr:last-child td {
   border-color: #007bff;
 }
 
-/* Enhanced Pagination Styles */
+/* Pagination */
 .pagination-wrapper {
+  position: sticky;
+  bottom: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 16px;
+  padding: 20px;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border, #CBD5E1);
   flex-wrap: wrap;
-  margin-bottom: 30px;
+  z-index: 100;
+  margin-top: 24px;
 }
 
 .pagination-info {
@@ -2086,14 +2090,38 @@ tbody tr:last-child td {
   flex-wrap: wrap;
 }
 
+.pagination-info .text-muted {
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+  font-weight: 500;
+}
+
 .page-size-select {
   width: auto;
-  min-width: 120px;
+  min-width: 130px;
+  padding: 8px 32px 8px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.page-size-select:focus {
+  outline: none;
+  border-color: var(--primary, #476996);
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
 }
 
 .pagination {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 
 .page-link {
@@ -2102,28 +2130,35 @@ tbody tr:last-child td {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #dee2e6;
-  color: #495057;
-  background-color: #fff;
-  transition: all 0.2s;
+  padding: 0 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  color: var(--text-primary, #1E293B);
+  background-color: white;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .page-link:hover:not(:disabled) {
-  background-color: #e9ecef;
-  border-color: #dee2e6;
+  background-color: var(--primary-soft, #EEF2FF);
+  border-color: var(--primary, #476996);
+  color: var(--primary, #476996);
+  transform: translateY(-1px);
 }
 
 .page-item.active .page-link {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
+  background: var(--primary, #476996);
+  border-color: var(--primary, #476996);
   color: white;
-  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(71, 105, 150, 0.2);
 }
 
 .page-item.disabled .page-link {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.4;
+  transform: none;
 }
 
 .page-jumper {
@@ -2132,13 +2167,50 @@ tbody tr:last-child td {
   gap: 8px;
 }
 
+.page-jumper .text-muted {
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+}
+
 .page-jumper input {
   width: 70px;
   text-align: center;
+  padding: 8px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.page-jumper input:focus {
+  outline: none;
+  border-color: var(--primary, #476996);
+  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
 }
 
 .page-jumper .btn {
   white-space: nowrap;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary, #476996);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-jumper .btn:hover:not(:disabled) {
+  background: var(--primary-hover, #35527a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
+}
+
+.page-jumper .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 @media (max-width: 992px) {
@@ -2166,7 +2238,7 @@ tbody tr:last-child td {
 /* Selection Toolbar Styles */
 .selection-toolbar-wrapper {
   position: fixed;
-  bottom: 24px;
+  bottom: 100px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
