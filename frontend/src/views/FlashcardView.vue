@@ -3,7 +3,20 @@
     <div class="container">
       <!-- Review Mode -->
       <div v-if="reviewMode" class="review-mode">
-        <ReviewHeader :current-index="currentIndex" :total-cards="reviewCards.length" @exit="exitReview" />
+        <!-- Simple Review Header -->
+        <div class="review-header" data-testid="review-header">
+          <div class="progress-info">
+            <span class="progress-text" data-testid="progress-text">{{ swiperActiveIndex + 1 }} / {{ reviewCards.length
+            }}</span>
+            <div class="progress-bar" data-testid="progress-bar">
+              <div class="progress-fill" data-testid="progress-fill" :style="{ width: progressWidth + '%' }"></div>
+            </div>
+          </div>
+          <button class="btn-exit" data-testid="exit-button" @click="exitReview">
+            <i class="bi bi-x-lg"></i>
+            <span>結束</span>
+          </button>
+        </div>
 
         <!-- Error message in review mode -->
         <div v-if="errorMessage" class="alert error review-alert" data-testid="review-error-alert">
@@ -19,11 +32,27 @@
           </div>
         </div>
 
-        <FlashcardDisplay v-if="currentCard" :card="currentCard" :options="currentOptions" :flipped="isFlipped"
-          @flip="flipCard" />
+        <!-- Swiper with Cards Effect for all flashcards -->
+        <div class="flashcard-swiper-container">
+          <Swiper v-if="reviewCards.length > 0" :modules="swiperModules" :effect="'cards'" :grabCursor="false"
+            :cardsEffect="{
+              perSlideOffset: 8,
+              perSlideRotate: 2,
+              rotate: true,
+              slideShadows: true,
+            }" :allowTouchMove="false" :lazy="{
+              loadPrevNext: true,
+              loadPrevNextAmount: 2,
+            }" :preloadImages="false" class="flashcard-swiper" @swiper="onSwiperInit" @slideChange="onSlideChange">
+            <SwiperSlide v-for="(card, index) in reviewCards" :key="card.id">
+              <FlashcardDisplay :ref="el => setCardRef(el, index)" :card="card" :options="cardOptions[card.id] || []"
+                @flip="handleCardFlip(index)" />
+            </SwiperSlide>
+          </Swiper>
+        </div>
 
-        <RatingPanel :visible="isFlipped" :disabled="isRating" :current-interval="currentCard?.interval || 1"
-          @rate="rateCard" />
+        <RatingPanel :visible="isCardFlipped && swiperActiveIndex < reviewCards.length" :disabled="isRating"
+          :current-interval="currentCard?.interval || 1" @rate="rateCard" />
       </div>
 
       <!-- Dashboard Mode -->
@@ -103,12 +132,23 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import { EffectCards } from 'swiper/modules'
 import flashcardService from '@/services/flashcardService'
 import questionService from '@/services/questionService'
-import { StatsGrid, CardList, FlashcardDisplay, RatingPanel, ReviewHeader } from '@/components/flashcard'
+import { StatsGrid, CardList, FlashcardDisplay, RatingPanel } from '@/components/flashcard'
+
+// Import Swiper styles
+import 'swiper/css'
+import 'swiper/css/effect-cards'
 
 // Component refs
 const cardListRef = ref(null)
+const cardRefs = ref([])
+const swiperInstance = ref(null)
+
+// Swiper modules
+const swiperModules = [EffectCards]
 
 // State
 const stats = ref({ total_cards: 0, due_cards: 0, completion_percent: 0, review_streak: 0 })
@@ -131,13 +171,43 @@ const errorDismissTimer = ref(null)
 // Review mode state
 const reviewMode = ref(false)
 const reviewCards = ref([])
-const currentIndex = ref(0)
-const isFlipped = ref(false)
+const swiperActiveIndex = ref(0)
+const isCardFlipped = ref(false)
 const isRating = ref(false)
-const currentOptions = ref([])
+const cardOptions = ref({}) // Store options for each card by card.id
 
-const currentCard = computed(() => reviewCards.value[currentIndex.value])
+const currentCard = computed(() => reviewCards.value[swiperActiveIndex.value])
 const selectedFlashcardCount = computed(() => selectedFlashcardIds.value.length)
+const progressWidth = computed(() => {
+  if (reviewCards.value.length === 0) return 0
+  return ((swiperActiveIndex.value + 1) / reviewCards.value.length) * 100
+})
+
+// Set card ref
+const setCardRef = (el, index) => {
+  if (el) {
+    cardRefs.value[index] = el
+  }
+}
+
+// Swiper event handlers
+const onSwiperInit = (swiper) => {
+  swiperInstance.value = swiper
+}
+
+const onSlideChange = () => {
+  if (swiperInstance.value) {
+    swiperActiveIndex.value = swiperInstance.value.activeIndex
+    isCardFlipped.value = false
+  }
+}
+
+// Handle card flip
+const handleCardFlip = (index) => {
+  if (index === swiperActiveIndex.value) {
+    isCardFlipped.value = true
+  }
+}
 
 const showError = (msg, retryAction = null) => {
   // Clear any existing timer
@@ -217,27 +287,52 @@ const startReview = async () => {
       return
     }
     reviewCards.value = [...dueFlashcards.value]
-    currentIndex.value = 0
-    isFlipped.value = false
-    await loadCurrentOptions()
+    swiperActiveIndex.value = 0
+    isCardFlipped.value = false
+    cardRefs.value = []
+
+    // Load options for all cards
+    await loadAllCardOptions()
+
     reviewMode.value = true
   } catch (e) {
     showError(e.message, startReview)
   }
 }
 
-const loadCurrentOptions = async () => {
-  if (!currentCard.value?.question) return
-  try {
-    const { data } = await questionService.getQuestion(currentCard.value.question)
-    currentOptions.value = data.options || []
-  } catch (e) {
-    currentOptions.value = []
+// Load options for all review cards (optimized for lazy loading)
+const loadAllCardOptions = async () => {
+  const optionsMap = {}
+  // Only load first 5 cards initially for better performance
+  const cardsToLoad = reviewCards.value.slice(0, Math.min(5, reviewCards.value.length))
+
+  for (const card of cardsToLoad) {
+    try {
+      const { data } = await questionService.getQuestion(card.question)
+      optionsMap[card.id] = data.options || []
+    } catch (e) {
+      optionsMap[card.id] = []
+    }
+  }
+  cardOptions.value = optionsMap
+
+  // Load remaining cards in background
+  if (reviewCards.value.length > 5) {
+    loadRemainingOptions()
   }
 }
 
-const flipCard = () => {
-  if (!isFlipped.value) isFlipped.value = true
+// Load remaining card options in background
+const loadRemainingOptions = async () => {
+  const remainingCards = reviewCards.value.slice(5)
+  for (const card of remainingCards) {
+    try {
+      const { data } = await questionService.getQuestion(card.question)
+      cardOptions.value[card.id] = data.options || []
+    } catch (e) {
+      cardOptions.value[card.id] = []
+    }
+  }
 }
 
 const rateCard = async (rating) => {
@@ -245,12 +340,16 @@ const rateCard = async (rating) => {
   isRating.value = true
   try {
     await flashcardService.reviewFlashcard(currentCard.value.id, rating)
-    // Next card or finish
-    if (currentIndex.value < reviewCards.value.length - 1) {
-      currentIndex.value++
-      isFlipped.value = false
-      await loadCurrentOptions()
+
+    // Check if there are more cards
+    if (swiperActiveIndex.value < reviewCards.value.length - 1) {
+      // Move to next card
+      isCardFlipped.value = false
+      if (swiperInstance.value) {
+        swiperInstance.value.slideNext()
+      }
     } else {
+      // Finished all cards
       showSuccess(`🎉 完成！複習了 ${reviewCards.value.length} 張卡片`)
       exitReview()
     }
@@ -266,8 +365,11 @@ const rateCard = async (rating) => {
 const exitReview = () => {
   reviewMode.value = false
   reviewCards.value = []
-  currentIndex.value = 0
-  isFlipped.value = false
+  swiperActiveIndex.value = 0
+  isCardFlipped.value = false
+  cardOptions.value = {}
+  cardRefs.value = []
+  swiperInstance.value = null
   loadStats()
   loadFlashcards()
 }
@@ -459,8 +561,95 @@ onMounted(() => {
   flex-direction: column;
 }
 
+/* Review Header */
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+  padding: 20px 24px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.progress-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.progress-text {
+  font-weight: 700;
+  font-size: 16px;
+  color: #1e293b;
+  min-width: 70px;
+  white-space: nowrap;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #476996 0%, #35527a 100%);
+  border-radius: 10px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(71, 105, 150, 0.4);
+}
+
+.btn-exit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-exit:hover {
+  background: #EEF2FF;
+  border-color: #476996;
+  color: #476996;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.2);
+}
+
+.btn-exit:active {
+  transform: translateY(0);
+}
+
 .review-alert {
   margin: 0 0 16px 0;
+}
+
+/* Flashcard Swiper Container */
+.flashcard-swiper-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 30px;
+  padding: 30px;
+}
+
+.flashcard-swiper {
+  width: 100%;
+  height: 600px;
+  padding: 60px 30px;
 }
 
 /* Selection Toolbar */
@@ -679,6 +868,36 @@ onMounted(() => {
 
   .toolbar-divider {
     display: none;
+  }
+
+  .review-header {
+    flex-wrap: wrap;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .progress-info {
+    width: 100%;
+    order: 2;
+  }
+
+  .btn-exit {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+  .btn-exit span {
+    display: none;
+  }
+
+  .flashcard-swiper-container {
+    padding: 20px;
+    max-width: 100%;
+  }
+
+  .flashcard-swiper {
+    height: 500px;
+    padding: 40px 20px;
   }
 }
 
