@@ -1,74 +1,17 @@
 <template>
   <div class="exam-edit-view">
     <!-- 上方：考卷資訊表單 -->
-    <ExamForm
-      :exam="exam"
-      :saving="savingExam"
-      @save="handleSaveExam"
-      @cancel="handleCancel"
-    />
+    <ExamForm :exam="exam" :saving="savingExam" @save="handleSaveExam" @cancel="handleCancel" />
 
-    <!-- PDF 匯入區 -->
-    <PdfUploadSection
-      ref="pdfUploadSectionRef"
-      @import-success="handlePdfImport"
-    />
 
     <!-- 下方：題目列表全寬 -->
-    <div class="content-container" style="width: 100%;">
-      <!-- 題目列表 -->
-      <div class="right-panel" style="width: 100%;">
-        <div class="right-panel-inner">
-          <div class="question-toolbar">
-            <button class="toolbar-btn toolbar-btn-primary" @click="isAutoDistributeModalVisible = true" :disabled="autoDistributeLoading">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="2" x2="12" y2="6"></line>
-                <line x1="12" y1="18" x2="12" y2="22"></line>
-                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                <line x1="2" y1="12" x2="6" y2="12"></line>
-                <line x1="18" y1="12" x2="22" y2="12"></line>
-                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-              </svg>
-              <span>自動配分</span>
-            </button>
-            <!-- Bulk tag/subject actions moved to 管理中心的題目管理多選工具欄 -->
-            <button 
-              v-if="selectedQuestionIds.length > 0" 
-              class="toolbar-btn toolbar-btn-danger" 
-              @click="handleBulkRemove"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              </svg>
-              <span>批次移除 ({{ selectedQuestionIds.length }})</span>
-            </button>
-          </div>
-          <div class="question-list-wrapper">
-            <QuestionList
-              ref="questionListRef"
-              :questions="allQuestions"
-              :selected-question-id="selectedQuestionId"
-              :loading="loadingQuestions"
-              v-model:total-points="autoPointsTotal"
-              :auto-distribute-loading="autoDistributeLoading"
-              :pending-edits="pendingQuestionEdits"
-              :show-auto-distribute="false"
-              @select-question="handleSelectQuestion"
-              @add-question="handleAddQuestion"
-              @add-existing-question="showAddModal = true"
-              @remove-question="handleRemoveQuestion"
-              @auto-distribute="autoDistributePoints"
-              @update:selected-ids="handleSelectedIdsChange"
-            />
-          </div>
-          <div class="right-actions">
-            <!-- Reserved for other actions or quick links -->
-          </div>
-        </div>
-      </div>
+    <div class="content-container">
+      <QuestionList ref="questionListRef" :questions="allQuestions" :selected-question-id="selectedQuestionId"
+        :loading="loadingQuestions" v-model:total-points="autoPointsTotal"
+        :auto-distribute-loading="autoDistributeLoading" :pending-edits="pendingQuestionEdits"
+        :show-auto-distribute="true" @select-question="handleSelectQuestion" @add-question="handleAddQuestion"
+        @add-existing-question="showAddModal = true" @remove-question="handleRemoveQuestion"
+        @auto-distribute="autoDistributePoints" @update:selected-ids="handleSelectedIdsChange" />
     </div>
 
     <!-- 編輯題目彈窗 -->
@@ -80,24 +23,16 @@
             <button type="button" class="btn-close" @click="closeEditModal" :disabled="savingQuestion"></button>
           </div>
           <div class="modal-body">
-            <QuestionEditor
-              v-if="selectedQuestion"
-              :question="selectedQuestion"
-              :exam-question="selectedExamQuestion"
-              :saving="savingQuestion"
-              @save="handleSaveQuestion"
-            />
+            <QuestionEditor v-if="selectedQuestion" :question="selectedQuestion" :exam-question="selectedExamQuestion"
+              :saving="savingQuestion" @save="handleSaveQuestion" />
           </div>
         </div>
       </div>
     </div>
 
     <!-- 新增題目的彈窗 -->
-    <AddQuestionModal
-      v-if="showAddModal"
-      @close="showAddModal = false"
-      @add="handleAddQuestionToExam"
-    />
+    <AddQuestionModal v-if="showAddModal" :existing-question-ids="existingQuestionIds" @close="showAddModal = false"
+      @add="handleAddQuestionToExam" />
     <!-- BulkTagEditor and BulkSubjectEditor are moved to AdminQuestionManagement -->
 
     <!-- 儲存進度 Modal -->
@@ -113,14 +48,9 @@
               {{ savingCurrentStep }}/{{ savingTotalSteps }}
             </p>
             <div class="progress">
-              <div
-                class="progress-bar progress-bar-striped progress-bar-animated"
-                role="progressbar"
-                :style="{ width: savingProgressPercent + '%' }"
-                :aria-valuenow="savingProgressPercent"
-                aria-valuemin="0"
-                aria-valuemax="100"
-              >
+              <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                :style="{ width: savingProgressPercent + '%' }" :aria-valuenow="savingProgressPercent" aria-valuemin="0"
+                aria-valuemax="100">
                 {{ savingProgressPercent }}%
               </div>
             </div>
@@ -130,58 +60,107 @@
     </div>
 
     <!-- 自動配分 Modal -->
-    <div v-if="isAutoDistributeModalVisible" class="modal d-block" style="background: rgba(0, 0, 0, 0.5)">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">自動配分試算</h5>
-            <button type="button" class="btn-close" @click="isAutoDistributeModalVisible = false"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label for="autoDistributePointsInput" class="form-label">滿分</label>
-              <input
-                id="autoDistributePointsInput"
-                v-model.number="autoPointsTotal"
-                type="number"
-                min="1"
-                step="0.01"
-                class="form-control"
-                @input="calculateAutoDistribute"
-              />
+    <div v-if="isAutoDistributeModalVisible" class="auto-distribute-overlay"
+      @click.self="isAutoDistributeModalVisible = false">
+      <div class="auto-distribute-modal">
+        <!-- Header -->
+        <div class="ad-modal-header">
+          <div class="ad-header-content">
+            <div class="ad-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="2" x2="12" y2="6"></line>
+                <line x1="12" y1="18" x2="12" y2="22"></line>
+                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                <line x1="2" y1="12" x2="6" y2="12"></line>
+                <line x1="18" y1="12" x2="22" y2="12"></line>
+                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+              </svg>
             </div>
-            <div v-if="autoDistributeQuotaList.length > 0" class="card bg-light">
-              <div class="card-body">
-                <div class="row">
-                  <div class="col-6">
-                    <p class="text-muted mb-1">題數</p>
-                    <p class="fs-5 fw-bold">{{ autoDistributeQuotaList.length }} 題</p>
-                  </div>
-                  <div class="col-6">
-                    <p class="text-muted mb-1">平均配分</p>
-                    <p class="fs-5 fw-bold">{{ (autoPointsTotal / autoDistributeQuotaList.length).toFixed(2) }} 分</p>
-                  </div>
+            <div>
+              <h3 class="ad-modal-title">自動配分試算</h3>
+              <p class="ad-modal-subtitle">根據總分自動平均分配每題分數</p>
+            </div>
+          </div>
+          <button class="ad-close-btn" @click="isAutoDistributeModalVisible = false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="ad-modal-body">
+          <!-- 滿分輸入 -->
+          <div class="ad-input-section">
+            <label for="autoDistributePointsInput" class="ad-input-label">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="M12 20V10"></path>
+                <path d="M18 20V4"></path>
+                <path d="M6 20v-4"></path>
+              </svg>
+              總分設定
+            </label>
+            <div class="ad-input-wrapper">
+              <input id="autoDistributePointsInput" v-model.number="autoPointsTotal" type="number" min="1" step="0.01"
+                class="ad-input" @input="calculateAutoDistribute" />
+              <span class="ad-input-unit">分</span>
+            </div>
+          </div>
+
+          <!-- 試算結果 -->
+          <div v-if="autoDistributeQuotaList.length > 0" class="ad-result-section">
+            <div class="ad-result-header">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              試算結果
+            </div>
+            <div class="ad-result-grid">
+              <div class="ad-result-item">
+                <div class="ad-result-label">題目數量</div>
+                <div class="ad-result-value">{{ autoDistributeQuotaList.length }} <span class="ad-result-unit">題</span>
                 </div>
               </div>
+              <div class="ad-result-item">
+                <div class="ad-result-label">平均配分</div>
+                <div class="ad-result-value">{{ (autoPointsTotal / autoDistributeQuotaList.length).toFixed(2) }} <span
+                    class="ad-result-unit">分/題</span></div>
+              </div>
             </div>
-            <p v-if="autoDistributeMessage" class="text-muted small mt-3 mb-0">{{ autoDistributeMessage }}</p>
           </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              @click="isAutoDistributeModalVisible = false"
-            >
-              取消
-            </button>
-            <button
-              type="button"
-              class="btn btn-primary"
-              @click="applyAutoDistribute"
-            >
-              確認配分
-            </button>
+
+          <!-- 提示訊息 -->
+          <div v-if="autoDistributeMessage" class="ad-message">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            {{ autoDistributeMessage }}
           </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="ad-modal-footer">
+          <button class="ad-btn ad-btn-secondary" @click="isAutoDistributeModalVisible = false">
+            取消
+          </button>
+          <button class="ad-btn ad-btn-primary" @click="applyAutoDistribute" :disabled="autoDistributeLoading">
+            <svg v-if="!autoDistributeLoading" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <div v-else class="ad-btn-spinner"></div>
+            {{ autoDistributeLoading ? '套用中...' : '確認配分' }}
+          </button>
         </div>
       </div>
     </div>
@@ -195,10 +174,8 @@ import ExamForm from '../components/ExamForm.vue'
 import QuestionEditor from '../components/QuestionEditor.vue'
 import QuestionList from '../components/QuestionList.vue'
 import AddQuestionModal from '../components/AddQuestionModal.vue'
-import PdfUploadSection from '../components/PdfUploadSection.vue'
 import examService from '../services/examService'
 import questionService from '../services/questionService'
-import { usePdfImportStore } from '@/stores/pdfImport'
 
 const route = useRoute()
 const router = useRouter()
@@ -244,8 +221,6 @@ const isAutoDistributeModalVisible = ref(false)
 const autoDistributeQuotaList = ref([])
 const autoDistributeMessage = ref('')
 
-const pdfImportStore = usePdfImportStore()
-
 // 計算 examId
 const examId = computed(() => {
   return route.params.id ? parseInt(route.params.id) : null
@@ -273,6 +248,13 @@ const allQuestions = computed(() => {
   }))
 
   return [...saved, ...pending]
+})
+
+// 已存在的題目 IDs（用於排除）
+const existingQuestionIds = computed(() => {
+  return examQuestions.value
+    .filter(eq => eq.question)
+    .map(eq => eq.question)
 })
 
 // 載入考卷資料
@@ -369,7 +351,7 @@ const handleSaveExam = async (examData) => {
           for (let i = 0; i < results.length; i++) {
             const r = results[i]
             const m = meta[i]
-            
+
             // 更新進度
             savingCurrentStep.value = i + 1
             savingProgressMessage.value = `建立題目中 (${i + 1}/${results.length}題)`
@@ -391,7 +373,7 @@ const handleSaveExam = async (examData) => {
             } else {
               failCount++
               const detail = r.errors
-              summaryParts.push(`${r.index !== undefined ? `第 ${r.index + 1} 題`: '某題'} 建立失敗: ${JSON.stringify(detail)}`)
+              summaryParts.push(`${r.index !== undefined ? `第 ${r.index + 1} 題` : '某題'} 建立失敗: ${JSON.stringify(detail)}`)
             }
           }
         } catch (err) {
@@ -592,7 +574,7 @@ const applyPendingQuestionEdits = async (currentExamId) => {
 
   for (let idx = 0; idx < entries.length; idx++) {
     const [examQuestionId, edit] = entries[idx]
-    
+
     // 更新進度
     savingCurrentStep.value = idx + 1
     savingProgressMessage.value = `更新題目設定中 (${idx + 1}/${entries.length}題)`
@@ -766,7 +748,7 @@ const handleAddQuestionToExam = async (questionIds, points) => {
 
   // 確保 questionIds 是陣列
   const ids = Array.isArray(questionIds) ? questionIds : [questionIds]
-  
+
   try {
     let successCount = 0
     let failCount = 0
@@ -787,7 +769,7 @@ const handleAddQuestionToExam = async (questionIds, points) => {
     }
 
     showAddModal.value = false
-    
+
     if (failCount === 0) {
       alert(`成功新增 ${successCount} 題`)
     } else {
@@ -1149,10 +1131,7 @@ onMounted(async () => {
 }
 
 .content-container {
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 24px;
-  height: calc(100vh - 300px);
+  height: calc(100vh - 200px);
   min-height: 600px;
 }
 
@@ -1187,18 +1166,305 @@ onMounted(async () => {
 
 .question-list-wrapper {
   flex: 1;
-  min-height: 0; /* for proper scrolling in flex container */
+  min-height: 0;
+  /* for proper scrolling in flex container */
   display: flex;
   flex-direction: column;
-  padding: 8px; /* give space so shadows and rounded corners don't get clipped */
+  padding: 8px;
+  /* give space so shadows and rounded corners don't get clipped */
 }
-.question-list-wrapper > * {
+
+.question-list-wrapper>* {
   height: 100%;
   width: 100%;
 }
+
 .right-actions {
   padding: 12px 0 0 0;
-  display:flex;
-  gap:8px;
+  display: flex;
+  gap: 8px;
+}
+
+/* Auto Distribute Modal */
+.auto-distribute-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1050;
+  animation: adFadeIn 0.2s ease-out;
+}
+
+@keyframes adFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.auto-distribute-modal {
+  width: 90%;
+  max-width: 480px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: adSlideUp 0.3s ease-out;
+}
+
+@keyframes adSlideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.ad-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--border, #E2E8F0);
+}
+
+.ad-header-content {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.ad-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.ad-modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+  margin: 0 0 4px 0;
+}
+
+.ad-modal-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+  margin: 0;
+}
+
+.ad-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.ad-close-btn:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.ad-modal-body {
+  padding: 24px;
+}
+
+.ad-input-section {
+  margin-bottom: 24px;
+}
+
+.ad-input-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+  margin-bottom: 12px;
+}
+
+.ad-input-label svg {
+  color: var(--primary, #476996);
+}
+
+.ad-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ad-input {
+  flex: 1;
+  padding: 14px 16px;
+  border: 2px solid var(--border, #E2E8F0);
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.ad-input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.ad-input-unit {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-secondary, #64748B);
+}
+
+.ad-result-section {
+  margin-bottom: 16px;
+}
+
+.ad-result-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+  margin-bottom: 16px;
+}
+
+.ad-result-header svg {
+  color: var(--primary, #476996);
+}
+
+.ad-result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.ad-result-item {
+  text-align: center;
+}
+
+.ad-result-label {
+  font-size: 13px;
+  color: var(--text-secondary, #64748B);
+  margin-bottom: 4px;
+}
+
+.ad-result-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary, #1E293B);
+}
+
+.ad-result-unit {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.ad-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--primary-soft, #EEF2FF);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--primary, #476996);
+}
+
+.ad-message svg {
+  flex-shrink: 0;
+}
+
+.ad-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid var(--border, #E2E8F0);
+  background: #f8fafc;
+  border-radius: 0 0 16px 16px;
+}
+
+.ad-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ad-btn-secondary {
+  background: white;
+  color: var(--text-secondary, #64748B);
+  border: 2px solid var(--border, #E2E8F0);
+}
+
+.ad-btn-secondary:hover {
+  background: #f9fafb;
+  color: var(--text-primary, #1E293B);
+  border-color: #94a3b8;
+}
+
+.ad-btn-primary {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.ad-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+.ad-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ad-btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: adSpin 0.8s linear infinite;
+}
+
+@keyframes adSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

@@ -2,7 +2,8 @@
   <div class="question-list">
     <div class="list-header">
       <div class="header-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
           <polyline points="14 2 14 8 20 8"></polyline>
           <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -15,15 +16,32 @@
       </div>
 
       <div class="header-actions">
+        <button v-if="showAutoDistribute" class="action-btn action-btn-accent" @click="$emit('auto-distribute')"
+          :disabled="autoDistributeLoading">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="2" x2="12" y2="6"></line>
+            <line x1="12" y1="18" x2="12" y2="22"></line>
+            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+            <line x1="2" y1="12" x2="6" y2="12"></line>
+            <line x1="18" y1="12" x2="22" y2="12"></line>
+            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+          </svg>
+          自動配分
+        </button>
         <button class="action-btn action-btn-secondary" @click="$emit('add-existing-question')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
           </svg>
           從題庫加入
         </button>
         <button class="action-btn action-btn-primary" @click="$emit('add-question')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
@@ -34,24 +52,14 @@
 
     <div class="search-bar">
       <div class="search-control">
-        <input
-          type="checkbox"
-          :checked="isAllSelected"
-          :indeterminate.prop="isPartialSelected"
-          @change="toggleSelectAll"
-          class="select-all-checkbox"
-          title="全選/取消全選"
-        />
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+        <input type="checkbox" :checked="isAllSelected" :indeterminate.prop="isPartialSelected"
+          @change="toggleSelectAll" class="select-all-checkbox" title="全選/取消全選" />
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" class="search-icon">
           <circle cx="11" cy="11" r="8"></circle>
           <path d="m21 21-4.35-4.35"></path>
         </svg>
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="搜尋題目內容、科目、分類..."
-          class="search-input"
-        />
+        <input v-model="searchQuery" type="text" placeholder="搜尋題目內容、科目、分類..." class="search-input" />
         <span v-if="selectedIds.length > 0" class="selection-badge">
           已選 {{ selectedIds.length }} 題
         </span>
@@ -64,7 +72,8 @@
     </div>
 
     <div v-else-if="filteredQuestions.length === 0" class="empty-state">
-      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="empty-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" class="empty-icon">
         <circle cx="12" cy="12" r="10"></circle>
         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -74,18 +83,10 @@
     </div>
 
     <div v-else class="questions">
-      <QuestionItem
-        v-for="item in filteredQuestions"
-        :key="item.id"
-        :item="item"
-        :is-active="selectedQuestionId === item.question"
-        :has-pending-edit="Boolean(pendingEdits[item.id])"
-        :is-checked="selectedIds.includes(item.id)"
-        :show-checkbox="true"
-        @select="selectQuestion"
-        @remove="(id) => $emit('remove-question', id)"
-        @toggle-check="toggleCheck"
-      />
+      <QuestionItem v-for="item in filteredQuestions" :key="item.id" :item="item"
+        :is-active="selectedQuestionId === item.question" :has-pending-edit="Boolean(pendingEdits[item.id])"
+        :is-checked="selectedIds.includes(item.id)" :show-checkbox="true" @select="selectQuestion"
+        @remove="(id) => $emit('remove-question', id)" @toggle-check="toggleCheck" />
     </div>
   </div>
 </template>
@@ -154,7 +155,7 @@ const filteredQuestions = computed(() => {
 })
 
 const isAllSelected = computed(() => {
-  return filteredQuestions.value.length > 0 && 
+  return filteredQuestions.value.length > 0 &&
     filteredQuestions.value.every(q => selectedIds.value.includes(q.id))
 })
 
@@ -188,7 +189,7 @@ const selectQuestion = (item) => {
 
 watch(() => props.questions, () => {
   // 清除已不存在的選取項
-  selectedIds.value = selectedIds.value.filter(id => 
+  selectedIds.value = selectedIds.value.filter(id =>
     props.questions.some(q => q.id === id)
   )
 })
@@ -292,6 +293,24 @@ defineExpose({ selectedIds })
   color: var(--primary, #476996);
 }
 
+.action-btn-accent {
+  background: var(--accent, #10B981);
+  color: white;
+}
+
+.action-btn-accent:hover {
+  background: var(--accent-hover, #059669);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.25);
+}
+
+.action-btn-accent:disabled {
+  background: var(--border, #CBD5E1);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* Search Bar */
 .search-bar {
   padding: 16px 24px;
@@ -384,7 +403,9 @@ defineExpose({ selectedIds })
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-state p {
