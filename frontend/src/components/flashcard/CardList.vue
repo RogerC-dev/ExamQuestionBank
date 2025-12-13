@@ -1,7 +1,11 @@
 <template>
   <div class="card-list-section">
     <div class="list-header">
-      <h3>我的快閃卡 ({{ cards.length }})</h3>
+      <div class="list-header-left">
+        <input v-if="cards.length > 0" type="checkbox" :checked="isAllSelected" @change="toggleSelectAll"
+          class="select-all-checkbox" aria-label="選取全部" />
+        <h3>我的快閃卡 ({{ cards.length }})</h3>
+      </div>
       <select :value="statusFilter" @change="$emit('filter-change', ($event.target as HTMLSelectElement).value)">
         <option value="all">全部</option>
         <option value="learning">學習中</option>
@@ -16,6 +20,9 @@
     </div>
     <div v-else class="card-list">
       <div v-for="card in cards" :key="card.id" class="list-card">
+        <input type="checkbox" :checked="isCardSelected(card.id)"
+          @change="toggleCardSelection(card.id, ($event.target as HTMLInputElement).checked)" class="card-checkbox"
+          :disabled="deletingId === card.id" aria-label="選取快閃卡" />
         <div class="list-card-content">
           <span class="list-card-subject">{{ card.question_subject }}</span>
           <p class="list-card-question">{{ card.question_content }}</p>
@@ -25,11 +32,7 @@
             <span>複習 {{ card.review_count }} 次</span>
           </div>
         </div>
-        <button 
-          class="btn-delete" 
-          @click="confirmDelete(card)"
-          :disabled="deletingId === card.id"
-        >
+        <button class="btn-delete" @click="confirmDelete(card)" :disabled="deletingId === card.id">
           <i class="bi bi-trash"></i>
         </button>
       </div>
@@ -53,23 +56,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { Flashcard, StatusFilter } from '@/types/flashcard'
 
 interface Props {
   cards: Flashcard[]
   loading?: boolean
   statusFilter?: StatusFilter
+  selectedIds?: number[]
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   loading: false,
-  statusFilter: 'all'
+  statusFilter: 'all',
+  selectedIds: () => []
 })
 
 const emit = defineEmits<{
   (e: 'delete', cardId: number): void
   (e: 'filter-change', status: string): void
+  (e: 'selection-change', selectedIds: number[]): void
 }>()
 
 const deletingId = ref<number | null>(null)
@@ -108,6 +114,37 @@ const executeDelete = () => {
   }
 }
 
+// Selection management
+const isCardSelected = (cardId: number): boolean => {
+  return props.selectedIds.includes(cardId)
+}
+
+const toggleCardSelection = (cardId: number, checked: boolean) => {
+  let newSelection: number[]
+  if (checked) {
+    newSelection = [...props.selectedIds, cardId]
+  } else {
+    newSelection = props.selectedIds.filter(id => id !== cardId)
+  }
+  emit('selection-change', newSelection)
+}
+
+const isAllSelected = computed(() => {
+  if (props.cards.length === 0) return false
+  return props.cards.every(card => props.selectedIds.includes(card.id))
+})
+
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    // Deselect all
+    emit('selection-change', [])
+  } else {
+    // Select all on current page
+    const allIds = props.cards.map(card => card.id)
+    emit('selection-change', allIds)
+  }
+}
+
 // Expose method to reset deleting state (called by parent after delete completes)
 defineExpose({
   resetDeletingState: () => {
@@ -129,6 +166,20 @@ defineExpose({
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.list-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.select-all-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #1976d2;
 }
 
 .list-header h3 {
@@ -178,6 +229,20 @@ defineExpose({
   background: #f8f9fa;
   border-radius: 8px;
   transition: background 0.2s;
+  gap: 0.75rem;
+}
+
+.card-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: #1976d2;
+}
+
+.card-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .list-card:hover {
