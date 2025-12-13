@@ -6,7 +6,7 @@
       <!-- Practice Modes -->
       <h2 class="section-title">選擇練習模式</h2>
       <div class="practice-modes">
-        <div class="mode-card" @click="startPractice('historical')">
+        <div class="mode-card historical-card" @click="startPractice('historical')">
           <div class="mode-icon">題</div>
           <div class="mode-title">歷屆考題</div>
           <div class="mode-desc">按年度練習歷屆考題</div>
@@ -16,12 +16,12 @@
           <div class="mode-title">模擬考題</div>
           <div class="mode-desc">自訂題目組合模擬測驗</div>
         </div>
-        <div class="mode-card" @click="setTab('wrong')">
+        <div class="mode-card wrong-card" @click="setTab('wrong')">
           <div class="mode-icon">錯</div>
           <div class="mode-title">錯題</div>
           <div class="mode-desc">複習答錯的題目</div>
         </div>
-        <div class="mode-card" @click="setTab('bookmarks')">
+        <div class="mode-card bookmark-card" @click="setTab('bookmarks')">
           <div class="mode-icon">藏</div>
           <div class="mode-title">收藏</div>
           <div class="mode-desc">複習已收藏的題目</div>
@@ -1234,18 +1234,56 @@ onUnmounted(() => {
 .mode-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
 .mode-desc { font-size: 13px; color: var(--text-secondary); }
 
+/* Historical Exam Card - Blue theme */
+.historical-card {
+  background: linear-gradient(135deg, #f0f7ff 0%, #e8f4fd 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.historical-card .mode-icon {
+  background: rgba(59, 130, 246, 0.15);
+  color: #2563eb;
+}
+.historical-card:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* Mock Exam Card - Purple theme */
 .mock-exam-card {
   background: linear-gradient(135deg, #f8f4ff 0%, #f3f7ff 100%);
   border: 1px solid rgba(128, 90, 200, 0.35);
 }
-
 .mock-exam-card .mode-icon {
   background: rgba(128, 90, 200, 0.15);
   color: #7c3aed;
 }
-
 .mock-exam-card:hover {
   border-color: rgba(128, 90, 200, 0.5);
+}
+
+/* Wrong Questions Card - Red/Orange theme */
+.wrong-card {
+  background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.wrong-card .mode-icon {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+.wrong-card:hover {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* Bookmark Card - Amber/Gold theme */
+.bookmark-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef9e7 100%);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+.bookmark-card .mode-icon {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+.bookmark-card:hover {
+  border-color: rgba(245, 158, 11, 0.55);
 }
 
 /* Floating AI Button */
@@ -1277,14 +1315,9 @@ onUnmounted(() => {
 }
 
 .floating-ai-icon {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 

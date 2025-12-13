@@ -14,7 +14,7 @@
       <div v-if="currentTab === 'analyze'" class="analyze-panel">
         <div class="messages-area" ref="messagesContainer">
           <div v-if="!messages.length" class="empty-state">
-            <div class="empty-icon">📝</div>
+            <div class="empty-icon"><i class="bi bi-file-earmark-text"></i></div>
             <p>貼上一道申論題，AI 會幫你分析：</p>
             <ul>
               <li>可能涉及的法條</li>
@@ -181,6 +181,8 @@ onMounted(() => {
 .empty-icon {
   font-size: 48px;
   margin-bottom: 16px;
+  color: var(--primary);
+  opacity: 0.7;
 }
 .empty-state ul {
   list-style: none;
