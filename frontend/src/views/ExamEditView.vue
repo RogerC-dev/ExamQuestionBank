@@ -36,25 +36,36 @@
     <!-- BulkTagEditor and BulkSubjectEditor are moved to AdminQuestionManagement -->
 
     <!-- 儲存進度 Modal -->
-    <div v-if="isSavingProgressVisible" class="modal d-block" style="background: rgba(0, 0, 0, 0.5)">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">儲存進度</h5>
+    <div v-if="isSavingProgressVisible" class="saving-overlay">
+      <div class="saving-modal">
+        <!-- Header -->
+        <div class="saving-header">
+          <div class="saving-icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" class="saving-icon-spin">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+            </svg>
           </div>
-          <div class="modal-body">
-            <p class="mb-2">{{ savingProgressMessage }}</p>
-            <p v-if="savingTotalSteps > 0" class="text-muted small mb-3">
-              {{ savingCurrentStep }}/{{ savingTotalSteps }}
-            </p>
-            <div class="progress">
-              <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
-                :style="{ width: savingProgressPercent + '%' }" :aria-valuenow="savingProgressPercent" aria-valuemin="0"
-                aria-valuemax="100">
-                {{ savingProgressPercent }}%
-              </div>
-            </div>
+          <div>
+            <h3 class="saving-title">儲存進度</h3>
+            <p class="saving-subtitle">{{ savingProgressMessage }}</p>
           </div>
+        </div>
+
+        <!-- Body -->
+        <div class="saving-body">
+          <!-- 進度資訊 -->
+          <div v-if="savingTotalSteps > 0" class="saving-steps">
+            <span class="saving-current">{{ savingCurrentStep }}</span>
+            <span class="saving-divider">/</span>
+            <span class="saving-total">{{ savingTotalSteps }}</span>
+          </div>
+
+          <!-- 進度條 -->
+          <div class="saving-progress-container">
+            <div class="saving-progress-bar" :style="{ width: savingProgressPercent + '%' }"></div>
+          </div>
+          <div class="saving-percent">{{ savingProgressPercent }}%</div>
         </div>
       </div>
     </div>
@@ -1183,6 +1194,142 @@ onMounted(async () => {
   padding: 12px 0 0 0;
   display: flex;
   gap: 8px;
+}
+
+/* Saving Progress Modal */
+.saving-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1060;
+  animation: savingFadeIn 0.2s ease-out;
+}
+
+@keyframes savingFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.saving-modal {
+  width: 90%;
+  max-width: 400px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: savingSlideUp 0.3s ease-out;
+  overflow: hidden;
+}
+
+@keyframes savingSlideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.saving-header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--border, #E2E8F0);
+}
+
+.saving-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--primary, #476996);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.saving-icon-spin {
+  animation: savingSpin 1s linear infinite;
+}
+
+@keyframes savingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.saving-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+  margin: 0 0 4px 0;
+}
+
+.saving-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+  margin: 0;
+}
+
+.saving-body {
+  padding: 24px;
+  text-align: center;
+}
+
+.saving-steps {
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.saving-current {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary, #476996);
+}
+
+.saving-divider {
+  margin: 0 4px;
+  color: var(--text-secondary, #64748B);
+}
+
+.saving-total {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-secondary, #64748B);
+}
+
+.saving-progress-container {
+  height: 8px;
+  background: var(--border, #E2E8F0);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.saving-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary, #476996), var(--primary-hover, #35527a));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.saving-percent {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
 }
 
 /* Auto Distribute Modal */

@@ -323,152 +323,351 @@
       :error="examDetailError" @close="closeExamDetail" />
 
     <!-- Export Progress Modal -->
-    <div v-if="isExportProgressVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">考卷匯出中</h5>
+    <div v-if="isExportProgressVisible" class="progress-overlay">
+      <div class="progress-modal">
+        <div class="progress-header">
+          <div class="progress-icon-wrapper export-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" class="progress-icon-spin">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+            </svg>
           </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <p class="mb-2">正在匯出考卷...</p>
-              <div class="progress">
-                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
-                  :style="{ width: exportProgress + '%' }" :aria-valuenow="exportProgress" aria-valuemin="0"
-                  aria-valuemax="100">
-                  {{ exportProgress }}%
-                </div>
-              </div>
-            </div>
-            <p class="text-muted small">{{ exportProgressText }}</p>
+          <div>
+            <h3 class="progress-title">考卷匯出中</h3>
+            <p class="progress-subtitle">{{ exportProgressText || '正在匯出考卷...' }}</p>
           </div>
+        </div>
+        <div class="progress-body">
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" :style="{ width: exportProgress + '%' }"></div>
+          </div>
+          <div class="progress-percent">{{ exportProgress }}%</div>
         </div>
       </div>
     </div>
 
     <!-- Import Progress Modal -->
-    <div v-if="isImportProgressVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">考卷匯入中</h5>
+    <div v-if="isImportProgressVisible" class="progress-overlay">
+      <div class="progress-modal">
+        <div class="progress-header">
+          <div class="progress-icon-wrapper import-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" class="progress-icon-spin">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+            </svg>
           </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <p class="mb-2">正在匯入考卷...</p>
-              <div class="progress">
-                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar"
-                  :style="{ width: importProgress + '%' }" :aria-valuenow="importProgress" aria-valuemin="0"
-                  aria-valuemax="100">
-                  {{ importProgress }}%
-                </div>
-              </div>
-            </div>
-            <p class="text-muted small">{{ importProgressText }}</p>
+          <div>
+            <h3 class="progress-title">考卷匯入中</h3>
+            <p class="progress-subtitle">{{ importProgressText || '正在匯入考卷...' }}</p>
           </div>
+        </div>
+        <div class="progress-body">
+          <div class="progress-bar-container import-bar">
+            <div class="progress-bar-fill import-fill" :style="{ width: importProgress + '%' }"></div>
+          </div>
+          <div class="progress-percent">{{ importProgress }}%</div>
         </div>
       </div>
     </div>
 
     <!-- Import Result Modal -->
-    <div v-if="isImportResultVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
-      <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">匯入結果</h5>
-            <button type="button" class="btn-close" @click="isImportResultVisible = false" aria-label="Close"></button>
+    <div v-if="isImportResultVisible" class="result-overlay" @click.self="isImportResultVisible = false">
+      <div class="result-modal">
+        <!-- Header -->
+        <div class="result-header">
+          <div class="result-header-content">
+            <div class="result-icon-wrapper" :class="hasImportErrors ? 'warning-icon' : 'success-icon'">
+              <svg v-if="hasImportErrors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                </path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+            <div>
+              <h3 class="result-title">匯入結果</h3>
+              <p class="result-subtitle">{{ hasImportErrors ? '匯入完成，部分項目有問題' : '所有項目都已成功匯入' }}</p>
+            </div>
           </div>
-          <div class="modal-body">
-            <!-- Summary Statistics -->
-            <div class="row mb-4">
-              <div class="col-md-6">
-                <div class="card bg-light">
-                  <div class="card-body">
-                    <h6 class="card-subtitle mb-2 text-muted">考卷匯入</h6>
-                    <p class="card-text fs-4 mb-0">
-                      <span class="text-success fw-bold">{{ importResultData.successCount }}</span> / {{
-                        importResultData.totalExams }}
-                    </p>
-                  </div>
+          <button class="result-close-btn" @click="isImportResultVisible = false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="result-body">
+          <!-- Summary Statistics -->
+          <div class="result-stats">
+            <div class="result-stat-item">
+              <div class="result-stat-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+              </div>
+              <div class="result-stat-content">
+                <div class="result-stat-label">考卷匯入</div>
+                <div class="result-stat-value">
+                  <span class="result-success">{{ importResultData.successCount }}</span>
+                  <span class="result-divider">/</span>
+                  <span class="result-total">{{ importResultData.totalExams }}</span>
                 </div>
               </div>
-              <div class="col-md-6">
-                <div class="card bg-light">
-                  <div class="card-body">
-                    <h6 class="card-subtitle mb-2 text-muted">題目加入</h6>
-                    <p class="card-text fs-4 mb-0">
-                      <span class="text-success fw-bold">{{ importResultData.successfulQuestions }}</span> / {{
-                        importResultData.totalQuestions }}
-                    </p>
-                  </div>
+            </div>
+            <div class="result-stat-item">
+              <div class="result-stat-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+              </div>
+              <div class="result-stat-content">
+                <div class="result-stat-label">題目加入</div>
+                <div class="result-stat-value">
+                  <span class="result-success">{{ importResultData.successfulQuestions }}</span>
+                  <span class="result-divider">/</span>
+                  <span class="result-total">{{ importResultData.totalQuestions }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Deleted Questions Warning -->
+          <div v-if="importResultData.deletedQuestions.length > 0" class="result-warning-section">
+            <div class="result-section-header warning">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                </path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              已刪除的題目 ({{ importResultData.deletedQuestions.length }})
+            </div>
+            <p class="result-section-desc">以下題目 ID 在資料庫中找不到，可能已被刪除</p>
+            <div class="result-table-wrapper">
+              <table class="result-table">
+                <thead>
+                  <tr>
+                    <th>題目 ID</th>
+                    <th>順序</th>
+                    <th>配分</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(q, index) in importResultData.deletedQuestions" :key="index">
+                    <td>{{ q.question_id }}</td>
+                    <td>{{ q.order || '-' }}</td>
+                    <td>{{ q.points || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Failed Additions -->
+          <div v-if="importResultData.failedAdds.length > 0" class="result-error-section">
+            <div class="result-section-header error">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+              </svg>
+              加入失敗的題目 ({{ importResultData.failedAdds.length }})
+            </div>
+            <p class="result-section-desc">以下題目無法加入考卷</p>
+            <div class="result-table-wrapper">
+              <table class="result-table">
+                <thead>
+                  <tr>
+                    <th>題目 ID</th>
+                    <th>順序</th>
+                    <th>配分</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(q, index) in importResultData.failedAdds" :key="index">
+                    <td>{{ q.question_id }}</td>
+                    <td>{{ q.order || '-' }}</td>
+                    <td>{{ q.points || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Success Message -->
+          <div v-if="!hasImportErrors" class="result-success-message">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            所有考卷和題目都已成功匯入！
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="result-footer">
+          <button class="result-close-button" @click="isImportResultVisible = false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            關閉
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Duplicate Exam Detection Modal -->
+    <div v-if="isDuplicateModalVisible && duplicateExamData" class="duplicate-overlay"
+      @click.self="cancelDuplicateResolution">
+      <div class="duplicate-modal">
+        <!-- Header -->
+        <div class="duplicate-header">
+          <div class="duplicate-header-content">
+            <div class="duplicate-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                </path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </div>
+            <div>
+              <h3 class="duplicate-title">發現同名考卷</h3>
+              <p class="duplicate-subtitle">請選擇如何處理此考卷</p>
+            </div>
+          </div>
+          <button class="duplicate-close-btn" @click="cancelDuplicateResolution">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="duplicate-body">
+          <!-- Comparison -->
+          <div class="duplicate-comparison">
+            <!-- Existing Exam -->
+            <div class="duplicate-exam-card existing">
+              <div class="exam-card-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                現有考卷
+              </div>
+              <div class="exam-card-body">
+                <div class="exam-info-row">
+                  <span class="exam-label">名稱</span>
+                  <span class="exam-value">{{ duplicateExamData.existingExam.name }}</span>
+                </div>
+                <div class="exam-info-row">
+                  <span class="exam-label">說明</span>
+                  <span class="exam-value">{{ duplicateExamData.existingExam.description || '無' }}</span>
+                </div>
+                <div class="exam-info-row">
+                  <span class="exam-label">題數</span>
+                  <span class="exam-value">{{ duplicateExamData.existingExam.question_count || 0 }} 題</span>
+                </div>
+                <div class="exam-info-row">
+                  <span class="exam-label">時間限制</span>
+                  <span class="exam-value">{{ duplicateExamData.existingExam.time_limit ?
+                    duplicateExamData.existingExam.time_limit + ' 分鐘' : '無' }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- Deleted Questions Warning -->
-            <div v-if="importResultData.deletedQuestions.length > 0" class="alert alert-warning">
-              <h6 class="alert-heading">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                已刪除的題目 ({{ importResultData.deletedQuestions.length }})
-              </h6>
-              <p class="mb-2">以下題目 ID 在資料庫中找不到，可能已被刪除：</p>
-              <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
-                <table class="table table-sm table-striped">
-                  <thead>
-                    <tr>
-                      <th>題目 ID</th>
-                      <th>順序</th>
-                      <th>配分</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(q, index) in importResultData.deletedQuestions" :key="index">
-                      <td>{{ q.question_id }}</td>
-                      <td>{{ q.order || '-' }}</td>
-                      <td>{{ q.points || '-' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            <div class="duplicate-arrow">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
             </div>
 
-            <!-- Failed Additions -->
-            <div v-if="importResultData.failedAdds.length > 0" class="alert alert-danger">
-              <h6 class="alert-heading">
-                <i class="bi bi-x-circle-fill me-2"></i>
-                加入失敗的題目 ({{ importResultData.failedAdds.length }})
-              </h6>
-              <p class="mb-2">以下題目無法加入考卷：</p>
-              <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
-                <table class="table table-sm table-striped">
-                  <thead>
-                    <tr>
-                      <th>題目 ID</th>
-                      <th>順序</th>
-                      <th>配分</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(q, index) in importResultData.failedAdds" :key="index">
-                      <td>{{ q.question_id }}</td>
-                      <td>{{ q.order || '-' }}</td>
-                      <td>{{ q.points || '-' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+            <!-- New Exam -->
+            <div class="duplicate-exam-card new">
+              <div class="exam-card-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="12" y1="11" x2="12" y2="17"></line>
+                  <line x1="9" y1="14" x2="15" y2="14"></line>
+                </svg>
+                匯入考卷
+              </div>
+              <div class="exam-card-body">
+                <div class="exam-info-row">
+                  <span class="exam-label">名稱</span>
+                  <span class="exam-value">{{ duplicateExamData.newExam.name }}</span>
+                </div>
+                <div class="exam-info-row">
+                  <span class="exam-label">說明</span>
+                  <span class="exam-value">{{ duplicateExamData.newExam.description || '無' }}</span>
+                </div>
+                <div class="exam-info-row">
+                  <span class="exam-label">題數</span>
+                  <span class="exam-value">{{ duplicateExamData.newExam.exam_questions?.length || 0 }} 題</span>
+                </div>
+                <div class="exam-info-row">
+                  <span class="exam-label">時間限制</span>
+                  <span class="exam-value">{{ duplicateExamData.newExam.time_limit ?
+                    duplicateExamData.newExam.time_limit +
+                    ' 分鐘' : '無' }}</span>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
 
-            <!-- Success Message -->
-            <div v-if="importResultData.deletedQuestions.length === 0 && importResultData.failedAdds.length === 0"
-              class="alert alert-success">
-              <i class="bi bi-check-circle-fill me-2"></i>
-              所有考卷和題目都已成功匯入！
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-primary" @click="isImportResultVisible = false">關閉</button>
-          </div>
+        <!-- Footer -->
+        <div class="duplicate-footer">
+          <button class="duplicate-btn duplicate-btn-secondary" @click="handleDuplicateDecision('skip')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14"></path>
+            </svg>
+            略過
+          </button>
+          <button class="duplicate-btn duplicate-btn-warning" @click="handleDuplicateDecision('overwrite')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            覆蓋
+          </button>
+          <button class="duplicate-btn duplicate-btn-primary" @click="handleDuplicateDecision('create_new')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            另建新卷
+          </button>
         </div>
       </div>
     </div>
@@ -528,6 +727,12 @@ const importResultData = ref({
   deletedQuestions: [],
   failedAdds: []
 })
+// Duplicate exam detection
+const isDuplicateModalVisible = ref(false)
+const duplicateExamData = ref(null) // { newExam, existingExam, importPayload }
+const pendingImportItems = ref([]) // Items waiting to be imported after duplicate resolution
+const currentDuplicateIndex = ref(0)
+const importFileEvent = ref(null) // Store event for cleanup
 // showActivityLog removed — no longer used
 
 // Exam selection state
@@ -539,6 +744,11 @@ const questionImportInput = ref(null)
 const isImportingQuestions = ref(false)
 const questionManagementRef = ref(null)
 const adminQuestionManagementRef = ref(null)
+
+// Computed for import errors
+const hasImportErrors = computed(() => {
+  return importResultData.value.deletedQuestions.length > 0 || importResultData.value.failedAdds.length > 0
+})
 
 const filteredExams = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
@@ -993,6 +1203,7 @@ const handleImportFile = async (event) => {
   importProgressText.value = '解析檔案中...'
   totalImportQuestions.value = 0
   completedImportQuestions.value = 0
+  importFileEvent.value = event
 
   const file = event.target.files && event.target.files[0]
   if (!file) {
@@ -1003,85 +1214,56 @@ const handleImportFile = async (event) => {
   try {
     const text = await file.text()
     const parsed = JSON.parse(text)
-    importProgress.value = 10
-    importProgressText.value = '準備匯入...'
+    importProgress.value = 5
+    importProgressText.value = '檢查重複考卷...'
 
     // allow both array (multiple exams) or single object
     const items = Array.isArray(parsed) ? parsed : [parsed]
 
-    // First pass: count total questions
-    let totalQuestions = 0
+    // Check for duplicate exam names
+    const itemsWithDuplicateInfo = []
     for (const item of items) {
-      if (Array.isArray(item.exam_questions)) {
-        totalQuestions += item.exam_questions.length
+      if (!item.name) continue
+
+      // Search for existing exam with same name
+      try {
+        const res = await examService.getExams({ search: item.name, page_size: 100 })
+        const existingExams = res.data?.results || res.data || []
+        const exactMatch = existingExams.find(e => e.name === item.name)
+
+        itemsWithDuplicateInfo.push({
+          payload: item,
+          existingExam: exactMatch || null,
+          action: 'create'
+        })
+      } catch (err) {
+        console.error('Failed to check duplicate', err)
+        itemsWithDuplicateInfo.push({
+          payload: item,
+          existingExam: null,
+          action: 'create'
+        })
       }
     }
-    totalImportQuestions.value = totalQuestions
-    completedImportQuestions.value = 0
 
-    const summaries = []
+    importProgress.value = 10
+    importProgressText.value = '準備匯入...'
 
-    for (let i = 0; i < items.length; i++) {
-      const onQuestionProgress = (completed, total) => {
-        completedImportQuestions.value += 1
-        const percentage = totalQuestions > 0 ? Math.floor((completedImportQuestions.value / totalQuestions) * 80) : 0
-        importProgress.value = 10 + percentage
-        importProgressText.value = `已匯入 ${completedImportQuestions.value}/${totalQuestions} 題...`
-      }
+    // Check if any have duplicates
+    const hasDuplicates = itemsWithDuplicateInfo.some(item => item.existingExam)
 
-      const result = await importExamFromJson(items[i], onQuestionProgress)
-      summaries.push(result)
-      // Update progress: 10-90% for processing exams
-      importProgress.value = 10 + Math.floor((i + 1) / items.length * 80)
-      importProgressText.value = `已完成 ${i + 1}/${items.length} 張考卷`
-    }
-
-    importProgress.value = 95
-    importProgressText.value = '整理資料中...'
-
-    // Summarize results
-    const successCount = summaries.filter(s => s && s.newExamId).length
-    const totalDeletedQuestions = summaries.reduce((acc, s) => {
-      if (s.deletedQuestions && Array.isArray(s.deletedQuestions)) {
-        return acc.concat(s.deletedQuestions)
-      }
-      return acc
-    }, [])
-    const totalSuccessfulQuestions = summaries.reduce((acc, s) => acc + (s.successfulAdds || 0), 0)
-    const totalFailedAdds = summaries.reduce((acc, s) => {
-      if (s.failedAdds && Array.isArray(s.failedAdds)) {
-        return acc.concat(s.failedAdds)
-      }
-      return acc
-    }, [])
-
-    importProgress.value = 100
-    importProgressText.value = '匯入完成'
-
-    // Close progress modal and show result modal
-    setTimeout(() => {
+    if (hasDuplicates) {
+      // Store items and show duplicate modal
+      pendingImportItems.value = itemsWithDuplicateInfo
+      currentDuplicateIndex.value = 0
       isImportProgressVisible.value = false
-      importProgress.value = 0
-      importProgressText.value = ''
-      totalImportQuestions.value = 0
-      completedImportQuestions.value = 0
+      isImporting.value = false
+      showNextDuplicateModal()
+      return
+    }
 
-      // Set import result data
-      importResultData.value = {
-        successCount: successCount,
-        totalExams: items.length,
-        totalQuestions: totalQuestions,
-        successfulQuestions: totalSuccessfulQuestions,
-        deletedQuestions: totalDeletedQuestions,
-        failedAdds: totalFailedAdds
-      }
-
-      // Show result modal
-      isImportResultVisible.value = true
-
-      // Refresh listing
-      fetchExams()
-    }, 1000)
+    // No duplicates, proceed with normal import
+    await processImportItems(itemsWithDuplicateInfo)
   } catch (error) {
     console.error('Import failed', error)
     isImportProgressVisible.value = false
@@ -1090,11 +1272,142 @@ const handleImportFile = async (event) => {
     totalImportQuestions.value = 0
     completedImportQuestions.value = 0
     alert('匯入失敗：' + (error.message || '格式錯誤'))
-  } finally {
-    // reset file input
-    event.target.value = ''
     isImporting.value = false
+  } finally {
+    if (event.target) {
+      event.target.value = ''
+    }
   }
+}
+
+// Show the next duplicate modal or proceed with import
+const showNextDuplicateModal = () => {
+  while (currentDuplicateIndex.value < pendingImportItems.value.length) {
+    const item = pendingImportItems.value[currentDuplicateIndex.value]
+    if (item.existingExam && item.action === 'create') {
+      duplicateExamData.value = {
+        newExam: item.payload,
+        existingExam: item.existingExam,
+        index: currentDuplicateIndex.value
+      }
+      isDuplicateModalVisible.value = true
+      return
+    }
+    currentDuplicateIndex.value++
+  }
+
+  isDuplicateModalVisible.value = false
+  duplicateExamData.value = null
+  continueImportAfterDuplicateResolution()
+}
+
+// Handle user decision on duplicate
+const handleDuplicateDecision = async (action) => {
+  pendingImportItems.value[currentDuplicateIndex.value].action = action
+  currentDuplicateIndex.value++
+  showNextDuplicateModal()
+}
+
+// Cancel duplicate resolution
+const cancelDuplicateResolution = () => {
+  isDuplicateModalVisible.value = false
+  duplicateExamData.value = null
+  pendingImportItems.value = []
+  currentDuplicateIndex.value = 0
+  isImporting.value = false
+  if (importFileEvent.value?.target) {
+    importFileEvent.value.target.value = ''
+  }
+}
+
+// Continue import after all duplicates are resolved
+const continueImportAfterDuplicateResolution = async () => {
+  isImporting.value = true
+  isImportProgressVisible.value = true
+  importProgress.value = 10
+
+  await processImportItems(pendingImportItems.value)
+
+  pendingImportItems.value = []
+  currentDuplicateIndex.value = 0
+  if (importFileEvent.value?.target) {
+    importFileEvent.value.target.value = ''
+  }
+}
+
+// Process import items
+const processImportItems = async (items) => {
+  let totalQuestions = 0
+  const itemsToProcess = items.filter(item => item.action !== 'skip')
+  for (const item of itemsToProcess) {
+    if (Array.isArray(item.payload.exam_questions)) {
+      totalQuestions += item.payload.exam_questions.length
+    }
+  }
+  totalImportQuestions.value = totalQuestions
+  completedImportQuestions.value = 0
+
+  const summaries = []
+
+  for (let i = 0; i < itemsToProcess.length; i++) {
+    const item = itemsToProcess[i]
+
+    const onQuestionProgress = () => {
+      completedImportQuestions.value += 1
+      const percentage = totalQuestions > 0 ? Math.floor((completedImportQuestions.value / totalQuestions) * 80) : 0
+      importProgress.value = 10 + percentage
+      importProgressText.value = `已匯入 ${completedImportQuestions.value}/${totalQuestions} 題...`
+    }
+
+    try {
+      let result
+      if (item.action === 'overwrite' && item.existingExam) {
+        await examService.deleteExam(item.existingExam.id)
+        result = await importExamFromJson(item.payload, onQuestionProgress)
+      } else {
+        result = await importExamFromJson(item.payload, onQuestionProgress)
+      }
+      summaries.push(result)
+    } catch (err) {
+      console.error('Failed to import exam', err)
+      summaries.push({ newExamId: null, totalQuestions: 0, successfulAdds: 0, deletedQuestions: [], failedAdds: [] })
+    }
+
+    importProgress.value = 10 + Math.floor((i + 1) / itemsToProcess.length * 80)
+    importProgressText.value = `已完成 ${i + 1}/${itemsToProcess.length} 張考卷`
+  }
+
+  importProgress.value = 95
+  importProgressText.value = '整理資料中...'
+
+  const successCount = summaries.filter(s => s && s.newExamId).length
+  const totalDeletedQuestions = summaries.reduce((acc, s) => s?.deletedQuestions ? acc.concat(s.deletedQuestions) : acc, [])
+  const totalSuccessfulQuestions = summaries.reduce((acc, s) => acc + (s?.successfulAdds || 0), 0)
+  const totalFailedAdds = summaries.reduce((acc, s) => s?.failedAdds ? acc.concat(s.failedAdds) : acc, [])
+
+  importProgress.value = 100
+  importProgressText.value = '匯入完成'
+
+  setTimeout(() => {
+    isImportProgressVisible.value = false
+    importProgress.value = 0
+    importProgressText.value = ''
+    totalImportQuestions.value = 0
+    completedImportQuestions.value = 0
+
+    importResultData.value = {
+      successCount,
+      totalExams: itemsToProcess.length,
+      totalQuestions,
+      successfulQuestions: totalSuccessfulQuestions,
+      deletedQuestions: totalDeletedQuestions,
+      failedAdds: totalFailedAdds
+    }
+
+    isImportResultVisible.value = true
+    fetchExams()
+    isImporting.value = false
+  }, 1000)
 }
 
 const importExamFromJson = async (payload, onProgressUpdate) => {
@@ -2229,6 +2542,691 @@ tbody tr:last-child td {
   }
 
   .page-size-select {
+    width: 100%;
+  }
+}
+
+/* Progress Modal Styles */
+.progress-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1060;
+  animation: progressFadeIn 0.2s ease-out;
+}
+
+@keyframes progressFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.progress-modal {
+  width: 90%;
+  max-width: 400px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: progressSlideUp 0.3s ease-out;
+  overflow: hidden;
+}
+
+@keyframes progressSlideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.progress-header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--border, #E2E8F0);
+}
+
+.progress-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.progress-icon-wrapper.export-icon {
+  background: var(--primary, #476996);
+}
+
+.progress-icon-wrapper.import-icon {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.progress-icon-spin {
+  animation: progressSpin 1s linear infinite;
+}
+
+@keyframes progressSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.progress-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+  margin: 0 0 4px 0;
+}
+
+.progress-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+  margin: 0;
+}
+
+.progress-body {
+  padding: 24px;
+  text-align: center;
+}
+
+.progress-bar-container {
+  height: 8px;
+  background: var(--border, #E2E8F0);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary, #476996), var(--primary-hover, #35527a));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-bar-container.import-bar .progress-bar-fill,
+.progress-bar-fill.import-fill {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.progress-percent {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+}
+
+/* Import Result Modal Styles */
+.result-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1060;
+  animation: resultFadeIn 0.2s ease-out;
+}
+
+@keyframes resultFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.result-modal {
+  width: 90%;
+  max-width: 600px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: resultSlideUp 0.3s ease-out;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes resultSlideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.result-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--border, #E2E8F0);
+}
+
+.result-header-content {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.result-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.result-icon-wrapper.success-icon {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.result-icon-wrapper.warning-icon {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.result-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+  margin: 0 0 4px 0;
+}
+
+.result-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+  margin: 0;
+}
+
+.result-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.result-close-btn:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.result-body {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.result-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.result-stat-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  background: var(--bg-page, #F8FAFC);
+  border-radius: 12px;
+  border: 1px solid var(--border, #E2E8F0);
+}
+
+.result-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary, #476996);
+  flex-shrink: 0;
+}
+
+.result-stat-content {
+  flex: 1;
+}
+
+.result-stat-label {
+  font-size: 13px;
+  color: var(--text-secondary, #64748B);
+  margin-bottom: 4px;
+}
+
+.result-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.result-success {
+  color: #10b981;
+}
+
+.result-divider {
+  margin: 0 4px;
+  color: var(--text-secondary, #64748B);
+}
+
+.result-total {
+  color: var(--text-secondary, #64748B);
+  font-weight: 500;
+}
+
+.result-warning-section,
+.result-error-section {
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.result-warning-section {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+}
+
+.result-error-section {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+}
+
+.result-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.result-section-header.warning {
+  color: #92400e;
+}
+
+.result-section-header.error {
+  color: #991b1b;
+}
+
+.result-section-desc {
+  font-size: 13px;
+  color: var(--text-secondary, #64748B);
+  margin: 0 0 12px 0;
+}
+
+.result-table-wrapper {
+  max-height: 150px;
+  overflow-y: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border, #E2E8F0);
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.result-table th,
+.result-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border, #E2E8F0);
+}
+
+.result-table th {
+  background: var(--bg-page, #F8FAFC);
+  font-weight: 600;
+  color: var(--text-secondary, #64748B);
+  position: sticky;
+  top: 0;
+}
+
+.result-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.result-success-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  color: #166534;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.result-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 24px;
+  border-top: 1px solid var(--border, #E2E8F0);
+  background: var(--bg-page, #F8FAFC);
+  border-radius: 0 0 16px 16px;
+}
+
+.result-close-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--primary, #476996);
+  color: white;
+  box-shadow: 0 2px 4px rgba(71, 105, 150, 0.2);
+}
+
+.result-close-button:hover {
+  background: var(--primary-hover, #35527a);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(71, 105, 150, 0.3);
+}
+
+@media (max-width: 768px) {
+  .result-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Duplicate Exam Detection Modal Styles */
+.duplicate-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1070;
+  animation: duplicateFadeIn 0.2s ease-out;
+}
+
+@keyframes duplicateFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.duplicate-modal {
+  width: 90%;
+  max-width: 700px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: duplicateSlideUp 0.3s ease-out;
+}
+
+@keyframes duplicateSlideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.duplicate-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--border, #E2E8F0);
+}
+
+.duplicate-header-content {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.duplicate-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.duplicate-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+  margin: 0 0 4px 0;
+}
+
+.duplicate-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+  margin: 0;
+}
+
+.duplicate-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.duplicate-close-btn:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.duplicate-body {
+  padding: 24px;
+}
+
+.duplicate-comparison {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.duplicate-exam-card {
+  flex: 1;
+  border-radius: 12px;
+  border: 2px solid var(--border, #E2E8F0);
+  overflow: hidden;
+}
+
+.duplicate-exam-card.existing {
+  border-color: #e5e7eb;
+}
+
+.duplicate-exam-card.new {
+  border-color: #10b981;
+}
+
+.exam-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.duplicate-exam-card.existing .exam-card-header {
+  background: #f9fafb;
+  color: var(--text-secondary, #64748B);
+}
+
+.duplicate-exam-card.new .exam-card-header {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.exam-card-body {
+  padding: 16px;
+}
+
+.exam-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border, #E2E8F0);
+}
+
+.exam-info-row:last-child {
+  border-bottom: none;
+}
+
+.exam-label {
+  font-size: 13px;
+  color: var(--text-secondary, #64748B);
+  flex-shrink: 0;
+}
+
+.exam-value {
+  font-size: 13px;
+  color: var(--text-primary, #1E293B);
+  font-weight: 500;
+  text-align: right;
+  word-break: break-word;
+  max-width: 60%;
+}
+
+.duplicate-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary, #64748B);
+  flex-shrink: 0;
+}
+
+.duplicate-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 20px 24px;
+  border-top: 1px solid var(--border, #E2E8F0);
+  background: var(--bg-page, #F8FAFC);
+  border-radius: 0 0 16px 16px;
+}
+
+.duplicate-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.duplicate-btn-secondary {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.duplicate-btn-secondary:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.duplicate-btn-warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+.duplicate-btn-warning:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3);
+}
+
+.duplicate-btn-primary {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.duplicate-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+@media (max-width: 768px) {
+  .duplicate-comparison {
+    flex-direction: column;
+  }
+
+  .duplicate-arrow {
+    transform: rotate(90deg);
+    justify-content: center;
+  }
+
+  .duplicate-footer {
+    flex-direction: column;
+  }
+
+  .duplicate-btn {
     width: 100%;
   }
 }
