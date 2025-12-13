@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import ExtractExamPDFView, ExtractAnswerPDFView, QuestionViewSet, SubjectListView, TagViewSet
 from .ai_views import AIChatView, AIChatHistoryView, AIAnalyzeCaseView
+from .essay_analysis_views import EssayAnalysisView, EssayAnalysisHistoryView
 from .extension_views import ExtensionStatsView, SyncBookmarksView, SyncFlashcardsView
 from .essay_views import EssaySubmissionView, EssayDetailView, EssayGradingView
 from .analytics_views import (
@@ -22,6 +23,9 @@ urlpatterns = [
     path("ai/chat/", AIChatView.as_view(), name="ai_chat"),
     path("ai/history/", AIChatHistoryView.as_view(), name="ai_history"),
     path("ai/analyze-case/", AIAnalyzeCaseView.as_view(), name="ai_analyze_case"),
+    # Essay Analysis endpoints (separate from general AI chat)
+    path("essay-analysis/analyze/", EssayAnalysisView.as_view(), name="essay_analysis"),
+    path("essay-analysis/history/", EssayAnalysisHistoryView.as_view(), name="essay_analysis_history"),
     # Extension endpoints
     path("extension/stats/", ExtensionStatsView.as_view(), name="extension_stats"),
     path("extension/sync-bookmarks/", SyncBookmarksView.as_view(), name="extension_sync_bookmarks"),

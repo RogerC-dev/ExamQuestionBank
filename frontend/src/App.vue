@@ -11,7 +11,7 @@ const tabs = [
   { name: '首頁', path: '/', key: 'landing' },
   { name: '練習模式', path: '/practice', key: 'practice' },
   { name: '快閃卡', path: '/flashcard', key: 'flashcard' },
-  { name: 'AI 助手', path: '/ai-chat', key: 'ai-chat' },
+  { name: 'AI 申論解析', path: '/essay-analysis', key: 'essay-analysis' },
   { name: '學習追蹤', path: '/analytics', key: 'analytics' },
   { name: '題庫管理', path: '/admin', key: 'admin', adminOnly: true }
 ]

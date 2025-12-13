@@ -259,7 +259,7 @@
     <!-- Floating Ask AI Button -->
     <button v-if="!isChatOpen" class="floating-ai-btn" @click="openChat()" aria-label="Ask AI">
       <span class="floating-ai-icon">AI</span>
-      <span class="floating-ai-text">Ask AI</span>
+      
     </button>
 
     <!-- Mock Exam Dialog -->
@@ -1255,16 +1255,18 @@ onUnmounted(() => {
   right: 24px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 14px 20px;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
   background: linear-gradient(135deg, #4f7da8 0%, #2f5f90 100%);
   color: #fff;
   border: none;
-  border-radius: 50px;
+  border-radius: 50%;
   box-shadow: 0 6px 24px rgba(47, 95, 144, 0.35);
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 700;
+  
+  
   transition: all 0.25s ease;
   z-index: 100;
 }
@@ -1275,19 +1277,16 @@ onUnmounted(() => {
 }
 
 .floating-ai-icon {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  font-size: 11px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 800;
 }
 
-.floating-ai-text {
-  letter-spacing: 0.02em;
-}
 
 /* Mock Exam Dialog */
 .mock-exam-overlay {
