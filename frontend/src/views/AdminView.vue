@@ -27,7 +27,7 @@
                 <span>新增考卷</span>
               </button>
             </template>
-            <template v-else>
+            <template v-else-if="currentTab === 'questions'">
               <button class="action-btn action-btn-secondary" @click="importQuestions">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2">
@@ -44,6 +44,16 @@
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
                 <span>新增題目</span>
+              </button>
+            </template>
+            <template v-else-if="currentTab === 'tags'">
+              <button class="action-btn action-btn-primary" @click="addTag">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>新增標籤</span>
               </button>
             </template>
           </div>
@@ -66,6 +76,14 @@
             </svg>
             <span>題目管理</span>
           </button>
+          <button :class="['tab-btn', { active: currentTab === 'tags' }]" @click="setTab('tags')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+              <line x1="7" y1="7" x2="7.01" y2="7"></line>
+            </svg>
+            <span>標籤管理</span>
+          </button>
         </div>
       </div>
 
@@ -74,8 +92,12 @@
         <AdminExamManagement ref="adminExamManagementRef" />
       </div>
 
-      <div v-else>
+      <div v-else-if="currentTab === 'questions'">
         <AdminQuestionManagement ref="adminQuestionManagementRef" />
+      </div>
+
+      <div v-else-if="currentTab === 'tags'">
+        <AdminTagManagement ref="adminTagManagementRef" />
       </div>
     </div>
   </div>
@@ -85,10 +107,12 @@
 import { ref } from 'vue'
 import AdminQuestionManagement from '@/components/AdminQuestionManagement.vue'
 import AdminExamManagement from '@/components/AdminExamManagement.vue'
+import AdminTagManagement from '@/components/AdminTagManagement.vue'
 
 const currentTab = ref('exams')
 const adminExamManagementRef = ref(null)
 const adminQuestionManagementRef = ref(null)
+const adminTagManagementRef = ref(null)
 
 const setTab = (tab) => {
   currentTab.value = tab
@@ -116,6 +140,13 @@ const addQuestion = () => {
 const importQuestions = () => {
   if (adminQuestionManagementRef.value && adminQuestionManagementRef.value.showImportModal) {
     adminQuestionManagementRef.value.showImportModal()
+  }
+}
+
+// Tag management functions
+const addTag = () => {
+  if (adminTagManagementRef.value && adminTagManagementRef.value.openAddModal) {
+    adminTagManagementRef.value.openAddModal()
   }
 }
 </script>

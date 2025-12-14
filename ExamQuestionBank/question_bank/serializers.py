@@ -16,10 +16,15 @@ class QuestionOptionSerializer(serializers.ModelSerializer):
 
 class TagSerializer(serializers.ModelSerializer):
     """標籤序列化器"""
+    question_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Tag
-        fields = ['id', 'name']
-        read_only_fields = ['id']
+        fields = ['id', 'name', 'question_count', 'created_at']
+        read_only_fields = ['id', 'question_count', 'created_at']
+
+    def get_question_count(self, obj):
+        return obj.questions.count()
 
 
 class QuestionListSerializer(serializers.ModelSerializer):

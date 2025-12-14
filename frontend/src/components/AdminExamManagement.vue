@@ -121,6 +121,11 @@
                                         </button>
                                     </li>
                                     <li>
+                                        <button class="dropdown-item" type="button" @click="printExam(exam.id)">
+                                            列印
+                                        </button>
+                                    </li>
+                                    <li>
                                         <button class="dropdown-item text-danger" type="button"
                                             :disabled="deletingExamId === exam.id" @click="deleteExam(exam.id)">
                                             <span v-if="deletingExamId === exam.id"
@@ -449,6 +454,11 @@ const handleImportFile = async (event) => {
     finally { event.target.value = '' }
 }
 
+const printExam = (examId) => {
+    const printUrl = router.resolve({ path: `/admin/exams/${examId}/print` }).href
+    window.open(printUrl, '_blank')
+}
+
 defineExpose({ fetchExams, addExam, batchImport })
 onMounted(() => { fetchExams() })
 </script>
@@ -570,45 +580,60 @@ onMounted(() => { fetchExams() })
 .exam-table {
     background: white;
     border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    border: 1px solid var(--border, #CBD5E1);
-    margin-bottom: 24px;
+}
+
+.exam-table .table {
+    margin-bottom: 0;
 }
 
 .table-status {
     text-align: center;
     color: var(--text-secondary, #64748B);
-    padding: 48px 24px;
-    font-size: 15px;
+    padding: 60px 20px;
+    font-size: 14px;
 }
 
 .table th,
 .table td {
-    padding: 14px 16px;
+    padding: 14px 20px;
     vertical-align: middle;
 }
 
 .table th {
     font-weight: 600;
-    color: var(--text-primary, #1E293B);
-    background-color: #f8fafc;
-    border-bottom: 2px solid #e5e7eb;
+    color: var(--text-secondary, #64748B);
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
 }
 
 .table td {
-    color: var(--text-secondary, #64748B);
-    border-bottom: 1px solid #f0f0f0;
+    color: var(--text-primary, #1E293B);
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+}
+
+.table tbody tr {
+    transition: background 0.15s;
 }
 
 .table tbody tr:hover {
-    background-color: #f9fafb;
+    background: #f8fafc;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
 }
 
 .table input[type="checkbox"] {
     width: 18px;
     height: 18px;
     cursor: pointer;
+    accent-color: var(--primary, #476996);
 }
 
 .toolbar-spinner {

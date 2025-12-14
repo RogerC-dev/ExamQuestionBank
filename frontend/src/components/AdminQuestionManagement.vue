@@ -1904,11 +1904,12 @@ defineExpose({
 .question-table {
   background: white;
   border-radius: 12px;
-  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--border, #CBD5E1);
-  margin-bottom: 24px;
+}
+
+.question-table .table {
+  margin-bottom: 0;
 }
 
 .table-status {
@@ -1948,23 +1949,23 @@ table {
 }
 
 thead {
-  background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
-  border-bottom: 2px solid var(--border, #CBD5E1);
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 th {
-  padding: 16px;
+  padding: 14px 16px;
   text-align: left;
   font-weight: 600;
-  color: var(--text-primary, #1E293B);
+  color: var(--text-secondary, #64748B);
   font-size: 13px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
 }
 
 th input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
   accent-color: var(--primary, #476996);
 }
@@ -2067,8 +2068,8 @@ td:nth-child(9) {
 
 
 td {
-  padding: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
   font-size: 14px;
   color: var(--text-primary, #1E293B);
   overflow: visible;
@@ -2076,18 +2077,18 @@ td {
 }
 
 td input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
   accent-color: var(--primary, #476996);
 }
 
 tbody tr {
-  transition: all 0.2s ease;
+  transition: background 0.15s;
 }
 
 tbody tr:hover {
-  background: var(--primary-soft, #EEF2FF);
+  background: #f8fafc;
 }
 
 tbody tr:last-child td {

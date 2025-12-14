@@ -84,6 +84,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/admin/exams/:id/print',
+      name: 'ExamPrint',
+      component: () => import('@/views/ExamPrintView.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
       path: '/exams/:id/preview',
       name: 'ExamPreview',
       component: () => import('@/views/ExamPreviewView.vue'),
