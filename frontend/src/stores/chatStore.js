@@ -36,6 +36,10 @@ export const useChatStore = defineStore('chat', () => {
         content: response.response,
         timestamp: new Date()
       })
+
+      // Refresh history to sync with newly sent message
+      await loadHistory()
+
       return response
     } catch (error) {
       errorMessage.value = error.message || '發送訊息時發生錯誤'
@@ -51,10 +55,12 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const data = await aiService.getHistory(20, 0)
       historyItems.value = data.results || []
-      
+
       // Only update messages if we haven't had any conversation yet in this session
       if (!isInitialized.value) {
-        messages.value = historyItems.value.flatMap(item => ([
+        // Reverse the history so oldest messages appear at top (normal chat order)
+        const reversedHistory = [...historyItems.value].reverse()
+        messages.value = reversedHistory.flatMap(item => ([
           { role: 'user', content: item.message, timestamp: new Date(item.created_at) },
           { role: 'assistant', content: item.response, timestamp: new Date(item.created_at) }
         ]))

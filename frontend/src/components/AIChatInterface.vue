@@ -126,6 +126,15 @@ watch(messages, () => {
   })
 }, { deep: true })
 
+// Scroll to bottom when switching to chat tab
+watch(currentTab, (newTab) => {
+  if (newTab === 'chat') {
+    nextTick(() => {
+      scrollToBottom()
+    })
+  }
+})
+
 watch(() => props.prefill?.stamp, () => {
   if (!props.prefill) return
   inputMessage.value = props.prefill.text || ''

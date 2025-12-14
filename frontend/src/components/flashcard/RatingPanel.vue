@@ -41,6 +41,8 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
+
 interface Props {
   visible?: boolean
   disabled?: boolean
@@ -55,7 +57,7 @@ const props = withDefaults(defineProps<Props>(), {
   practiceMode: false
 })
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'rate', rating: number): void
 }>()
 
@@ -77,6 +79,37 @@ function calculateInterval(rating: number): number {
     return Math.round(props.currentInterval * 2)
   }
 }
+
+/**
+ * Handle keyboard navigation
+ */
+const handleKeyDown = (e: KeyboardEvent) => {
+  // Only handle if visible and not disabled
+  if (!props.visible || props.disabled) return
+
+  // In practice mode: Right arrow or Ctrl+Right arrow triggers next
+  if (props.practiceMode) {
+    if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      emit('rate', 0)
+    }
+  } else {
+    // In review mode: Number keys 1-5 for ratings
+    if (e.key >= '1' && e.key <= '5') {
+      e.preventDefault()
+      const rating = parseInt(e.key)
+      emit('rate', rating)
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
 </script>
 
 <style scoped>

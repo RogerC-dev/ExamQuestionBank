@@ -174,7 +174,7 @@
             <td>
               <div>{{ q.subject }}</div>
               <div style="margin-top:6px">
-                <span v-for="t in q.tags" :key="t.id" class="meta-badge tag-badge">{{ t.name }}</span>
+                <span v-for="t in q.tags" :key="t.id" class="meta-badge tag-badge clickable" @click="addTagToFilter(t)" :title="`點擊新增「${t.name}」到篩選條件`">{{ t.name }}</span>
               </div>
             </td>
             <td :title="q.content">{{ q.contentSnippet }}</td>
@@ -871,6 +871,19 @@ const fetchQuestions = async () => {
 
 const applyFilters = () => { currentPage.value = 1; fetchQuestions() }
 const resetFilters = () => { searchTerm.value = ''; selectedSearchTags.value = []; tagSearchMode.value = 'or'; ordering.value = '-created_at'; currentPage.value = 1; fetchQuestions() }
+
+// Add tag to filter when clicking tag badge
+const addTagToFilter = (tag) => {
+  // Check if tag is already in the filter
+  const alreadySelected = selectedSearchTags.value.some(t => t.id === tag.id)
+
+  if (!alreadySelected) {
+    // Add tag to filter
+    selectedSearchTags.value.push(tag)
+    // Apply filters to search with the new tag
+    applyFilters()
+  }
+}
 
 const handlePageChange = (page) => {
   if (page !== currentPage.value && page >= 1 && page <= paginationState.value.totalPages) {
@@ -1875,6 +1888,18 @@ defineExpose({
   font-size: 11px;
   font-weight: 500;
   margin-right: 6px;
+}
+
+.tag-badge.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tag-badge.clickable:hover {
+  background: var(--primary, #476996);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(71, 105, 150, 0.3);
   margin-bottom: 4px;
 }
 
