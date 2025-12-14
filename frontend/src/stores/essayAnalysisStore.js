@@ -53,6 +53,22 @@ export const useEssayAnalysisStore = defineStore('essayAnalysis', () => {
     errorMessage.value = ''
   }
 
+  const restoreFromHistory = (historyItem) => {
+    messages.value = [
+      {
+        role: 'user',
+        content: historyItem.question_text,
+        timestamp: new Date(historyItem.created_at)
+      },
+      {
+        role: 'assistant',
+        content: historyItem.analysis_response,
+        timestamp: new Date(historyItem.created_at)
+      }
+    ]
+    errorMessage.value = ''
+  }
+
   const clearError = () => {
     errorMessage.value = ''
   }
@@ -66,6 +82,7 @@ export const useEssayAnalysisStore = defineStore('essayAnalysis', () => {
     analyze,
     loadHistory,
     clearMessages,
+    restoreFromHistory,
     clearError
   }
 })
