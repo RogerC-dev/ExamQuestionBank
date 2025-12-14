@@ -39,12 +39,13 @@
               perSlideOffset: 8,
               perSlideRotate: 2,
               rotate: true,
-              slideShadows: true,
-            }" :allowTouchMove="isPracticeMode" :lazy="{
-              loadPrevNext: true,
-              loadPrevNextAmount: 2,
+              slideShadows: false,
+            }" :allowTouchMove="isPracticeMode" :virtual="{
+              enabled: true,
+              addSlidesAfter: 2,
+              addSlidesBefore: 2,
             }" :preloadImages="false" class="flashcard-swiper" @swiper="onSwiperInit" @slideChange="onSlideChange">
-            <SwiperSlide v-for="(card, index) in reviewCards" :key="card.id">
+            <SwiperSlide v-for="(card, index) in reviewCards" :key="card.id" :virtualIndex="index">
               <FlashcardDisplay :ref="el => setCardRef(el, index)" :card="card" :options="cardOptions[card.id] || []"
                 @flip="handleCardFlip(index)" />
             </SwiperSlide>
@@ -117,7 +118,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
-import { EffectCards } from 'swiper/modules'
+import { EffectCards, Virtual } from 'swiper/modules'
 import flashcardService from '@/services/flashcardService'
 import questionService from '@/services/questionService'
 import { StatsGrid, CardList, FlashcardDisplay, RatingPanel } from '@/components/flashcard'
@@ -134,11 +135,10 @@ const cardRefs = ref([])
 const swiperInstance = ref(null)
 
 // Swiper modules
-const swiperModules = [EffectCards]
+const swiperModules = [EffectCards, Virtual]
 
 // State
 const stats = ref({ total_cards: 0, due_cards: 0, completion_percent: 0, review_streak: 0 })
-const flashcards = ref([])
 const dueFlashcards = ref([])
 const statusFilter = ref('all')
 const isListLoading = ref(false)
@@ -343,11 +343,11 @@ const startReview = async (isPractice = false) => {
     isPracticeMode.value = isPractice
 
     if (isPractice) {
-      if (flashcards.value.length === 0) {
+      if (allFlashcards.value.length === 0) {
         showError('沒有可供複習的卡片')
         return
       }
-      reviewCards.value = [...flashcards.value]
+      reviewCards.value = [...allFlashcards.value]
     } else {
       await loadDueFlashcards()
       if (dueFlashcards.value.length === 0) {
@@ -376,7 +376,7 @@ const startPracticeSelected = async () => {
     isPracticeMode.value = true
 
     // Filter currently loaded flashcards by selection
-    const selectedCards = flashcards.value.filter(card =>
+    const selectedCards = allFlashcards.value.filter(card =>
       selectedFlashcardIds.value.includes(card.id)
     )
 
@@ -450,7 +450,7 @@ const exitReview = () => {
 const handleDelete = async (id) => {
   try {
     await flashcardService.deleteFlashcard(id)
-    flashcards.value = flashcards.value.filter(c => c.id !== id)
+    allFlashcards.value = allFlashcards.value.filter(c => c.id !== id)
     loadStats()
     showSuccess('快閃卡已刪除')
   } catch (e) {
@@ -489,7 +489,7 @@ const deleteSelectedFlashcards = async () => {
   for (const id of idsToDelete) {
     try {
       await flashcardService.deleteFlashcard(id)
-      flashcards.value = flashcards.value.filter(c => c.id !== id)
+      allFlashcards.value = allFlashcards.value.filter(c => c.id !== id)
       successCount++
       // Remove from selection
       const index = selectedFlashcardIds.value.indexOf(id)
