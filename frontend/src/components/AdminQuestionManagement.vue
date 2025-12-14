@@ -21,6 +21,16 @@
         <multiselect v-model="selectedSearchTags" :options="tagOptions" :multiple="true" :close-on-select="false"
           :clear-on-select="false" :preserve-search="true" placeholder="選擇標籤..." track-by="id" label="name"
           class="tag-multiselect" />
+        <div v-if="selectedSearchTags.length > 1" class="tag-mode-toggle">
+          <button :class="['mode-btn', { active: tagSearchMode === 'or' }]" @click="tagSearchMode = 'or'"
+            title="符合任一標籤即可">
+            OR
+          </button>
+          <button :class="['mode-btn', { active: tagSearchMode === 'and' }]" @click="tagSearchMode = 'and'"
+            title="必須符合所有標籤">
+            AND
+          </button>
+        </div>
       </div>
 
       <div class="filter-select-wrapper">
@@ -656,6 +666,7 @@ const isLoading = ref(false)
 const error = ref('')
 const searchTerm = ref('')
 const selectedSearchTags = ref([])
+const tagSearchMode = ref('or') // 'or' 或 'and'
 const tagOptions = ref([])
 const ordering = ref('-created_at')
 const currentPage = ref(1)
@@ -844,6 +855,7 @@ const fetchQuestions = async () => {
     if (ordering.value) params.ordering = ordering.value
     if (selectedSearchTags.value.length > 0) {
       params.tags = selectedSearchTags.value.map(t => t.id).join(',')
+      params.tag_mode = tagSearchMode.value
     }
     const { data } = await questionService.getQuestions(params)
     const list = Array.isArray(data) ? data : data.results || []
@@ -876,7 +888,7 @@ const fetchQuestions = async () => {
 }
 
 const applyFilters = () => { currentPage.value = 1; fetchQuestions() }
-const resetFilters = () => { searchTerm.value = ''; selectedSearchTags.value = []; ordering.value = '-created_at'; currentPage.value = 1; fetchQuestions() }
+const resetFilters = () => { searchTerm.value = ''; selectedSearchTags.value = []; tagSearchMode.value = 'or'; ordering.value = '-created_at'; currentPage.value = 1; fetchQuestions() }
 
 const handlePageChange = (page) => {
   if (page !== currentPage.value && page >= 1 && page <= paginationState.value.totalPages) {
@@ -1773,6 +1785,39 @@ defineExpose({
 
 .tag-multiselect {
   width: 100%;
+}
+
+.tag-mode-toggle {
+  display: flex;
+  margin-top: 8px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #64748B);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-btn:hover:not(.active) {
+  background: rgba(71, 105, 150, 0.1);
+  color: var(--primary, #476996);
+}
+
+.mode-btn.active {
+  background: var(--primary, #476996);
+  color: white;
+  box-shadow: 0 2px 4px rgba(71, 105, 150, 0.25);
 }
 
 .tag-multiselect :deep(.multiselect__tags) {

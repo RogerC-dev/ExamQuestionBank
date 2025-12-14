@@ -156,11 +156,20 @@ class QuestionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(q_filter).distinct()
         
         # tags 篩選（依標籤 ID，逗號分隔）
+        # tag_mode: 'or' (預設) = 符合任一標籤, 'and' = 必須符合所有標籤
         tags_param = self.request.query_params.get('tags', '').strip()
+        tag_mode = self.request.query_params.get('tag_mode', 'or').strip().lower()
         if tags_param:
             tag_ids = [int(tid) for tid in tags_param.split(',') if tid.isdigit()]
             if tag_ids:
-                queryset = queryset.filter(tags__id__in=tag_ids).distinct()
+                if tag_mode == 'and':
+                    # AND 模式：題目必須包含所有指定的標籤
+                    for tag_id in tag_ids:
+                        queryset = queryset.filter(tags__id=tag_id)
+                    queryset = queryset.distinct()
+                else:
+                    # OR 模式（預設）：題目包含任一指定的標籤
+                    queryset = queryset.filter(tags__id__in=tag_ids).distinct()
         
         return queryset
 
