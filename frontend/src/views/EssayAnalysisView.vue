@@ -16,10 +16,14 @@
           <span>尚無解析記錄</span>
         </div>
         <div v-else class="history-list">
-          <div v-for="item in historyItems" :key="item.id" class="history-item"
-            :class="{ active: activeHistoryId === item.id }" @click="loadHistoryItem(item)">
-            <i class="bi bi-chat-left-text"></i>
-            <span class="history-title">{{ truncate(item.question_text, 30) }}</span>
+          <div v-for="item in historyItems" :key="item.id" class="history-item-wrapper">
+            <div class="history-item" :class="{ active: activeHistoryId === item.id }" @click="loadHistoryItem(item)">
+              <i class="bi bi-chat-left-text"></i>
+              <span class="history-title">{{ truncate(item.question_text, 30) }}</span>
+            </div>
+            <button class="history-edit-btn" @click.stop="editHistoryItem(item)" title="編輯並重問">
+              <i class="bi bi-pencil"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -173,6 +177,19 @@ const loadHistoryItem = (item) => {
   nextTick(() => scrollToBottom())
 }
 
+const editHistoryItem = (item) => {
+  activeHistoryId.value = null
+  inputText.value = (item.question_text || '') + '\n\n[補充說明]: '
+  store.clearMessages()
+  nextTick(() => {
+    if (inputRef.value) {
+      inputRef.value.focus()
+      const length = inputText.value.length
+      inputRef.value.setSelectionRange(length, length)
+    }
+  })
+}
+
 const scrollToBottom = () => {
   if (messagesContainer.value) {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
@@ -263,7 +280,14 @@ onMounted(() => {
   gap: 2px;
 }
 
+.history-item-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .history-item {
+  flex: 1;
   padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
@@ -295,6 +319,26 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.history-edit-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.history-edit-btn:hover {
+  background: var(--bg-soft, #f3f4f6);
+  color: var(--primary);
 }
 
 /* Main Content */
@@ -678,9 +722,18 @@ onMounted(() => {
     gap: 8px;
   }
 
+  .history-item-wrapper {
+    flex-shrink: 0;
+  }
+
   .history-item {
     white-space: nowrap;
-    flex-shrink: 0;
+  }
+
+  .history-edit-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
   }
 
   .main-content {

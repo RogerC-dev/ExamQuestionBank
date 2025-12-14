@@ -84,18 +84,21 @@ class AIChatView(APIView):
             # 呼叫 AI 服務
             ai_response = ai_service.chat(message, context)
 
-            # 儲存聊天記錄
-            chat_history = AIChatHistory.objects.create(
-                user=user,
-                message=message,
-                response=ai_response,
-                context_type=context_type,
-                context_id=context_id
-            )
+            # 儲存聊天記錄（除非是錯誤訊息）
+            chat_id = None
+            if not self._is_error_response(ai_response):
+                chat_history = AIChatHistory.objects.create(
+                    user=user,
+                    message=message,
+                    response=ai_response,
+                    context_type=context_type,
+                    context_id=context_id
+                )
+                chat_id = chat_history.id
 
             return Response({
                 "response": ai_response,
-                "chat_id": chat_history.id
+                "chat_id": chat_id
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -137,6 +140,20 @@ class AIChatView(APIView):
             logger.error(f"Error checking usage limit: {str(e)}")
             # 發生錯誤時保守起見，允許訪問（或根據需求拒絕）
             return True
+
+    def _is_error_response(self, response: str) -> bool:
+        """
+        檢查回應是否為錯誤訊息
+        """
+        error_patterns = [
+            '錯誤',
+            '失敗',
+            '請稍後再試',
+            'error',
+            'failed',
+        ]
+        response_lower = response.lower() if response else ''
+        return any(pattern in response_lower for pattern in error_patterns)
 
 
 class AIChatHistoryView(APIView):
@@ -243,13 +260,15 @@ class AIAnalyzeCaseView(APIView):
             # 分析案例
             analysis = ai_service.analyze_case(case_text)
 
-            # 儲存為聊天記錄
-            AIChatHistory.objects.create(
-                user=user,
-                message=f"[案例分析] {case_text[:100]}...",
-                response=f"摘要：{analysis['summary']}\n關鍵點：{', '.join(analysis['key_points'])}\n相關法條：{', '.join(analysis['related_laws'])}",
-                context_type='case'
-            )
+            # 儲存為聊天記錄（除非是錯誤訊息）
+            response_text = f"摘要：{analysis['summary']}\n關鍵點：{', '.join(analysis['key_points'])}\n相關法條：{', '.join(analysis['related_laws'])}"
+            if not self._is_error_response(response_text):
+                AIChatHistory.objects.create(
+                    user=user,
+                    message=f"[案例分析] {case_text[:100]}...",
+                    response=response_text,
+                    context_type='case'
+                )
 
             return Response(analysis, status=status.HTTP_200_OK)
 

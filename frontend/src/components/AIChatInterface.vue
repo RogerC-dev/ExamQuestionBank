@@ -76,7 +76,10 @@
             <span v-html="formatMessage(item.response)"></span>
           </div>
           <div class="history-meta">{{ formatTime(item.created_at) }}</div>
-          <button class="history-reuse" @click="reuseHistory(item)">引用此題</button>
+          <div class="history-actions">
+            <button class="history-reuse" @click="reuseHistory(item)">引用此題</button>
+            <button class="history-edit" @click="editHistory(item)">編輯並重問</button>
+          </div>
         </div>
       </div>
     </div>
@@ -179,6 +182,20 @@ const reuseHistory = (entry) => {
   setTab('chat')
   nextTick(() => {
     chatInputRef.value?.focus()
+  })
+}
+
+const editHistory = (entry) => {
+  // Pre-fill with previous question and add placeholder for additional input
+  inputMessage.value = (entry.message || '') + '\n\n[補充說明]: '
+  setTab('chat')
+  nextTick(() => {
+    if (chatInputRef.value) {
+      chatInputRef.value.focus()
+      // Position cursor at the end
+      const length = inputMessage.value.length
+      chatInputRef.value.setSelectionRange(length, length)
+    }
   })
 }
 
@@ -524,11 +541,14 @@ onMounted(() => {
   gap: 12px;
   background: var(--bg-page);
   color: var(--text-primary);
+  min-height: 0;
+  overflow: hidden;
 }
 
 .history-toolbar {
   display: flex;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .btn-refresh {
@@ -551,6 +571,8 @@ onMounted(() => {
   flex-direction: column;
   gap: 16px;
   overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .history-item {
@@ -578,14 +600,39 @@ onMounted(() => {
   margin-top: 8px;
 }
 
-.history-reuse {
+.history-actions {
   margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.history-reuse,
+.history-edit {
   padding: 6px 10px;
   border: none;
-  background: var(--primary);
-  color: #fff;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.history-reuse {
+  background: var(--primary);
+  color: #fff;
+}
+
+.history-reuse:hover {
+  background: var(--primary-hover);
+}
+
+.history-edit {
+  background: #f3f4f6;
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.history-edit:hover {
+  background: #e5e7eb;
 }
 
 .chat-messages::-webkit-scrollbar,
@@ -732,7 +779,12 @@ onMounted(() => {
     font-size: 11px;
   }
   
-  .history-reuse {
+  .history-actions {
+    flex-direction: column;
+  }
+
+  .history-reuse,
+  .history-edit {
     width: 100%;
     padding: 8px 12px;
     font-size: 14px;

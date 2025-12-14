@@ -88,16 +88,19 @@ class EssayAnalysisView(APIView):
             # 呼叫 AI 服務
             analysis = self._analyze_essay_question(question_text)
 
-            # 儲存記錄
-            chat_record = EssayAnalysisChat.objects.create(
-                user=user,
-                question_text=question_text,
-                analysis_response=analysis
-            )
+            # 儲存記錄（除非是錯誤訊息）
+            chat_id = None
+            if not self._is_error_response(analysis):
+                chat_record = EssayAnalysisChat.objects.create(
+                    user=user,
+                    question_text=question_text,
+                    analysis_response=analysis
+                )
+                chat_id = chat_record.id
 
             return Response({
                 "analysis": analysis,
-                "chat_id": chat_record.id
+                "chat_id": chat_id
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -148,6 +151,20 @@ class EssayAnalysisView(APIView):
         except Exception as e:
             logger.error(f"Error checking usage limit: {str(e)}")
             return True
+
+    def _is_error_response(self, response: str) -> bool:
+        """
+        檢查回應是否為錯誤訊息
+        """
+        error_patterns = [
+            '錯誤',
+            '失敗',
+            '請稍後再試',
+            'error',
+            'failed',
+        ]
+        response_lower = response.lower() if response else ''
+        return any(pattern in response_lower for pattern in error_patterns)
 
 
 class EssayAnalysisHistoryView(APIView):
