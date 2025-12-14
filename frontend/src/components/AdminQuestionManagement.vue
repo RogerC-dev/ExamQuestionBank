@@ -12,26 +12,7 @@
           @keyup.enter="applyFilters" />
       </div>
 
-      <div class="filter-tags-wrapper">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" class="tags-icon">
-          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-          <line x1="7" y1="7" x2="7.01" y2="7"></line>
-        </svg>
-        <multiselect v-model="selectedSearchTags" :options="tagOptions" :multiple="true" :close-on-select="false"
-          :clear-on-select="false" :preserve-search="true" placeholder="選擇標籤..." track-by="id" label="name"
-          class="tag-multiselect" />
-        <div v-if="selectedSearchTags.length > 1" class="tag-mode-toggle">
-          <button :class="['mode-btn', { active: tagSearchMode === 'or' }]" @click="tagSearchMode = 'or'"
-            title="符合任一標籤即可">
-            OR
-          </button>
-          <button :class="['mode-btn', { active: tagSearchMode === 'and' }]" @click="tagSearchMode = 'and'"
-            title="必須符合所有標籤">
-            AND
-          </button>
-        </div>
-      </div>
+      <TagFilter v-model="selectedSearchTags" v-model:mode="tagSearchMode" :options="tagOptions" />
 
       <div class="filter-select-wrapper">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -652,6 +633,7 @@ import BulkTagEditor from '@/components/BulkTagEditor.vue'
 import BulkSubjectEditor from '@/components/BulkSubjectEditor.vue'
 import PdfUploadSection from '@/components/PdfUploadSection.vue'
 import SelectionToolbar from '@/components/common/SelectionToolbar.vue'
+import TagFilter from '@/components/common/TagFilter.vue'
 import PaginationControl from '@/components/common/PaginationControl.vue'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
@@ -1767,99 +1749,7 @@ defineExpose({
   box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
 }
 
-.filter-tags-wrapper {
-  position: relative;
-  flex: 1;
-  min-width: 240px;
-  align-self: flex-start;
-}
-
-.tags-icon {
-  position: absolute;
-  left: 14px;
-  top: 16px;
-  z-index: 1;
-  color: var(--text-secondary, #64748B);
-  pointer-events: none;
-}
-
-.tag-multiselect {
-  width: 100%;
-}
-
-.tag-mode-toggle {
-  display: flex;
-  margin-top: 8px;
-  background: #f1f5f9;
-  border-radius: 8px;
-  padding: 4px;
-  gap: 2px;
-}
-
-.mode-btn {
-  flex: 1;
-  padding: 6px 12px;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary, #64748B);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.mode-btn:hover:not(.active) {
-  background: rgba(71, 105, 150, 0.1);
-  color: var(--primary, #476996);
-}
-
-.mode-btn.active {
-  background: var(--primary, #476996);
-  color: white;
-  box-shadow: 0 2px 4px rgba(71, 105, 150, 0.25);
-}
-
-.tag-multiselect :deep(.multiselect__tags) {
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 8px 12px 8px 44px;
-  background: #f9fafb;
-  min-height: 44px;
-  transition: all 0.2s ease;
-}
-
-.tag-multiselect :deep(.multiselect__tags):focus-within {
-  border-color: var(--primary, #476996);
-  background: white;
-  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
-}
-
-.tag-multiselect :deep(.multiselect__tag) {
-  background: var(--primary, #476996);
-  color: white;
-  border-radius: 6px;
-  padding: 6px 26px 6px 10px;
-  margin: 2px 4px 2px 0;
-}
-
-.tag-multiselect :deep(.multiselect__tag-icon:after) {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.tag-multiselect :deep(.multiselect__tag-icon:hover) {
-  background: var(--primary-hover, #35527a);
-}
-
-.tag-multiselect :deep(.multiselect__option--highlight) {
-  background: var(--primary, #476996);
-}
-
-.tag-multiselect :deep(.multiselect__option--selected) {
-  background: var(--primary-soft, #EEF2FF);
-  color: var(--primary, #476996);
-}
-
+/* Removed old tag styles as they are now in TagFilter.vue */
 .tag-multiselect :deep(.multiselect__content-wrapper) {
   position: absolute;
   width: 100%;

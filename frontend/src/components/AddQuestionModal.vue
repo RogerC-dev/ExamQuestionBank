@@ -62,6 +62,9 @@
 
           <!-- 篩選列 -->
           <div class="filter-row">
+            <TagFilter v-model="selectedTags" v-model:mode="tagSearchMode" :options="tagOptions"
+              @update:model-value="handleFilterChange" @update:mode="handleFilterChange" />
+
             <!-- 科目篩選 -->
             <div class="filter-group">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -73,26 +76,12 @@
                 @input="handleSearch" />
             </div>
 
-            <!-- 標籤篩選 -->
-            <div class="filter-group filter-tags">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" class="filter-icon">
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                <line x1="7" y1="7" x2="7.01" y2="7"></line>
-              </svg>
-              <multiselect v-model="selectedTags" :options="tagOptions" :multiple="true" :close-on-select="false"
-                :clear-on-select="false" :preserve-search="true" placeholder="選擇標籤..." track-by="id" label="name"
-                class="tag-multiselect" @select="handleFilterChange" @remove="handleFilterChange" />
-            </div>
-
-            <!-- 重置按鈕 -->
-            <button v-if="hasActiveFilters" class="filter-reset-btn" @click="resetFilters">
+            <button class="filter-reset-btn" @click="resetFilters" v-if="hasActiveFilters" title="清除所有篩選">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                <path d="M3 3v5h5"></path>
+                <path d="M18 6L6 18M6 6l12 12"></path>
               </svg>
-              重置
+              清除
             </button>
           </div>
         </div>
@@ -231,8 +220,7 @@
 import { ref, computed, onMounted } from 'vue'
 import questionService from '../services/questionService'
 import tagService from '../services/tagService'
-import Multiselect from 'vue-multiselect'
-import 'vue-multiselect/dist/vue-multiselect.min.css'
+import TagFilter from '@/components/common/TagFilter.vue'
 
 const props = defineProps({
   existingQuestionIds: {
@@ -252,6 +240,7 @@ const points = ref(1)
 // 篩選相關
 const selectedSubject = ref('')
 const selectedTags = ref([])
+const tagSearchMode = ref('or')
 const tagOptions = ref([])
 
 // 分頁相關
@@ -322,11 +311,10 @@ const loadQuestions = async () => {
     if (searchKeyword.value) {
       params.keyword = searchKeyword.value
     }
-    if (selectedSubject.value) {
-      params.subject = selectedSubject.value
-    }
+    if (selectedSubject.value) params.subject = selectedSubject.value
     if (selectedTags.value.length > 0) {
       params.tags = selectedTags.value.map(t => t.id).join(',')
+      params.tag_mode = tagSearchMode.value
     }
 
     const response = await questionService.getQuestions(params)
@@ -374,6 +362,7 @@ const resetFilters = () => {
   searchKeyword.value = ''
   selectedSubject.value = ''
   selectedTags.value = []
+  tagSearchMode.value = 'or'
   currentPage.value = 1
   loadQuestions()
 }
@@ -606,13 +595,15 @@ onMounted(() => {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .filter-group {
   position: relative;
   display: flex;
   align-items: center;
+  flex: 1;
+  min-width: 200px;
 }
 
 .filter-icon {
@@ -666,54 +657,6 @@ onMounted(() => {
   color: var(--text-secondary, #64748B);
 }
 
-.filter-tags {
-  flex: 1;
-  min-width: 200px;
-}
-
-.filter-tags .filter-icon {
-  top: 12px;
-}
-
-.tag-multiselect {
-  width: 100%;
-}
-
-.tag-multiselect :deep(.multiselect__tags) {
-  padding-left: 38px;
-  border: 2px solid var(--border, #CBD5E1);
-  border-radius: 10px;
-  background: var(--bg-page, #F8FAFC);
-  min-height: 42px;
-}
-
-.tag-multiselect :deep(.multiselect__tags:focus-within) {
-  border-color: var(--primary, #476996);
-  background: white;
-  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
-}
-
-.tag-multiselect :deep(.multiselect__placeholder) {
-  padding-top: 2px;
-  color: var(--text-secondary, #64748B);
-}
-
-.tag-multiselect :deep(.multiselect__tag) {
-  background: var(--primary, #476996);
-  border-radius: 6px;
-}
-
-.tag-multiselect :deep(.multiselect__tag-icon::after) {
-  color: white;
-}
-
-.tag-multiselect :deep(.multiselect__tag-icon:hover) {
-  background: var(--primary-hover, #35527a);
-}
-
-.tag-multiselect :deep(.multiselect__option--highlight) {
-  background: var(--primary, #476996);
-}
 
 .filter-reset-btn {
   display: flex;
