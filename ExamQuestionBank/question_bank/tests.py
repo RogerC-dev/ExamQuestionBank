@@ -54,6 +54,16 @@ class BulkQuestionAPITest(APITestCase):
 		# Ensure both created
 		self.assertEqual(len([r for r in results if r['success']]), 2)
 
+		# Check order of options for the first question
+		q1_result = results[0]
+		self.assertTrue(q1_result['success'])
+		options = q1_result['data']['options']
+		# Verify options order
+		opt_A = next(o for o in options if o['content'] == 'A')
+		opt_B = next(o for o in options if o['content'] == 'B')
+		self.assertEqual(opt_A['order'], 0)
+		self.assertEqual(opt_B['order'], 1)
+
 	def test_bulk_update_questions(self):
 		# create a sample question to update
 		q = Question.objects.create(subject='Civil Law', category='contract', content='Original content', question_type='選擇題', difficulty='easy', status='draft', created_by=self.user)

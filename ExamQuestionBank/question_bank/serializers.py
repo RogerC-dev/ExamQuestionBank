@@ -80,7 +80,9 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
         question = Question.objects.create(**validated_data)
 
         # Create options
-        for option_data in options_data:
+        for index, option_data in enumerate(options_data):
+            # Ensure order is set based on the list index
+            option_data['order'] = index
             QuestionOption.objects.create(question=question, **option_data)
 
         # Add tags
@@ -102,7 +104,9 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
         # Update options if provided
         if options_data is not None:
             instance.options.all().delete()
-            for option_data in options_data:
+            for index, option_data in enumerate(options_data):
+                # Ensure order is set based on the list index
+                option_data['order'] = index
                 QuestionOption.objects.create(question=instance, **option_data)
 
         # Update tags if provided
