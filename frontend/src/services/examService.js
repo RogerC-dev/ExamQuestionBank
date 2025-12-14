@@ -54,6 +54,9 @@ const examService = {
   getExamStats() {
     return api.get('/exam-stats/').catch(handle401)
   },
+  getTrends(params = {}) {
+    return api.get('/analytics/trends/', { params }).catch(handle401)
+  },
   getWrongQuestions() {
     return api.get('/wrong-questions/').catch(handle401)
   },
