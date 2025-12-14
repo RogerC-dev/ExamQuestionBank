@@ -648,7 +648,7 @@ class ExamStatsView(APIView):
             for r in reversed(list(recent_results))
         ]
 
-        total_bank = ExamQuestion.objects.count()
+        total_bank = Question.objects.count()
         wrong_count = WrongQuestion.objects.filter(user=user, reviewed=False).count()
         bookmark_count = Bookmark.objects.filter(user=user).count()
 
