@@ -27,6 +27,10 @@ export const useEssayAnalysisStore = defineStore('essayAnalysis', () => {
         content: response.analysis,
         timestamp: new Date()
       })
+
+      // Refresh history to sync with newly analyzed essay
+      await loadHistory()
+
       return response
     } catch (error) {
       errorMessage.value = error.message || '分析時發生錯誤'
