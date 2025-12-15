@@ -1,7 +1,7 @@
 from rest_framework import permissions, viewsets
 
-from .models import StudyMetric, Recommendation, MockExamPerformance
-from .serializers import StudyMetricSerializer, RecommendationSerializer, MockExamPerformanceSerializer
+from .models import StudyMetric, Recommendation
+from .serializers import StudyMetricSerializer, RecommendationSerializer
 
 
 class StudyMetricViewSet(viewsets.ModelViewSet):
@@ -21,17 +21,6 @@ class RecommendationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Recommendation.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-
-class MockExamPerformanceViewSet(viewsets.ModelViewSet):
-    serializer_class = MockExamPerformanceSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return MockExamPerformance.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

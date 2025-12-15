@@ -1,56 +1,33 @@
 <template>
   <div class="question-admin">
     <!-- Question Filters -->
-    <div class="question-filters">
-      <div class="filter-search">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" class="search-icon">
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.35-4.35"></path>
-        </svg>
-        <input v-model="searchTerm" type="text" class="filter-input" placeholder="搜尋題目內容、科目..."
-          @keyup.enter="applyFilters" />
+    <div class="question-filters-wrapper">
+      <QuestionFilterPanel v-model="filters" :tags="tagOptions" :loading="isLoading"
+        :total-count="paginationState.totalCount" :show-title="false" @search="applyFilters" @reset="resetFilters" />
+
+      <!-- Ordering Filter -->
+      <div class="ordering-filter">
+        <div class="filter-select-wrapper">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" class="select-icon">
+            <line x1="4" y1="21" x2="4" y2="14"></line>
+            <line x1="4" y1="10" x2="4" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12" y2="3"></line>
+            <line x1="20" y1="21" x2="20" y2="16"></line>
+            <line x1="20" y1="12" x2="20" y2="3"></line>
+            <line x1="1" y1="14" x2="7" y2="14"></line>
+            <line x1="9" y1="8" x2="15" y2="8"></line>
+            <line x1="17" y1="16" x2="23" y2="16"></line>
+          </svg>
+          <select v-model="ordering" class="filter-select" @change="applyFilters">
+            <option value="-created_at">最新建立</option>
+            <option value="created_at">最舊建立</option>
+            <option value="-updated_at">最近更新</option>
+            <option value="content">題目內容 A-Z</option>
+          </select>
+        </div>
       </div>
-
-      <TagFilter v-model="selectedSearchTags" v-model:mode="tagSearchMode" :options="tagOptions" />
-
-      <div class="filter-select-wrapper">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" class="select-icon">
-          <line x1="4" y1="21" x2="4" y2="14"></line>
-          <line x1="4" y1="10" x2="4" y2="3"></line>
-          <line x1="12" y1="21" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12" y2="3"></line>
-          <line x1="20" y1="21" x2="20" y2="16"></line>
-          <line x1="20" y1="12" x2="20" y2="3"></line>
-          <line x1="1" y1="14" x2="7" y2="14"></line>
-          <line x1="9" y1="8" x2="15" y2="8"></line>
-          <line x1="17" y1="16" x2="23" y2="16"></line>
-        </svg>
-        <select v-model="ordering" class="filter-select" @change="applyFilters">
-          <option value="-created_at">最新建立</option>
-          <option value="created_at">最舊建立</option>
-          <option value="-updated_at">最近更新</option>
-          <option value="content">題目內容 A-Z</option>
-        </select>
-      </div>
-
-      <button class="filter-btn filter-btn-reset" @click="resetFilters">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2">
-          <polyline points="1 4 1 10 7 10"></polyline>
-          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-        </svg>
-        <span>重設</span>
-      </button>
-      <button class="filter-btn filter-btn-search" @click="applyFilters">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.35-4.35"></path>
-        </svg>
-        <span>搜尋</span>
-      </button>
     </div>
 
     <!-- Pending Questions Section -->
@@ -174,7 +151,8 @@
             <td>
               <div>{{ q.subject }}</div>
               <div style="margin-top:6px">
-                <span v-for="t in q.tags" :key="t.id" class="meta-badge tag-badge clickable" @click="addTagToFilter(t)" :title="`點擊新增「${t.name}」到篩選條件`">{{ t.name }}</span>
+                <span v-for="t in q.tags" :key="t.id" class="meta-badge tag-badge clickable" @click="addTagToFilter(t)"
+                  :title="`點擊新增「${t.name}」到篩選條件`">{{ t.name }}</span>
               </div>
             </td>
             <td :title="q.content">{{ q.contentSnippet }}</td>
@@ -633,7 +611,7 @@ import BulkTagEditor from '@/components/BulkTagEditor.vue'
 import BulkSubjectEditor from '@/components/BulkSubjectEditor.vue'
 import PdfUploadSection from '@/components/PdfUploadSection.vue'
 import SelectionToolbar from '@/components/common/SelectionToolbar.vue'
-import TagFilter from '@/components/common/TagFilter.vue'
+import QuestionFilterPanel from '@/components/common/QuestionFilterPanel.vue'
 import PaginationControl from '@/components/common/PaginationControl.vue'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
@@ -646,9 +624,13 @@ const savingPendingProgress = ref(0)
 const selectedPendingIds = ref([]) // 暫存題目選中的索引
 const isLoading = ref(false)
 const error = ref('')
-const searchTerm = ref('')
-const selectedSearchTags = ref([])
-const tagSearchMode = ref('or') // 'or' 或 'and'
+const filters = ref({
+  subject: '',
+  difficulty: '',
+  search: '',
+  tags: [],
+  tag_mode: 'or'
+})
 const tagOptions = ref([])
 const ordering = ref('-created_at')
 const currentPage = ref(1)
@@ -832,12 +814,13 @@ const fetchQuestions = async () => {
       page: currentPage.value,
       page_size: pageSize.value
     }
-    const trimmed = searchTerm.value?.trim()
-    if (trimmed) params.search = trimmed
+    if (filters.value.subject) params.subject = filters.value.subject
+    if (filters.value.difficulty) params.difficulty = filters.value.difficulty
+    if (filters.value.search?.trim()) params.search = filters.value.search.trim()
     if (ordering.value) params.ordering = ordering.value
-    if (selectedSearchTags.value.length > 0) {
-      params.tags = selectedSearchTags.value.map(t => t.id).join(',')
-      params.tag_mode = tagSearchMode.value
+    if (filters.value.tags && filters.value.tags.length > 0) {
+      params.tags = filters.value.tags.map(t => t.id).join(',')
+      params.tag_mode = filters.value.tag_mode
     }
     const { data } = await questionService.getQuestions(params)
     const list = Array.isArray(data) ? data : data.results || []
@@ -870,16 +853,27 @@ const fetchQuestions = async () => {
 }
 
 const applyFilters = () => { currentPage.value = 1; fetchQuestions() }
-const resetFilters = () => { searchTerm.value = ''; selectedSearchTags.value = []; tagSearchMode.value = 'or'; ordering.value = '-created_at'; currentPage.value = 1; fetchQuestions() }
+const resetFilters = () => {
+  filters.value = {
+    subject: '',
+    difficulty: '',
+    search: '',
+    tags: [],
+    tag_mode: 'or'
+  }
+  ordering.value = '-created_at'
+  currentPage.value = 1
+  fetchQuestions()
+}
 
 // Add tag to filter when clicking tag badge
 const addTagToFilter = (tag) => {
   // Check if tag is already in the filter
-  const alreadySelected = selectedSearchTags.value.some(t => t.id === tag.id)
+  const alreadySelected = filters.value.tags.some(t => t.id === tag.id)
 
   if (!alreadySelected) {
     // Add tag to filter
-    selectedSearchTags.value.push(tag)
+    filters.value.tags.push(tag)
     // Apply filters to search with the new tag
     applyFilters()
   }
@@ -1716,6 +1710,16 @@ defineExpose({
 }
 
 /* Filters */
+.question-filters-wrapper {
+  margin-bottom: 24px;
+}
+
+.ordering-filter {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .question-filters {
   display: flex;
   gap: 12px;

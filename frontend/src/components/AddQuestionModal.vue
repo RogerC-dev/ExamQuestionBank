@@ -42,48 +42,21 @@
 
         <!-- 篩選區 -->
         <div class="filters-section">
-          <!-- 搜尋列 -->
-          <div class="search-row">
-            <div class="search-control">
+          <!-- 選擇控制列 -->
+          <div class="selection-row">
+            <div class="selection-control">
               <input type="checkbox" :checked="isAllSelected" :indeterminate.prop="isPartialSelected"
                 @change="toggleSelectAll" class="select-all-checkbox" title="全選/取消全選" />
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" class="search-icon">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.35-4.35"></path>
-              </svg>
-              <input v-model="searchKeyword" type="text" placeholder="搜尋題目內容..." class="search-input"
-                @input="handleSearch" />
+              <span class="selection-label">全選此頁</span>
               <span v-if="selectedQuestions.length > 0" class="selection-badge">
                 已選 {{ selectedQuestions.length }} 題
               </span>
             </div>
           </div>
 
-          <!-- 篩選列 -->
-          <div class="filter-row">
-            <TagFilter v-model="selectedTags" v-model:mode="tagSearchMode" :options="tagOptions"
-              @update:model-value="handleFilterChange" @update:mode="handleFilterChange" />
-
-            <!-- 科目篩選 -->
-            <div class="filter-group">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" class="filter-icon">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-              </svg>
-              <input v-model="selectedSubject" type="text" class="filter-input" placeholder="輸入科目..."
-                @input="handleSearch" />
-            </div>
-
-            <button class="filter-reset-btn" @click="resetFilters" v-if="hasActiveFilters" title="清除所有篩選">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12"></path>
-              </svg>
-              清除
-            </button>
-          </div>
+          <!-- 篩選面板 -->
+          <QuestionFilterPanel v-model="filters" :tags="tagOptions" :loading="loading" :total-count="totalCount"
+            :show-title="false" :show-result-count="false" @search="handleFilterChange" @reset="resetFilters" />
         </div>
 
         <!-- 題目列表 -->
@@ -220,7 +193,7 @@
 import { ref, computed, onMounted } from 'vue'
 import questionService from '../services/questionService'
 import tagService from '../services/tagService'
-import TagFilter from '@/components/common/TagFilter.vue'
+import QuestionFilterPanel from '@/components/common/QuestionFilterPanel.vue'
 
 const props = defineProps({
   existingQuestionIds: {
@@ -233,22 +206,23 @@ const emit = defineEmits(['close', 'add'])
 
 const allQuestions = ref([])
 const loading = ref(false)
-const searchKeyword = ref('')
 const selectedQuestions = ref([])
 const points = ref(1)
 
 // 篩選相關
-const selectedSubject = ref('')
-const selectedTags = ref([])
-const tagSearchMode = ref('or')
+const filters = ref({
+  subject: '',
+  difficulty: '',
+  search: '',
+  tags: [],
+  tag_mode: 'or'
+})
 const tagOptions = ref([])
 
 // 分頁相關
 const currentPage = ref(1)
 const pageSize = ref(20)
 const totalCount = ref(0)
-
-let searchTimeout = null
 
 // 過濾掉已存在的題目
 const filteredQuestions = computed(() => {
@@ -276,7 +250,7 @@ const isPartialSelected = computed(() => {
 })
 
 const hasActiveFilters = computed(() => {
-  return searchKeyword.value || selectedSubject.value || selectedTags.value.length > 0
+  return filters.value.search || filters.value.subject || filters.value.difficulty || filters.value.tags.length > 0
 })
 
 const toggleSelectAll = () => {
@@ -308,13 +282,12 @@ const loadQuestions = async () => {
       page: currentPage.value,
       page_size: pageSize.value
     }
-    if (searchKeyword.value) {
-      params.keyword = searchKeyword.value
-    }
-    if (selectedSubject.value) params.subject = selectedSubject.value
-    if (selectedTags.value.length > 0) {
-      params.tags = selectedTags.value.map(t => t.id).join(',')
-      params.tag_mode = tagSearchMode.value
+    if (filters.value.search) params.search = filters.value.search
+    if (filters.value.subject) params.subject = filters.value.subject
+    if (filters.value.difficulty) params.difficulty = filters.value.difficulty
+    if (filters.value.tags && filters.value.tags.length > 0) {
+      params.tags = filters.value.tags.map(t => t.id).join(',')
+      params.tag_mode = filters.value.tag_mode
     }
 
     const response = await questionService.getQuestions(params)
@@ -345,13 +318,7 @@ const loadTags = async () => {
   }
 }
 
-const handleSearch = () => {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    currentPage.value = 1
-    loadQuestions()
-  }, 500)
-}
+
 
 const handleFilterChange = () => {
   currentPage.value = 1
@@ -359,10 +326,13 @@ const handleFilterChange = () => {
 }
 
 const resetFilters = () => {
-  searchKeyword.value = ''
-  selectedSubject.value = ''
-  selectedTags.value = []
-  tagSearchMode.value = 'or'
+  filters.value = {
+    subject: '',
+    difficulty: '',
+    search: '',
+    tags: [],
+    tag_mode: 'or'
+  }
   currentPage.value = 1
   loadQuestions()
 }
@@ -530,11 +500,12 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
-.search-row {
-  margin-bottom: 12px;
+/* Selection Row */
+.selection-row {
+  margin-bottom: 16px;
 }
 
-.search-control {
+.selection-control {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -543,12 +514,6 @@ onMounted(() => {
   border-radius: 12px;
   padding: 12px 16px;
   transition: all 0.2s ease;
-}
-
-.search-control:focus-within {
-  border-color: var(--primary, #476996);
-  background: white;
-  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
 }
 
 .select-all-checkbox {
@@ -560,23 +525,11 @@ onMounted(() => {
   accent-color: var(--primary, #476996);
 }
 
-.search-icon {
-  color: var(--text-secondary, #64748B);
-  flex-shrink: 0;
-}
-
-.search-input {
-  flex: 1;
-  border: none;
-  background: transparent;
+.selection-label {
   font-size: 14px;
+  font-weight: 500;
   color: var(--text-primary, #1E293B);
-  outline: none;
-  min-width: 0;
-}
-
-.search-input::placeholder {
-  color: var(--text-secondary, #64748B);
+  flex-shrink: 0;
 }
 
 .selection-badge {
@@ -588,95 +541,7 @@ onMounted(() => {
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
-}
-
-/* Filter Row */
-.filter-row {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.filter-group {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex: 1;
-  min-width: 200px;
-}
-
-.filter-icon {
-  position: absolute;
-  left: 12px;
-  color: var(--text-secondary, #64748B);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.filter-select {
-  padding: 10px 36px 10px 38px;
-  border: 2px solid var(--border, #CBD5E1);
-  border-radius: 10px;
-  font-size: 14px;
-  background: var(--bg-page, #F8FAFC);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  min-width: 140px;
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: var(--primary, #476996);
-  background-color: white;
-  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
-}
-
-.filter-input {
-  padding: 10px 16px 10px 38px;
-  border: 2px solid var(--border, #CBD5E1);
-  border-radius: 10px;
-  font-size: 14px;
-  background: var(--bg-page, #F8FAFC);
-  transition: all 0.2s ease;
-  min-width: 140px;
-}
-
-.filter-input:focus {
-  outline: none;
-  border-color: var(--primary, #476996);
-  background-color: white;
-  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
-}
-
-.filter-input::placeholder {
-  color: var(--text-secondary, #64748B);
-}
-
-
-.filter-reset-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border: 2px solid var(--border, #CBD5E1);
-  border-radius: 10px;
-  background: white;
-  color: var(--text-secondary, #64748B);
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.filter-reset-btn:hover {
-  background: #f9fafb;
-  color: var(--text-primary, #1E293B);
-  border-color: #94a3b8;
+  margin-left: auto;
 }
 
 /* Loading State */

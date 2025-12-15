@@ -10,18 +10,14 @@ from drf_yasg import openapi
 from django.db import transaction
 from django.db.models import Sum, Count, Avg
 
-from .models import Exam, MockExam, ExamResult, WrongQuestion
+from .models import Exam, ExamResult, WrongQuestion
 from question_bank.models import ExamQuestion, Question, QuestionOption, Subject, Bookmark
-from question_bank.services.ai_service import ai_service
-from question_bank.services.rag_service import rag_service
 from .serializers import (
     ExamListSerializer,
     ExamDetailSerializer,
     ExamCreateUpdateSerializer,
     ExamQuestionCreateSerializer,
     ExamQuestionSerializer,
-    MockExamSerializer,
-    MockExamGenerateSerializer,
     ExamResultSerializer,
     ExamResultCreateSerializer,
     WrongQuestionSerializer
@@ -44,8 +40,14 @@ class ExamViewSet(viewsets.ModelViewSet):
     remove_question: 從考卷移除題目
     update_question: 更新考卷中的題目資訊（順序、配分）
     """
-    queryset = Exam.objects.all().prefetch_related('exam_questions__question')
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """一般使用者只能看到自己的考卷,管理員可以看到所有"""
+        user = self.request.user
+        if user.is_staff:
+            return Exam.objects.all().prefetch_related('exam_questions__question')
+        return Exam.objects.filter(created_by=user).prefetch_related('exam_questions__question')
 
     def get_serializer_class(self):
         """根據不同的動作回傳不同的序列化器"""
@@ -54,6 +56,12 @@ class ExamViewSet(viewsets.ModelViewSet):
         elif self.action in ['create', 'update', 'partial_update']:
             return ExamCreateUpdateSerializer
         return ExamDetailSerializer
+    
+    def get_serializer_context(self):
+        """添加 request 到序列化器 context"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     @swagger_auto_schema(
         operation_summary="取得考卷列表",
@@ -81,12 +89,15 @@ class ExamViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        # 自動設定 created_by_admin
+        # 自動設定 created_by 和 created_by_admin
         is_admin = request.user.is_staff or request.user.is_superuser
-        exam = serializer.save(created_by_admin=is_admin)
+        exam = serializer.save(
+            created_by=request.user,
+            created_by_admin=is_admin
+        )
 
         # 使用 ExamDetailSerializer 回傳完整資訊
-        response_serializer = ExamDetailSerializer(exam)
+        response_serializer = ExamDetailSerializer(exam, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     @swagger_auto_schema(
@@ -98,12 +109,18 @@ class ExamViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
+        
+        # 檢查權限
+        if not self._has_permission(instance):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("您沒有權限修改此考卷")
+        
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         exam = serializer.save()
 
         # 使用 ExamDetailSerializer 回傳完整資訊
-        response_serializer = ExamDetailSerializer(exam)
+        response_serializer = ExamDetailSerializer(exam, context={'request': request})
         return Response(response_serializer.data)
 
     @swagger_auto_schema(
@@ -122,7 +139,19 @@ class ExamViewSet(viewsets.ModelViewSet):
         responses={204: "刪除成功"}
     )
     def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # 檢查權限
+        if not self._has_permission(instance):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("您沒有權限刪除此考卷")
+        
         return super().destroy(request, *args, **kwargs)
+    
+    def _has_permission(self, exam):
+        """檢查使用者是否有權限操作此考卷"""
+        user = self.request.user
+        return user.is_staff or exam.created_by == user
 
     @swagger_auto_schema(
         method='post',
@@ -350,167 +379,6 @@ class ExamViewSet(viewsets.ModelViewSet):
             )
 
 
-class MockExamView(APIView):
-    """模擬測驗生成與列表 API"""
-    permission_classes = [IsAuthenticated]
-
-    @swagger_auto_schema(
-        operation_summary="產生模擬測驗",
-        operation_description="透過 AI/題庫生成模擬測驗",
-        request_body=MockExamGenerateSerializer,
-        responses={201: MockExamSerializer()}
-    )
-    def post(self, request):
-        serializer = MockExamGenerateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-
-        subject = data['subject']
-        requested_question_count = data['question_count']
-        difficulty = data['difficulty']
-        reuse_question_bank = data['reuse_question_bank']
-        topic = data.get('topic')
-        exam_year = data.get('exam_year')
-        time_limit = data.get('time_limit')
-        name = data['name']
-
-        exam = None
-
-        if reuse_question_bank:
-            selected_questions = self._select_questions_from_bank(subject, requested_question_count, difficulty, topic)
-            if not selected_questions:
-                return Response({"error": "題庫中沒有符合條件的題目"}, status=status.HTTP_404_NOT_FOUND)
-            exam = self._create_exam_from_existing_questions(name, subject, selected_questions)
-            question_count = len(selected_questions)
-        else:
-            generated_questions = self._generate_questions_with_ai(subject, requested_question_count, difficulty, exam_year, topic)
-            if not generated_questions:
-                return Response({"error": "無法生成題目，請稍後再試"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-            exam = self._persist_generated_exam(name, subject, generated_questions)
-            question_count = len(generated_questions)
-
-        mock_exam = MockExam.objects.create(
-            user=request.user,
-            exam=exam,
-            name=name,
-            subject=subject,
-            question_count=question_count,
-            time_limit=time_limit,
-            ai_generated=not reuse_question_bank
-        )
-
-        return Response(MockExamSerializer(mock_exam).data, status=status.HTTP_201_CREATED)
-
-    @swagger_auto_schema(
-        operation_summary="取得模擬測驗列表",
-        responses={200: MockExamSerializer(many=True)}
-    )
-    def get(self, request):
-        mock_exams = MockExam.objects.filter(user=request.user).select_related('subject', 'exam').order_by('-generated_at')
-        serializer = MockExamSerializer(mock_exams, many=True)
-        return Response(serializer.data)
-
-    def _generate_questions_with_ai(self, subject, question_count, difficulty, exam_year=None, topic=None):
-        rag_context = rag_service.get_context_for_question_generation(subject.name, topic) if rag_service.is_configured() else None
-        ai_result = ai_service.generate_mock_exam(
-            subject=subject.name,
-            question_count=question_count,
-            difficulty=difficulty,
-            exam_year=exam_year,
-            rag_context=rag_context
-        )
-        return ai_result.get('questions', [])
-
-    def _select_questions_from_bank(self, subject, question_count, difficulty, topic=None):
-        filters = {
-            'subject': subject,
-            'question_type': '選擇題'
-        }
-        if difficulty:
-            filters['difficulty'] = difficulty
-        if topic:
-            filters['content__icontains'] = topic
-
-        return list(
-            Question.objects.filter(**filters)
-            .prefetch_related('options')
-            .order_by('?')[:question_count]
-        )
-
-    def _create_exam_from_existing_questions(self, name, subject, questions):
-        exam = Exam.objects.create(
-            name=name,
-            description=f"題庫抽選的 {subject.name} 模擬測驗",
-            time_limit=None
-        )
-
-        with transaction.atomic():
-            for index, question in enumerate(questions, start=1):
-                ExamQuestion.objects.create(
-                    exam=exam,
-                    question=question,
-                    order=index
-                )
-        return exam
-
-    def _persist_generated_exam(self, name, subject, generated_questions):
-        exam = Exam.objects.create(
-            name=name,
-            description=f"AI 生成的 {subject.name} 模擬測驗",
-            time_limit=None
-        )
-
-        with transaction.atomic():
-            for index, question_data in enumerate(generated_questions, start=1):
-                question = Question.objects.create(
-                    subject=subject,
-                    content=question_data['content'],
-                    question_type='選擇題',
-                    difficulty='medium'
-                )
-                options = question_data.get('options', [])
-                for opt in options:
-                    QuestionOption.objects.create(
-                        question=question,
-                        content=opt['text'],
-                        is_correct=opt.get('label') == question_data.get('correct_answer'),
-                        order=ord(opt.get('label', 'A')) - 64
-                    )
-
-                ExamQuestion.objects.create(
-                    exam=exam,
-                    question=question,
-                    order=index
-                )
-        return exam
-
-
-class MockExamDetailView(APIView):
-    """模擬測驗詳細 API"""
-    permission_classes = [IsAuthenticated]
-
-    @swagger_auto_schema(
-        operation_summary="取得模擬測驗詳細資訊",
-        responses={200: MockExamSerializer()}
-    )
-    def get(self, request, pk):
-        mock_exam = self._get_mock_exam(pk, request.user)
-        return Response(MockExamSerializer(mock_exam).data)
-
-    @swagger_auto_schema(operation_summary="刪除模擬測驗")
-    def delete(self, request, pk):
-        mock_exam = self._get_mock_exam(pk, request.user)
-        mock_exam.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    def _get_mock_exam(self, pk, user):
-        try:
-            mock_exam = MockExam.objects.select_related('subject', 'exam').get(pk=pk, user=user)
-            return mock_exam
-        except MockExam.DoesNotExist:
-            raise NotFound({"error": "模擬測驗不存在"})
-
-
 class ExamResultView(APIView):
     """考試結果 API"""
     permission_classes = [IsAuthenticated]
@@ -682,125 +550,6 @@ class ExamStatsView(APIView):
         })
 
 
-class WrongQuestionExamView(APIView):
-    """從錯題生成模擬考卷 API"""
-    permission_classes = [IsAuthenticated]
-
-    @swagger_auto_schema(
-        operation_summary="從錯題生成模擬考卷",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'name': openapi.Schema(type=openapi.TYPE_STRING, description='考卷名稱'),
-                'question_ids': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_INTEGER), description='題目 ID 列表（可選，不提供則使用所有錯題）'),
-                'limit': openapi.Schema(type=openapi.TYPE_INTEGER, description='題目數量上限（可選）'),
-                'unreviewed_only': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='僅使用未複習的錯題'),
-            }
-        ),
-        responses={201: MockExamSerializer()}
-    )
-    def post(self, request):
-        name = request.data.get('name', '錯題複習測驗')
-        question_ids = request.data.get('question_ids')
-        limit = request.data.get('limit')
-        unreviewed_only = request.data.get('unreviewed_only', False)
-
-        wrong_qs = WrongQuestion.objects.filter(user=request.user).select_related('question')
-        
-        if unreviewed_only:
-            wrong_qs = wrong_qs.filter(reviewed=False)
-        
-        if question_ids:
-            wrong_qs = wrong_qs.filter(question_id__in=question_ids)
-        
-        wrong_qs = wrong_qs.order_by('-wrong_count', '-last_wrong_at')
-        
-        if limit:
-            wrong_qs = wrong_qs[:limit]
-
-        questions = [wq.question for wq in wrong_qs]
-        
-        if not questions:
-            return Response({"error": "沒有符合條件的錯題"}, status=status.HTTP_404_NOT_FOUND)
-
-        exam = Exam.objects.create(
-            name=name,
-            description=f"從 {len(questions)} 道錯題生成的複習測驗",
-            time_limit=None
-        )
-
-        with transaction.atomic():
-            for index, question in enumerate(questions, start=1):
-                ExamQuestion.objects.create(exam=exam, question=question, order=index)
-
-        mock_exam = MockExam.objects.create(
-            user=request.user,
-            exam=exam,
-            name=name,
-            question_count=len(questions),
-            ai_generated=False
-        )
-
-        return Response(MockExamSerializer(mock_exam).data, status=status.HTTP_201_CREATED)
-
-
-class BookmarkExamView(APIView):
-    """從收藏題目生成模擬考卷 API"""
-    permission_classes = [IsAuthenticated]
-
-    @swagger_auto_schema(
-        operation_summary="從收藏題目生成模擬考卷",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'name': openapi.Schema(type=openapi.TYPE_STRING, description='考卷名稱'),
-                'question_ids': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_INTEGER), description='題目 ID 列表（可選）'),
-                'limit': openapi.Schema(type=openapi.TYPE_INTEGER, description='題目數量上限（可選）'),
-            }
-        ),
-        responses={201: MockExamSerializer()}
-    )
-    def post(self, request):
-        name = request.data.get('name', '收藏題目測驗')
-        question_ids = request.data.get('question_ids')
-        limit = request.data.get('limit')
-
-        bookmarks = Bookmark.objects.filter(user=request.user).select_related('question')
-        
-        if question_ids:
-            bookmarks = bookmarks.filter(question_id__in=question_ids)
-        
-        bookmarks = bookmarks.order_by('-created_at')
-        
-        if limit:
-            bookmarks = bookmarks[:limit]
-
-        questions = [b.question for b in bookmarks]
-        
-        if not questions:
-            return Response({"error": "沒有符合條件的收藏題目"}, status=status.HTTP_404_NOT_FOUND)
-
-        exam = Exam.objects.create(
-            name=name,
-            description=f"從 {len(questions)} 道收藏題目生成的測驗",
-            time_limit=None
-        )
-
-        with transaction.atomic():
-            for index, question in enumerate(questions, start=1):
-                ExamQuestion.objects.create(exam=exam, question=question, order=index)
-
-        mock_exam = MockExam.objects.create(
-            user=request.user,
-            exam=exam,
-            name=name,
-            question_count=len(questions),
-            ai_generated=False
-        )
-
-        return Response(MockExamSerializer(mock_exam).data, status=status.HTTP_201_CREATED)
-
-
 class CustomExamView(APIView):
     """從任意題目 ID 列表生成考卷 API"""
     permission_classes = [IsAuthenticated]
@@ -816,7 +565,7 @@ class CustomExamView(APIView):
                 'time_limit': openapi.Schema(type=openapi.TYPE_INTEGER, description='時間限制（分鐘）'),
             }
         ),
-        responses={201: MockExamSerializer()}
+        responses={201: ExamDetailSerializer()}
     )
     def post(self, request):
         name = request.data.get('name', '自訂測驗')
@@ -835,23 +584,18 @@ class CustomExamView(APIView):
         id_to_question = {q.id: q for q in questions}
         ordered_questions = [id_to_question[qid] for qid in question_ids if qid in id_to_question]
 
+        # 建立考卷並自動設定建立者
         exam = Exam.objects.create(
             name=name,
             description=f"包含 {len(ordered_questions)} 道題目的自訂測驗",
-            time_limit=time_limit
+            time_limit=time_limit,
+            created_by=request.user
         )
 
         with transaction.atomic():
             for index, question in enumerate(ordered_questions, start=1):
                 ExamQuestion.objects.create(exam=exam, question=question, order=index)
 
-        mock_exam = MockExam.objects.create(
-            user=request.user,
-            exam=exam,
-            name=name,
-            question_count=len(ordered_questions),
-            time_limit=time_limit,
-            ai_generated=False
-        )
-
-        return Response(MockExamSerializer(mock_exam).data, status=status.HTTP_201_CREATED)
+        # 直接回傳 Exam 資料
+        serializer = ExamDetailSerializer(exam, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

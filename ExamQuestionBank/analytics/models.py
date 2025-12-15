@@ -26,13 +26,3 @@ class Recommendation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     seen = models.BooleanField(default=False)
 
-
-class MockExamPerformance(models.Model):
-    """Stores results from mock exams for analytics."""
-
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mock_exam_performance')
-    mock_exam = models.ForeignKey('exams.MockExam', on_delete=models.CASCADE, related_name='performances')
-    score = models.DecimalField(max_digits=5, decimal_places=2)
-    duration_seconds = models.IntegerField()
-    completed_at = models.DateTimeField(auto_now_add=True)
-

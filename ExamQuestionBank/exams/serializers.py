@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Exam, MockExam, ExamResult, WrongQuestion
+from .models import Exam, ExamResult, WrongQuestion
 from question_bank.models import ExamQuestion, Question, Subject
 
 
@@ -37,14 +37,26 @@ class WrongQuestionSerializer(serializers.ModelSerializer):
 class ExamListSerializer(serializers.ModelSerializer):
     """考卷列表序列化器"""
     question_count = serializers.SerializerMethodField()
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True, allow_null=True)
+    is_owner = serializers.SerializerMethodField()
 
     class Meta:
         model = Exam
-        fields = ['id', 'name', 'description', 'time_limit', 'created_by_admin', 'created_at', 'updated_at', 'question_count']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = [
+            'id', 'name', 'description', 'time_limit',
+            'created_by', 'created_by_username', 'created_by_admin',
+            'is_owner', 'created_at', 'updated_at', 'question_count'
+        ]
+        read_only_fields = ['id', 'created_by', 'created_by_username', 'created_at', 'updated_at']
 
     def get_question_count(self, obj):
         return obj.exam_questions.count()
+    
+    def get_is_owner(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.created_by == request.user or request.user.is_staff
+        return False
 
 
 class ExamQuestionSerializer(serializers.ModelSerializer):
@@ -62,11 +74,16 @@ class ExamQuestionSerializer(serializers.ModelSerializer):
 class ExamDetailSerializer(serializers.ModelSerializer):
     """考卷詳細序列化器，包含所有題目"""
     exam_questions = ExamQuestionSerializer(many=True, read_only=True)
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True, allow_null=True)
 
     class Meta:
         model = Exam
-        fields = ['id', 'name', 'description', 'time_limit', 'created_by_admin', 'created_at', 'updated_at', 'exam_questions']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = [
+            'id', 'name', 'description', 'time_limit',
+            'created_by', 'created_by_username', 'created_by_admin',
+            'created_at', 'updated_at', 'exam_questions'
+        ]
+        read_only_fields = ['id', 'created_by', 'created_by_username', 'created_at', 'updated_at']
 
 
 class ExamCreateUpdateSerializer(serializers.ModelSerializer):
@@ -75,6 +92,7 @@ class ExamCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exam
         fields = ['name', 'description', 'time_limit']
+        # created_by 不在 fields 中,由後端自動設定
 
 
 class ExamQuestionCreateSerializer(serializers.ModelSerializer):
@@ -90,57 +108,3 @@ class ExamQuestionCreateSerializer(serializers.ModelSerializer):
         if question_id and not Question.objects.filter(id=question_id.id).exists():
             raise serializers.ValidationError({"question": "題目不存在"})
         return data
-
-
-class MockExamSerializer(serializers.ModelSerializer):
-    """模擬測驗序列化器"""
-    subject_name = serializers.CharField(source='subject.name', read_only=True)
-    exam = ExamDetailSerializer(read_only=True)
-
-    class Meta:
-        model = MockExam
-        fields = [
-            'id', 'name', 'subject', 'subject_name', 'question_count',
-            'time_limit', 'ai_generated', 'generated_at', 'exam', 'created_at',
-            'updated_at'
-        ]
-        read_only_fields = [
-            'id', 'question_count', 'generated_at', 'created_at',
-            'updated_at', 'ai_generated', 'exam'
-        ]
-
-
-class MockExamGenerateSerializer(serializers.Serializer):
-    """模擬測驗生成請求序列化器"""
-    name = serializers.CharField(required=False, allow_blank=True, max_length=200)
-    subject_id = serializers.IntegerField(required=False)
-    subject_name = serializers.CharField(required=False, allow_blank=True)
-    topic = serializers.CharField(required=False, allow_blank=True)
-    question_count = serializers.IntegerField(min_value=1, max_value=100, default=20)
-    difficulty = serializers.ChoiceField(choices=['easy', 'medium', 'hard'], default='medium')
-    exam_year = serializers.IntegerField(required=False)
-    time_limit = serializers.IntegerField(required=False, min_value=5, max_value=600)
-    reuse_question_bank = serializers.BooleanField(default=False)
-
-    def validate(self, attrs):
-        subject = None
-        subject_id = attrs.get('subject_id')
-        subject_name = attrs.get('subject_name')
-
-        if subject_id:
-            subject = Subject.objects.filter(id=subject_id).first()
-            if not subject:
-                raise serializers.ValidationError({'subject_id': '科目不存在'})
-        elif subject_name:
-            subject = Subject.objects.filter(name__iexact=subject_name.strip()).first()
-            if not subject:
-                raise serializers.ValidationError({'subject_name': '找不到指定科目'})
-        else:
-            raise serializers.ValidationError('必須提供 subject_id 或 subject_name')
-
-        attrs['subject'] = subject
-
-        if not attrs.get('name'):
-            attrs['name'] = f"{subject.name} 模擬測驗"
-
-        return attrs

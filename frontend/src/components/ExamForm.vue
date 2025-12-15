@@ -2,7 +2,8 @@
   <div class="exam-form-card">
     <div class="form-header">
       <div class="header-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
           <polyline points="14 2 14 8 20 8"></polyline>
           <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -19,58 +20,45 @@
     <form @submit.prevent="handleSubmit" class="exam-form">
       <div class="form-group">
         <label for="name" class="form-label">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
             <polyline points="14 2 14 8 20 8"></polyline>
           </svg>
           <span>考卷名稱 <span class="required">*</span></span>
         </label>
-        <input
-          id="name"
-          v-model="formData.name"
-          type="text"
-          required
-          placeholder="例如：期中考、期末考、隨堂測驗..."
-          class="form-input"
-        />
+        <input id="name" v-model="formData.name" type="text" required placeholder="例如：期中考、期末考、隨堂測驗..."
+          class="form-input" />
       </div>
 
       <div class="form-group">
         <label for="description" class="form-label">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
           <span>考試說明</span>
         </label>
-        <textarea
-          id="description"
-          v-model="formData.description"
-          rows="3"
-          placeholder="輸入考試相關說明、注意事項或範圍..."
-          class="form-textarea"
-        ></textarea>
+        <textarea id="description" v-model="formData.description" rows="3" placeholder="輸入考試相關說明、注意事項或範圍..."
+          class="form-textarea"></textarea>
       </div>
 
       <div class="form-group">
         <label for="time_limit" class="form-label">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
           <span>考試時間限制（分鐘）</span>
         </label>
-        <input
-          id="time_limit"
-          v-model.number="formData.time_limit"
-          type="number"
-          min="1"
-          placeholder="設定考試時間限制，例如：60"
-          class="form-input"
-        />
+        <input id="time_limit" v-model.number="formData.time_limit" type="number" min="1" placeholder="設定考試時間限制，例如：60"
+          class="form-input" />
       </div>
 
       <div v-if="formError" class="form-error">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"></circle>
           <line x1="12" y1="8" x2="12" y2="12"></line>
           <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -80,14 +68,16 @@
 
       <div class="form-actions">
         <button type="submit" class="btn-submit" :disabled="saving">
-          <svg v-if="!saving" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg v-if="!saving" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
           <div v-else class="btn-spinner"></div>
           {{ saving ? '儲存中...' : '儲存考卷' }}
         </button>
         <button type="button" class="btn-cancel" @click="handleCancel">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -388,7 +378,9 @@ watch(() => props.exam, (newExam) => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive */

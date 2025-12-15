@@ -10,6 +10,7 @@ const route = useRoute()
 const tabs = [
   { name: '首頁', path: '/', key: 'landing' },
   { name: '練習模式', path: '/practice', key: 'practice' },
+  { name: '我的考卷', path: '/user-exam', key: 'user-exam' },
   { name: '快閃卡', path: '/flashcard', key: 'flashcard' },
   { name: 'AI 申論解析', path: '/essay-analysis', key: 'essay-analysis' },
   { name: '學習追蹤', path: '/analytics', key: 'analytics' },
@@ -122,13 +123,8 @@ onMounted(() => {
     <!-- Navigation -->
     <nav>
       <div class="nav-container">
-        <router-link
-          v-for="tab in visibleTabs"
-          :key="tab.key"
-          :to="tab.path"
-          active-class="active"
-          exact-active-class="active"
-        >
+        <router-link v-for="tab in visibleTabs" :key="tab.key" :to="tab.path" active-class="active"
+          exact-active-class="active">
           {{ tab.name }}
         </router-link>
       </div>
@@ -140,35 +136,39 @@ onMounted(() => {
     </main>
 
     <!-- Login Modal -->
-    <LoginModal
-      :visible="showLoginModal"
-      @close="handleModalClose"
-      @success="handleLoginSuccess"
-    />
+    <LoginModal :visible="showLoginModal" @close="handleModalClose" @success="handleLoginSuccess" />
   </div>
 </template>
 
 <style scoped>
 :global(:root) {
   /* Palette: Professional Slate & Steel */
-  --bg-page: #F8FAFC;      /* Slate 50 - Cool Light Base */
+  --bg-page: #F8FAFC;
+  /* Slate 50 - Cool Light Base */
   --surface: #FFFFFF;
-  --surface-muted: #E2E8F0; /* Slate 200 - Cool Grey */
-  
+  --surface-muted: #E2E8F0;
+  /* Slate 200 - Cool Grey */
+
   /* Primary: Professional Slate Blue */
-  --primary: #476996;      /* Calm, authoritative Blue */
+  --primary: #476996;
+  /* Calm, authoritative Blue */
   --primary-hover: #35527a;
-  --primary-soft: #EEF2FF; /* Indigo 50 - Very light cool blue */
-  
+  --primary-soft: #EEF2FF;
+  /* Indigo 50 - Very light cool blue */
+
   /* Text */
-  --text-primary: #1E293B; /* Slate 800 - Deep, readable contrast */
-  --text-secondary: #64748B; /* Slate 500 - Professional Grey */
-  
+  --text-primary: #1E293B;
+  /* Slate 800 - Deep, readable contrast */
+  --text-secondary: #64748B;
+  /* Slate 500 - Professional Grey */
+
   /* Borders & Shadows */
-  --border: #CBD5E1;       /* Slate 300 */
+  --border: #CBD5E1;
+  /* Slate 300 */
   --shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06);
   --shadow-hover: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
-  --radius: 12px;          /* Slightly less rounded for professional look */
+  --radius: 12px;
+  /* Slightly less rounded for professional look */
 }
 
 .app-container {

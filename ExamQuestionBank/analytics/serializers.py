@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import StudyMetric, Recommendation, MockExamPerformance
+from .models import StudyMetric, Recommendation
 
 
 class StudyMetricSerializer(serializers.ModelSerializer):
@@ -14,10 +14,3 @@ class RecommendationSerializer(serializers.ModelSerializer):
         model = Recommendation
         fields = '__all__'
         read_only_fields = ['user', 'created_at']
-
-
-class MockExamPerformanceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MockExamPerformance
-        fields = '__all__'
-        read_only_fields = ['user', 'completed_at']
