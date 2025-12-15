@@ -47,7 +47,17 @@ class ExamViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_staff:
             return Exam.objects.all().prefetch_related('exam_questions__question')
-        return Exam.objects.filter(created_by=user).prefetch_related('exam_questions__question')
+            
+        # 若是 list 動作 (查詢我的考卷)，僅回傳自己建立的
+        if self.action == 'list':
+            return Exam.objects.filter(created_by=user).prefetch_related('exam_questions__question')
+
+        # 其他動作 (retrieve, update, destroy 等)
+        # 允許查詢管理員建立的公開考卷 (權限控制由 _has_permission 處理修改/刪除)
+        from django.db.models import Q
+        return Exam.objects.filter(
+            Q(created_by=user) | Q(created_by_admin=True)
+        ).prefetch_related('exam_questions__question')
 
     def get_serializer_class(self):
         """根據不同的動作回傳不同的序列化器"""
@@ -302,6 +312,28 @@ class ExamViewSet(viewsets.ModelViewSet):
         exams = self.filter_queryset(self.get_queryset()).order_by('-created_at')
         page = self.paginate_queryset(exams)
         serializer = ExamListSerializer(page, many=True) if page is not None else ExamListSerializer(exams, many=True)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='practice-list')
+    def practice_list(self, request):
+        """獲取練習模式的考卷列表：管理員建立的考卷 + 使用者自己的考卷"""
+        from django.db.models import Q
+        user = request.user
+        
+        # 查詢條件：管理員建立的考卷 OR 使用者自己建立的考卷
+        exams = Exam.objects.filter(
+            Q(created_by_admin=True) | Q(created_by=user)
+        ).prefetch_related('exam_questions__question').order_by('-created_at')
+        
+        page = self.paginate_queryset(exams)
+        serializer = ExamListSerializer(
+            page if page is not None else exams, 
+            many=True, 
+            context={'request': request}
+        )
+        
         if page is not None:
             return self.get_paginated_response(serializer.data)
         return Response(serializer.data)

@@ -140,8 +140,27 @@ class QuestionViewSet(viewsets.ModelViewSet):
     search_fields = ['content', 'subject', 'category']
 
     def get_queryset(self):
-        """支援 keyword 和 tags 篩選"""
+        """支援 keyword、tags 和 source 篩選"""
         queryset = super().get_queryset()
+        user = self.request.user
+        
+        # source 篩選（題目來源：wrong=錯題本, bookmark=收藏, all=全部）
+        source = self.request.query_params.get('source', 'all').strip().lower()
+        if source == 'wrong':
+            # 只顯示使用者的錯題
+            from exams.models import WrongQuestion
+            wrong_question_ids = WrongQuestion.objects.filter(
+                user=user
+            ).values_list('question_id', flat=True)
+            queryset = queryset.filter(id__in=wrong_question_ids)
+        elif source == 'bookmark':
+            # 只顯示使用者的收藏題目
+            from .models import Bookmark
+            bookmark_question_ids = Bookmark.objects.filter(
+                user=user
+            ).values_list('question_id', flat=True)
+            queryset = queryset.filter(id__in=bookmark_question_ids)
+        # source == 'all' 或其他值：不篩選，顯示全部題目
         
         # keyword 篩選（搜尋題目內容、科目、分類，以及選項內容）
         keyword = self.request.query_params.get('keyword', '').strip()

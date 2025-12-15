@@ -21,6 +21,16 @@
                 </select>
             </div>
 
+            <!-- Source Filter -->
+            <div v-if="showSourceFilter" class="filter-item">
+                <label class="filter-label">題目來源</label>
+                <select v-model="localFilters.source" class="filter-select" @change="emitUpdate">
+                    <option value="all">全部題目</option>
+                    <option value="wrong">錯題本</option>
+                    <option value="bookmark">收藏題目</option>
+                </select>
+            </div>
+
             <!-- Keyword Search -->
             <div v-if="showKeywordSearch" class="filter-item filter-item-wide">
                 <label class="filter-label">關鍵字搜尋</label>
@@ -71,7 +81,8 @@ const props = defineProps({
             difficulty: '',
             search: '',
             tags: [],
-            tag_mode: 'or'
+            tag_mode: 'or',
+            source: 'all'
         })
     },
     tags: {
@@ -113,6 +124,10 @@ const props = defineProps({
     showResultCount: {
         type: Boolean,
         default: true
+    },
+    showSourceFilter: {
+        type: Boolean,
+        default: true
     }
 })
 
@@ -140,7 +155,8 @@ const handleReset = () => {
         difficulty: '',
         search: '',
         tags: [],
-        tag_mode: 'or'
+        tag_mode: 'or',
+        source: 'all'
     }
     emitUpdate()
     emit('reset')

@@ -215,7 +215,8 @@ const filters = ref({
   difficulty: '',
   search: '',
   tags: [],
-  tag_mode: 'or'
+  tag_mode: 'or',
+  source: 'all'
 })
 const tagOptions = ref([])
 
@@ -289,6 +290,9 @@ const loadQuestions = async () => {
       params.tags = filters.value.tags.map(t => t.id).join(',')
       params.tag_mode = filters.value.tag_mode
     }
+    if (filters.value.source) {
+      params.source = filters.value.source
+    }
 
     const response = await questionService.getQuestions(params)
     const data = response.data
@@ -331,7 +335,8 @@ const resetFilters = () => {
     difficulty: '',
     search: '',
     tags: [],
-    tag_mode: 'or'
+    tag_mode: 'or',
+    source: 'all'
   }
   currentPage.value = 1
   loadQuestions()

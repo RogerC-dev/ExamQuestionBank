@@ -298,6 +298,9 @@ const handleSearchQuestions = async (filters, page = 1, pageSize = 20) => {
             params.tags = filters.tags.map(t => t.id).join(',')
             params.tag_mode = filters.tag_mode
         }
+        if (filters.source) {
+            params.source = filters.source
+        }
 
         const { data } = await api.get('/question_bank/questions/', { params })
 

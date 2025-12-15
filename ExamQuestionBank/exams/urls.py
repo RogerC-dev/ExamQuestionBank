@@ -9,8 +9,8 @@ router = DefaultRouter()
 router.register(r'exams', ExamViewSet, basename='exam')
 
 urlpatterns = [
-    path("", include(router.urls)),
     path("exams/custom/", CustomExamView.as_view(), name="exam-custom"),
+    path("", include(router.urls)),
     path("exam-results/", ExamResultView.as_view(), name="exam-results"),
     path("exam-stats/", ExamStatsView.as_view(), name="exam-stats"),
     path("wrong-questions/", WrongQuestionView.as_view(), name="wrong-questions"),

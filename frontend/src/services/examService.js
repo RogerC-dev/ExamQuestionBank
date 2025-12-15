@@ -35,6 +35,9 @@ const examService = {
   getHistoricalExams(params = {}) {
     return api.get('/exams/historical/', { params }).catch(handle401)
   },
+  getPracticeExams(params = {}) {
+    return api.get('/exams/practice-list/', { params }).catch(handle401)
+  },
   startExam(examId) {
     return api.post(`/exams/${examId}/start/`).catch(handle401)
   },

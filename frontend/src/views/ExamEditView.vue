@@ -325,8 +325,14 @@ const handleSaveExam = async (examData) => {
       const response = await examService.createExam(examData)
       exam.value = response.data
       currentExamId = response.data.id
-      // 導向編輯頁面
-      await router.replace(`/admin/exams/${response.data.id}/edit`)
+      // 根據使用者角色導向不同頁面
+      if (isAdmin.value) {
+        // 管理員導向管理員編輯頁面
+        await router.replace(`/admin/exams/${response.data.id}/edit`)
+      } else {
+        // 普通使用者導向普通編輯頁面
+        await router.replace(`/exams/${response.data.id}/edit`)
+      }
     }
 
     const summaryParts = []
@@ -900,6 +906,9 @@ const handleSearchQuestions = async (filters, page = 1, pageSize = 20) => {
     if (filters.tags && filters.tags.length > 0) {
       params.tags = filters.tags.map(t => t.id).join(',')
       params.tag_mode = filters.tag_mode
+    }
+    if (filters.source) {
+      params.source = filters.source
     }
 
     const { data } = await api.get('/question_bank/questions/', { params })
