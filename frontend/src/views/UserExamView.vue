@@ -17,7 +17,7 @@
                     </svg>
                     我的考卷列表
                 </button>
-                <button class="tab-btn" :class="{ active: activeTab === 'create' }" @click="activeTab = 'create'">
+                <button class="tab-btn" @click="router.push('/exams/create')">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -105,89 +105,12 @@
 
             <!-- Create Exam Tab -->
             <div v-if="activeTab === 'create'" class="tab-content">
-                <!-- Filters Section -->
-                <QuestionFilterPanel v-model="filters" :tags="tags" :loading="loading" :total-count="totalCount"
-                    @search="loadQuestions" @reset="resetFilters" />
-
-                <!-- Selected Questions Summary -->
-                <div v-if="selectedQuestions.size > 0" class="selected-summary">
-                    <div class="summary-content">
-                        <span class="summary-text">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 11l3 3L22 4"></path>
-                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                            </svg>
-                            已選擇 {{ selectedQuestions.size }} 題
-                        </span>
-                        <button class="btn btn-ghost btn-sm" @click="clearSelection">清空選擇</button>
-                    </div>
-                </div>
-
-                <!-- Questions List -->
-                <div class="questions-section">
-                    <div class="section-header">
-                        <h2 class="section-title">題目列表</h2>
-                        <div class="selection-actions">
-                            <button class="btn btn-ghost btn-sm" @click="toggleSelectAll"
-                                :disabled="loading || questions.length === 0">
-                                {{ isAllSelected ? '取消全選' : '全選本頁' }}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div v-if="loading" class="loading-state">
-                        <div class="spinner"></div>
-                        <p>載入題目中...</p>
-                    </div>
-
-                    <div v-else-if="questions.length === 0" class="empty-state">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                        <p>找不到符合條件的題目</p>
-                        <button class="btn btn-secondary" @click="resetFilters">重設篩選條件</button>
-                    </div>
-
-                    <div v-else class="questions-list">
-                        <div v-for="question in questions" :key="question.id" class="question-card"
-                            :class="{ 'selected': selectedQuestions.has(question.id) }">
-                            <div class="question-checkbox">
-                                <input type="checkbox" :id="`q-${question.id}`"
-                                    :checked="selectedQuestions.has(question.id)" @change="toggleQuestion(question)" />
-                            </div>
-                            <div class="question-content">
-                                <div class="question-header">
-                                    <label :for="`q-${question.id}`" class="question-text">
-                                        {{ question.content || question.question_content }}
-                                    </label>
-                                    <div class="question-meta">
-                                        <span v-if="question.subject_name" class="meta-badge subject">
-                                            {{ question.subject_name }}
-                                        </span>
-                                        <span v-if="question.difficulty" class="meta-badge difficulty"
-                                            :class="question.difficulty">
-                                            {{ difficultyLabel(question.difficulty) }}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div v-if="question.tags && question.tags.length > 0" class="question-tags">
-                                    <span v-for="tag in question.tags" :key="tag.id" class="tag">
-                                        {{ tag.name }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pagination -->
-                    <PaginationControl v-if="totalCount > pageSize" :pagination-state="paginationState"
-                        :current-page="currentPage" :page-size="pageSize" :is-loading="loading"
-                        @page-change="handlePageChange" @size-change="handlePageSizeChange" />
-                </div>
+                <!-- Question List Component (Search Mode Only) -->
+                <QuestionList :questions="[]" :selected-question-id="null" :loading="false"
+                    :show-auto-distribute="false" :show-add-question="false" :tags="tags"
+                    :search-results="searchQuestions" :search-loading="searchLoading" :total-search-count="totalCount"
+                    :pending-edits="{}" @search-questions="handleSearchQuestions" @load-tags="loadTags"
+                    @update:selected-ids="handleSelectedIdsChange" />
 
                 <!-- Exam Configuration -->
                 <div class="exam-config-section">
@@ -235,8 +158,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api, { fetchSubjects } from '@/services/api'
 import examService from '@/services/examService'
-import QuestionFilterPanel from '@/components/common/QuestionFilterPanel.vue'
-import PaginationControl from '@/components/common/PaginationControl.vue'
+import questionService from '@/services/questionService'
+import QuestionList from '@/components/QuestionList.vue'
 
 const router = useRouter()
 
@@ -248,12 +171,25 @@ const userExams = ref([])
 const loadingExams = ref(false)
 const deletingExamId = ref(null)
 
-// Question selection data
-const subjects = ref([])
+// Create exam - search state
 const tags = ref([])
+const searchQuestions = ref([])
+const searchLoading = ref(false)
+const totalCount = ref(0)
+const selectedQuestionIds = ref([])
+
+// Create exam - exam config
+const examConfig = ref({
+    name: '',
+    timeLimit: null
+})
+const creating = ref(false)
+const errorMessage = ref('')
+
+// Legacy variables (to be removed after full migration)
+const subjects = ref([])
 const questions = ref([])
 const selectedQuestions = ref(new Set())
-
 const filters = ref({
     subject: '',
     difficulty: '',
@@ -261,23 +197,13 @@ const filters = ref({
     tags: [],
     tag_mode: 'or'
 })
-
 const currentPage = ref(1)
 const pageSize = ref(20)
-const totalCount = ref(0)
 const loading = ref(false)
-
-const examConfig = ref({
-    name: '',
-    timeLimit: null
-})
-
-const creating = ref(false)
-const errorMessage = ref('')
 
 // Computed
 const canCreateExam = computed(() => {
-    return selectedQuestions.value.size > 0 && examConfig.value.name.trim().length > 0
+    return selectedQuestionIds.value.length > 0 && examConfig.value.name.trim().length > 0
 })
 
 const isAllSelected = computed(() => {
@@ -354,6 +280,53 @@ const deleteExam = async (examId) => {
     } finally {
         deletingExamId.value = null
     }
+}
+
+// QuestionList event handlers
+const handleSearchQuestions = async (filters, page = 1, pageSize = 20) => {
+    searchLoading.value = true
+    try {
+        const params = {
+            page: page,
+            page_size: pageSize
+        }
+
+        if (filters.subject) params.subject = filters.subject
+        if (filters.difficulty) params.difficulty = filters.difficulty
+        if (filters.search) params.search = filters.search
+        if (filters.tags && filters.tags.length > 0) {
+            params.tags = filters.tags.map(t => t.id).join(',')
+            params.tag_mode = filters.tag_mode
+        }
+
+        const { data } = await api.get('/question_bank/questions/', { params })
+
+        // Transform search results to match format
+        searchQuestions.value = (data.results || []).map(q => ({
+            id: `search-${q.id}`,
+            question: q.id,
+            question_content: q.content || q.question_content,
+            question_subject: q.subject_name || q.subject,
+            question_category: q.category,
+            difficulty: q.difficulty,
+            tags: q.tags,
+            points: 1,
+            order: 0,
+            isSearchResult: true,
+            originalQuestion: q
+        }))
+        totalCount.value = data.count || 0
+    } catch (error) {
+        console.error('搜尋題目失敗:', error)
+        searchQuestions.value = []
+        totalCount.value = 0
+    } finally {
+        searchLoading.value = false
+    }
+}
+
+const handleSelectedIdsChange = (ids) => {
+    selectedQuestionIds.value = ids
 }
 
 const loadSubjects = async () => {
@@ -476,10 +449,9 @@ const createExam = async () => {
     errorMessage.value = ''
 
     try {
-        const questionIds = Array.from(selectedQuestions.value)
         const payload = {
             name: examConfig.value.name.trim(),
-            question_ids: questionIds
+            question_ids: selectedQuestionIds.value
         }
 
         if (examConfig.value.timeLimit && examConfig.value.timeLimit > 0) {
@@ -488,10 +460,9 @@ const createExam = async () => {
 
         const response = await examService.createCustomExam(payload)
 
-        // Reset form and switch to list tab
+        // Reset form
         examConfig.value = { name: '', timeLimit: null }
-        selectedQuestions.value.clear()
-        selectedQuestions.value = new Set()
+        selectedQuestionIds.value = []
 
         // Reload exam list
         await loadUserExams()

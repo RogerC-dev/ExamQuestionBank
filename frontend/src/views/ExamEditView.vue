@@ -9,12 +9,12 @@
       <QuestionList ref="questionListRef" :questions="allQuestions" :selected-question-id="selectedQuestionId"
         :loading="loadingQuestions" v-model:total-points="autoPointsTotal"
         :auto-distribute-loading="autoDistributeLoading" :pending-edits="pendingQuestionEdits"
-        :show-auto-distribute="true" :tags="tags" :search-results="searchQuestions" :search-loading="searchLoading"
-        :total-search-count="searchTotalCount" @select-question="handleSelectQuestion" @add-question="handleAddQuestion"
-        @add-existing-question="showAddModal = true" @remove-question="handleRemoveQuestion"
-        @auto-distribute="autoDistributePoints" @update:selected-ids="handleSelectedIdsChange"
-        @search-questions="handleSearchQuestions" @load-tags="handleLoadTags"
-        @add-search-results="handleAddSearchResultsToExam" />
+        :show-auto-distribute="true" :show-add-question="isAdmin" :tags="tags" :search-results="searchQuestions"
+        :search-loading="searchLoading" :total-search-count="searchTotalCount" @select-question="handleSelectQuestion"
+        @add-question="handleAddQuestion" @add-existing-question="showAddModal = true"
+        @remove-question="handleRemoveQuestion" @auto-distribute="autoDistributePoints"
+        @update:selected-ids="handleSelectedIdsChange" @search-questions="handleSearchQuestions"
+        @load-tags="handleLoadTags" @add-search-results="handleAddSearchResultsToExam" />
     </div>
 
     <!-- 編輯題目彈窗 -->
@@ -182,7 +182,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ExamForm from '../components/ExamForm.vue'
 import QuestionEditor from '../components/QuestionEditor.vue'
@@ -191,6 +191,8 @@ import AddQuestionModal from '../components/AddQuestionModal.vue'
 import examService from '../services/examService'
 import questionService from '../services/questionService'
 import api from '../services/api'
+
+const currentUser = inject('currentUser')
 
 const route = useRoute()
 const router = useRouter()
@@ -245,6 +247,11 @@ const searchTotalCount = ref(0)
 // 計算 examId
 const examId = computed(() => {
   return route.params.id ? parseInt(route.params.id) : null
+})
+
+// 檢查是否為管理員
+const isAdmin = computed(() => {
+  return currentUser?.value?.isAdmin || false
 })
 
 // 合併已儲存的題目和暫存的題目
