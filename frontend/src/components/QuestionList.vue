@@ -50,7 +50,30 @@
       </div>
     </div>
 
-    <div class="search-bar">
+    <!-- View Mode Toggle -->
+    <div class="view-mode-section">
+      <div class="view-mode-toggle">
+        <button class="toggle-btn" :class="{ active: viewMode === 'exam' }" @click="viewMode = 'exam'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          此張考卷的題目
+        </button>
+        <button class="toggle-btn" :class="{ active: viewMode === 'search' }" @click="handleViewModeChange('search')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          搜尋題目加入考卷
+        </button>
+      </div>
+    </div>
+
+    <!-- Exam Mode: Simple Search Bar -->
+    <div v-if="viewMode === 'exam'" class="search-bar">
       <div class="search-control">
         <input type="checkbox" :checked="isAllSelected" :indeterminate.prop="isPartialSelected"
           @change="toggleSelectAll" class="select-all-checkbox" title="全選/取消全選" />
@@ -66,7 +89,27 @@
       </div>
     </div>
 
-    <div v-if="loading" class="loading-state">
+    <!-- Search Mode: QuestionFilterPanel -->
+    <div v-else class="filter-panel-container">
+      <QuestionFilterPanel v-model="searchFilters" :tags="tags" :loading="searchLoading" :total-count="totalSearchCount"
+        @search="handleSearch" @reset="handleResetFilters" />
+    </div>
+
+    <!-- Selection Toolbar (Floating) -->
+    <SelectionToolbar v-if="viewMode === 'search'" :selected-count="selectedIds.length" item-unit="題"
+      @clear="clearSelection">
+      <button class="toolbar-btn toolbar-btn-primary" @click="handleAddSearchResultsToExam"
+        :disabled="selectedIds.length === 0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        加入考卷
+      </button>
+    </SelectionToolbar>
+
+    <div v-if="loading || searchLoading" class="loading-state">
       <div class="loading-spinner"></div>
       <p>載入中...</p>
     </div>
@@ -78,22 +121,53 @@
         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
       </svg>
-      <p class="empty-text">{{ searchQuery ? '沒有符合的題目' : '尚未加入任何題目' }}</p>
-      <p v-if="!searchQuery" class="empty-hint">點擊上方按鈕開始新增題目</p>
+      <p class="empty-text">{{ viewMode === 'search' ? '沒有找到符合的題目' : (searchQuery ? '沒有符合的題目' : '尚未加入任何題目') }}</p>
+      <p v-if="!searchQuery && viewMode === 'exam'" class="empty-hint">點擊上方按鈕開始新增題目</p>
     </div>
 
-    <div v-else class="questions">
+    <!-- Exam Mode: Use QuestionItem component -->
+    <div v-else-if="viewMode === 'exam'" class="questions">
       <QuestionItem v-for="item in filteredQuestions" :key="item.id" :item="item"
         :is-active="selectedQuestionId === item.question" :has-pending-edit="Boolean(pendingEdits[item.id])"
         :is-checked="selectedIds.includes(item.id)" :show-checkbox="true" @select="selectQuestion"
         @remove="(id) => $emit('remove-question', id)" @toggle-check="toggleCheck" />
     </div>
+
+    <!-- Search Mode: Use AddQuestionModal-style items -->
+    <div v-else class="search-questions-list">
+      <div v-for="item in filteredQuestions" :key="item.id" class="search-question-item"
+        :class="{ selected: selectedIds.includes(item.id) }" @click="toggleCheck(item.id)">
+        <input type="checkbox" :checked="selectedIds.includes(item.id)" class="search-question-checkbox" @click.stop
+          @change="toggleCheck(item.id)" />
+        <div class="search-question-info">
+          <div class="search-question-badges">
+            <span class="search-badge search-badge-subject">{{ item.question_subject || item.subject }}</span>
+            <span class="search-badge search-badge-category">{{ item.question_category || item.category }}</span>
+            <span v-for="tag in ((item.tags || []).slice(0, 2))" :key="tag.id" class="search-badge search-badge-tag">
+              {{ tag.name }}
+            </span>
+            <span v-if="(item.tags || []).length > 2" class="search-badge search-badge-more">
+              +{{ item.tags.length - 2 }}
+            </span>
+          </div>
+          <div class="search-question-content">{{ item.question_content || item.content }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Mode Pagination -->
+    <PaginationControl v-if="viewMode === 'search' && totalSearchCount > searchPageSize"
+      :pagination-state="searchPaginationState" :current-page="searchCurrentPage" :page-size="searchPageSize"
+      :is-loading="searchLoading" @page-change="handleSearchPageChange" @size-change="handleSearchPageSizeChange" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
 import QuestionItem from './QuestionItem.vue'
+import QuestionFilterPanel from './common/QuestionFilterPanel.vue'
+import PaginationControl from './common/PaginationControl.vue'
+import SelectionToolbar from './common/SelectionToolbar.vue'
 
 const props = defineProps({
   questions: {
@@ -123,6 +197,22 @@ const props = defineProps({
   pendingEdits: {
     type: Object,
     default: () => ({})
+  },
+  tags: {
+    type: Array,
+    default: () => []
+  },
+  searchResults: {
+    type: Array,
+    default: () => []
+  },
+  searchLoading: {
+    type: Boolean,
+    default: false
+  },
+  totalSearchCount: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -133,13 +223,32 @@ const emit = defineEmits([
   'remove-question',
   'auto-distribute',
   'update:total-points',
-  'update:selected-ids'
+  'update:selected-ids',
+  'search-questions',
+  'load-tags',
+  'add-search-results'
 ])
 
 const searchQuery = ref('')
 const selectedIds = ref([])
+const viewMode = ref('exam') // 'exam' or 'search'
+const searchFilters = ref({
+  subject: '',
+  difficulty: '',
+  search: '',
+  tags: [],
+  tag_mode: 'or'
+})
+const searchCurrentPage = ref(1)
+const searchPageSize = ref(20)
 
 const filteredQuestions = computed(() => {
+  // In search mode, show search results
+  if (viewMode.value === 'search') {
+    return props.searchResults
+  }
+
+  // In exam mode, show exam questions with optional filtering
   let questions = props.questions
   questions = [...questions].sort((a, b) => (a.order || 0) - (b.order || 0))
   if (!searchQuery.value) return questions
@@ -185,6 +294,80 @@ const toggleCheck = (id) => {
 
 const selectQuestion = (item) => {
   emit('select-question', item)
+}
+
+const handleViewModeChange = (mode) => {
+  viewMode.value = mode
+  if (mode === 'search') {
+    // Load tags when switching to search mode
+    emit('load-tags')
+    // Trigger initial search
+    handleSearch()
+  }
+}
+
+const handleSearch = () => {
+  searchCurrentPage.value = 1
+  emit('search-questions', searchFilters.value, searchCurrentPage.value, searchPageSize.value)
+}
+
+const handleResetFilters = () => {
+  searchFilters.value = {
+    subject: '',
+    difficulty: '',
+    search: '',
+    tags: [],
+    tag_mode: 'or'
+  }
+  searchCurrentPage.value = 1
+  handleSearch()
+}
+
+const handleSearchPageChange = (page) => {
+  searchCurrentPage.value = page
+  emit('search-questions', searchFilters.value, page, searchPageSize.value)
+}
+
+const handleSearchPageSizeChange = (size) => {
+  searchPageSize.value = size
+  searchCurrentPage.value = 1
+  emit('search-questions', searchFilters.value, searchCurrentPage.value, size)
+}
+
+const searchPaginationState = computed(() => {
+  const totalPages = Math.ceil(props.totalSearchCount / searchPageSize.value)
+  return {
+    totalPages,
+    totalCount: props.totalSearchCount,
+    hasNext: searchCurrentPage.value < totalPages,
+    hasPrev: searchCurrentPage.value > 1
+  }
+})
+
+const handleAddSearchResultsToExam = () => {
+  // Extract actual question IDs from selected search results
+  const questionIds = selectedIds.value
+    .map(id => {
+      const searchResult = props.searchResults.find(q => q.id === id)
+      return searchResult?.question
+    })
+    .filter(id => id !== undefined)
+
+  if (questionIds.length === 0) {
+    alert('請選擇要加入的題目')
+    return
+  }
+
+  // Emit event with question IDs and default points
+  emit('add-search-results', questionIds, 1)
+
+  // Clear selection after adding
+  clearSelection()
+}
+
+const clearSelection = () => {
+  selectedIds.value = []
+  emit('update:selected-ids', selectedIds.value)
 }
 
 watch(() => props.questions, () => {
@@ -309,6 +492,173 @@ defineExpose({ selectedIds })
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* View Mode Toggle */
+.view-mode-section {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border, #CBD5E1);
+  background: white;
+}
+
+.view-mode-toggle {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-page, #F8FAFC);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--border, #CBD5E1);
+}
+
+.toggle-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+  color: var(--text-secondary, #64748B);
+  white-space: nowrap;
+}
+
+.toggle-btn:hover {
+  color: var(--text-primary, #1E293B);
+  background: rgba(71, 105, 150, 0.05);
+}
+
+.toggle-btn.active {
+  background: var(--primary, #476996);
+  color: white;
+  box-shadow: 0 2px 4px rgba(71, 105, 150, 0.2);
+}
+
+.toggle-btn svg {
+  flex-shrink: 0;
+}
+
+/* Filter Panel Container */
+.filter-panel-container {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border, #CBD5E1);
+  background: white;
+}
+
+/* Search Questions List (AddQuestionModal style) */
+.search-questions-list {
+  overflow-y: auto;
+  border: 1px solid var(--border, #CBD5E1);
+  border-radius: 12px;
+  background: white;
+}
+
+.search-question-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border, #E2E8F0);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.search-question-item:last-child {
+  border-bottom: none;
+}
+
+.search-question-item:hover {
+  background: var(--bg-page, #F8FAFC);
+}
+
+.search-question-item.selected {
+  background: var(--primary-soft, #EEF2FF);
+  border-color: rgba(71, 105, 150, 0.2);
+}
+
+.search-question-checkbox {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: var(--primary, #476996);
+  flex-shrink: 0;
+}
+
+.search-question-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-question-badges {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.search-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.search-badge-subject {
+  background: var(--primary-soft, #EEF2FF);
+  color: var(--primary, #476996);
+}
+
+.search-badge-category {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.search-badge-tag {
+  background: #E0E7FF;
+  color: #4338CA;
+}
+
+.search-badge-more {
+  background: #f3f4f6;
+  color: var(--text-secondary, #64748B);
+}
+
+.search-question-content {
+  font-size: 14px;
+  color: var(--text-primary, #1E293B);
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Scrollbar for search questions list */
+.search-questions-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.search-questions-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.search-questions-list::-webkit-scrollbar-thumb {
+  background: var(--border, #CBD5E1);
+  border-radius: 4px;
+}
+
+.search-questions-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary, #64748B);
 }
 
 /* Search Bar */

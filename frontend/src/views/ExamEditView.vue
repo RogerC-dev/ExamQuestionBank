@@ -9,9 +9,12 @@
       <QuestionList ref="questionListRef" :questions="allQuestions" :selected-question-id="selectedQuestionId"
         :loading="loadingQuestions" v-model:total-points="autoPointsTotal"
         :auto-distribute-loading="autoDistributeLoading" :pending-edits="pendingQuestionEdits"
-        :show-auto-distribute="true" @select-question="handleSelectQuestion" @add-question="handleAddQuestion"
+        :show-auto-distribute="true" :tags="tags" :search-results="searchQuestions" :search-loading="searchLoading"
+        :total-search-count="searchTotalCount" @select-question="handleSelectQuestion" @add-question="handleAddQuestion"
         @add-existing-question="showAddModal = true" @remove-question="handleRemoveQuestion"
-        @auto-distribute="autoDistributePoints" @update:selected-ids="handleSelectedIdsChange" />
+        @auto-distribute="autoDistributePoints" @update:selected-ids="handleSelectedIdsChange"
+        @search-questions="handleSearchQuestions" @load-tags="handleLoadTags"
+        @add-search-results="handleAddSearchResultsToExam" />
     </div>
 
     <!-- 編輯題目彈窗 -->
@@ -187,6 +190,7 @@ import QuestionList from '../components/QuestionList.vue'
 import AddQuestionModal from '../components/AddQuestionModal.vue'
 import examService from '../services/examService'
 import questionService from '../services/questionService'
+import api from '../services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -231,6 +235,12 @@ const showAddModal = ref(false)
 const isAutoDistributeModalVisible = ref(false)
 const autoDistributeQuotaList = ref([])
 const autoDistributeMessage = ref('')
+
+// 搜尋題目相關
+const tags = ref([])
+const searchQuestions = ref([])
+const searchLoading = ref(false)
+const searchTotalCount = ref(0)
 
 // 計算 examId
 const examId = computed(() => {
@@ -473,6 +483,12 @@ const closeEditModal = () => {
 }
 
 const handleSelectQuestion = async (examQuestion) => {
+  // If it's a search result, don't allow editing (they need to be added to exam first)
+  if (examQuestion.isSearchResult) {
+    alert('請先將題目加入考卷後再進行編輯')
+    return
+  }
+
   selectedQuestionId.value = examQuestion.question
   selectedExamQuestion.value = {
     ...examQuestion,
@@ -798,6 +814,111 @@ const handleAddQuestionToExam = async (questionIds, points) => {
 // 處理多選變更
 const handleSelectedIdsChange = (ids) => {
   selectedQuestionIds.value = ids
+}
+
+// 從搜尋結果加入題目到暫存（不直接儲存）
+const handleAddSearchResultsToExam = async (questionIds, points) => {
+  if (!questionIds || questionIds.length === 0) return
+
+  try {
+    // 獲取搜尋結果中對應的題目詳細資料
+    const questionsToAdd = []
+
+    for (const qid of questionIds) {
+      try {
+        // 從 API 獲取完整的題目資料（包括 options）
+        const response = await questionService.getQuestion(qid)
+        const q = response.data
+
+        questionsToAdd.push({
+          content: q.content || q.question_content,
+          subject: q.subject_name || q.subject,
+          category: q.category,
+          question_type: q.question_type || '選擇題',
+          difficulty: q.difficulty || 'medium',
+          explanation: q.explanation || '',
+          options: q.options || [],
+          tag_ids: (q.tags || []).map(t => t.id),
+          points: points || 1,
+          order: examQuestions.value.length + pendingQuestions.value.length + questionsToAdd.length + 1
+        })
+      } catch (error) {
+        console.error(`獲取題目 ${qid} 失敗:`, error)
+        // 繼續處理其他題目
+      }
+    }
+
+    if (questionsToAdd.length > 0) {
+      // 加入到 pendingQuestions
+      pendingQuestions.value.push(...questionsToAdd)
+      alert(`已加入 ${questionsToAdd.length} 題到暫存，請記得儲存考卷`)
+    } else {
+      alert('無法找到選擇的題目')
+    }
+  } catch (error) {
+    console.error('加入題目失敗:', error)
+    alert('加入題目失敗：' + (error.message || '未知錯誤'))
+  }
+}
+
+// 載入標籤
+const handleLoadTags = async () => {
+  try {
+    const { data } = await api.get('/question_bank/tags/')
+    tags.value = Array.isArray(data) ? data : (data.results || [])
+  } catch (error) {
+    console.error('載入標籤失敗:', error)
+    tags.value = []
+  }
+}
+
+// 搜尋題目
+const handleSearchQuestions = async (filters, page = 1, pageSize = 20) => {
+  searchLoading.value = true
+  try {
+    const params = {
+      page: page,
+      page_size: pageSize
+    }
+
+    if (filters.subject) {
+      params.subject = filters.subject
+    }
+    if (filters.difficulty) {
+      params.difficulty = filters.difficulty
+    }
+    if (filters.search) {
+      params.search = filters.search
+    }
+    if (filters.tags && filters.tags.length > 0) {
+      params.tags = filters.tags.map(t => t.id).join(',')
+      params.tag_mode = filters.tag_mode
+    }
+
+    const { data } = await api.get('/question_bank/questions/', { params })
+
+    // Transform search results to match exam question format
+    searchQuestions.value = (data.results || []).map(q => ({
+      id: `search-${q.id}`,
+      question: q.id,
+      question_content: q.content || q.question_content,
+      question_subject: q.subject_name || q.subject,
+      question_category: q.category,
+      difficulty: q.difficulty,
+      tags: q.tags,
+      points: 1,
+      order: 0,
+      isSearchResult: true,
+      originalQuestion: q
+    }))
+    searchTotalCount.value = data.count || 0
+  } catch (error) {
+    console.error('搜尋題目失敗:', error)
+    searchQuestions.value = []
+    searchTotalCount.value = 0
+  } finally {
+    searchLoading.value = false
+  }
 }
 
 // Bulk tag/subject handlers removed; feature moved to AdminQuestionManagement
@@ -1142,8 +1263,7 @@ onMounted(async () => {
 }
 
 .content-container {
-  height: calc(100vh - 200px);
-  min-height: 600px;
+  height: 100vh;
 }
 
 .left-panel,
