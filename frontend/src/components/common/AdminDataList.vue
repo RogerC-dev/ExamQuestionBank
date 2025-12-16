@@ -183,8 +183,7 @@
         </div>
 
         <!-- Selection Toolbar -->
-        <SelectionToolbar v-if="selectedIds.length > 0" :selected-count="selectedIds.length" :item-unit="itemUnit"
-            @clear="clearSelection">
+        <SelectionToolbar :selected-count="selectedIds.length" :item-unit="itemUnit" @clear="clearSelection">
             <slot name="selection-actions" :selected-ids="selectedIds" :clear-selection="clearSelection"></slot>
         </SelectionToolbar>
 
@@ -445,7 +444,6 @@ defineExpose({
     border-radius: 16px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     border: 1px solid var(--border, #CBD5E1);
-    overflow: hidden;
 }
 
 /* Header */
@@ -526,6 +524,7 @@ defineExpose({
     display: flex;
     align-items: center;
     justify-content: space-between;
+    border-radius: 16px 16px 0 0;
     padding: 12px 24px;
     background: var(--bg-page, #F8FAFC);
     border-bottom: 1px solid var(--border, #E2E8F0);
@@ -767,7 +766,8 @@ defineExpose({
     flex-shrink: 0;
 }
 
-.action-btn {
+.action-btn,
+:deep(.action-btn) {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -780,32 +780,64 @@ defineExpose({
     background: transparent;
 }
 
-.action-btn:hover {
+.action-btn:hover,
+:deep(.action-btn:hover) {
     transform: translateY(-1px);
 }
 
-.action-btn-view {
+:deep(.action-btn:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.action-btn-view,
+:deep(.action-btn-view) {
     color: var(--primary, #476996);
 }
 
-.action-btn-view:hover {
+.action-btn-view:hover,
+:deep(.action-btn-view:hover) {
     background: var(--primary-soft, #EEF2FF);
 }
 
-.action-btn-edit {
+.action-btn-edit,
+:deep(.action-btn-edit) {
     color: #059669;
 }
 
-.action-btn-edit:hover {
+.action-btn-edit:hover,
+:deep(.action-btn-edit:hover) {
     background: #D1FAE5;
 }
 
-.action-btn-delete {
+.action-btn-delete,
+:deep(.action-btn-delete) {
     color: #DC2626;
 }
 
-.action-btn-delete:hover {
+.action-btn-delete:hover,
+:deep(.action-btn-delete:hover) {
     background: #FEE2E2;
+}
+
+/* Extra action button for 'info' type */
+:deep(.action-btn-info) {
+    color: #2563EB;
+}
+
+:deep(.action-btn-info:hover) {
+    background: #DBEAFE;
+}
+
+/* Action spinner for loading states */
+:deep(.action-spinner) {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(220, 38, 38, 0.3);
+    border-top-color: #DC2626;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
 }
 
 .action-btn-more {
@@ -815,6 +847,7 @@ defineExpose({
 .action-btn-more:hover {
     background: #F3F4F6;
 }
+
 
 /* More Actions Dropdown */
 .more-actions-dropdown {

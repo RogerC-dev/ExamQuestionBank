@@ -116,140 +116,92 @@
       </div>
     </div>
 
-    <div class="question-table">
-      <table class="table table-striped table-hover">
-        <thead>
-          <tr>
-            <th style="width:4%">
-              <input ref="pageSelectAllCheckbox" type="checkbox" :checked="isPageAllSelected"
-                :indeterminate="selectedCount > 0 && !isPageAllSelected" :disabled="isLoading" @change="toggleSelectAll"
-                aria-label="選取全部" />
-            </th>
-            <th>ID</th>
-            <th>科目</th>
-            <th>內容</th>
-            <th>題型</th>
-            <th>難度</th>
-            <th>建立時間</th>
-            <th>更新時間</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="isLoading">
-            <td colspan="9" class="table-status">題目資料載入中...</td>
-          </tr>
-          <tr v-else-if="!questions.length">
-            <td colspan="9" class="table-status">暫無符合條件的題目</td>
-          </tr>
-          <tr v-else v-for="q in questions" :key="q.id">
-            <td>
-              <input type="checkbox" :checked="isRowSelected(q.id)" :disabled="isLoading || deletingId === q.id"
-                @change="toggleSelect(q.id, $event.target.checked)" aria-label="選取題目" />
-            </td>
-            <td>{{ q.id }}</td>
-            <td>
-              <div>{{ q.subject }}</div>
-              <div style="margin-top:6px">
-                <span v-for="t in q.tags" :key="t.id" class="meta-badge tag-badge clickable" @click="addTagToFilter(t)"
-                  :title="`點擊新增「${t.name}」到篩選條件`">{{ t.name }}</span>
-              </div>
-            </td>
-            <td :title="q.content">{{ q.contentSnippet }}</td>
-            <td>{{ q.question_type }}</td>
-            <td>{{ q.difficulty }}</td>
-            <td>{{ q.createdAt }}</td>
-            <td>{{ q.updatedAt }}</td>
-            <td>
-              <div class="dropdown">
-                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                  :id="`dropdownQuestion${q.id}`" data-bs-toggle="dropdown" aria-expanded="false">
-                  操作
-                </button>
-                <ul class="dropdown-menu" :aria-labelledby="`dropdownQuestion${q.id}`">
-                  <li>
-                    <button class="dropdown-item" type="button" @click="openEditQuestion(q.id)">
-                      編輯
-                    </button>
-                  </li>
-                  <li>
-                    <button class="dropdown-item" type="button" @click="viewQuestion(q.id)">
-                      檢視
-                    </button>
-                  </li>
-                  <li>
-                    <button class="dropdown-item" type="button" @click="viewAssociatedExams(q.id, q.content)">
-                      查看關聯考卷
-                    </button>
-                  </li>
-                  <li>
-                    <hr class="dropdown-divider" />
-                  </li>
-                  <li>
-                    <button class="dropdown-item text-danger" type="button" :disabled="deletingId === q.id"
-                      :aria-disabled="deletingId === q.id" @click="deleteQuestion(q.id)">
-                      <span v-if="deletingId === q.id" class="spinner-border spinner-border-sm me-2" role="status"
-                        aria-hidden="true"></span>
-                      <span v-if="!deletingId || deletingId !== q.id">刪除</span>
-                      <span v-else>刪除中...</span>
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- Question List using AdminDataList -->
+    <AdminDataList ref="adminDataListRef" type="question" :items="questions" :loading="isLoading"
+      :total-count="paginationState.totalCount" :show-header="false" :show-pagination="true" item-unit="題"
+      empty-text="暫無符合條件的題目" empty-hint="嘗試調整篩選條件或新增題目" :current-page="currentPage" :page-size="pageSize"
+      :pagination-state="paginationState" @update:selected-ids="handleSelectionChange" @view="handleViewQuestion"
+      @edit="handleEditQuestion" @delete="handleDeleteQuestion" @tag-click="addTagToFilter"
+      @page-change="handlePageChange" @size-change="handleSizeChange">
+      <!-- Custom item actions -->
+      <template #item-actions="{ item }">
+        <button class="action-btn action-btn-view" @click="viewQuestion(item.id)" title="檢視">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+        <button class="action-btn action-btn-edit" @click="openEditQuestion(item.id)" title="編輯">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+        </button>
+        <button class="action-btn action-btn-info" @click="viewAssociatedExams(item.id, item.content)" title="查看關聯考卷">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+        </button>
+        <button class="action-btn action-btn-delete" @click="deleteQuestion(item.id)" title="刪除"
+          :disabled="deletingId === item.id">
+          <svg v-if="deletingId !== item.id" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <div v-else class="action-spinner"></div>
+        </button>
+      </template>
 
-    <!-- Selection Toolbar (Sticky) -->
-    <SelectionToolbar :selected-count="selectedCount" item-unit="個題目" @clear="clearSelection">
-      <button class="toolbar-btn toolbar-btn-primary" @click="openAddToExamModal" title="加入到考卷">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="12" y1="18" x2="12" y2="12"></line>
-          <line x1="9" y1="15" x2="15" y2="15"></line>
-        </svg>
-        <span>加入考卷</span>
-      </button>
+      <!-- Custom selection toolbar actions -->
+      <template #selection-actions="{ selectedIds, clearSelection }">
+        <button class="toolbar-btn toolbar-btn-primary" @click="openAddToExamModal" title="加入到考卷">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="12" y1="18" x2="12" y2="12"></line>
+            <line x1="9" y1="15" x2="15" y2="15"></line>
+          </svg>
+          <span>加入考卷</span>
+        </button>
 
-      <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkTagModal" title="批次編輯標籤">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-          <line x1="7" y1="7" x2="7.01" y2="7"></line>
-        </svg>
-        <span>編輯標籤</span>
-      </button>
+        <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkTagModal" title="批次編輯標籤">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+            <line x1="7" y1="7" x2="7.01" y2="7"></line>
+          </svg>
+          <span>編輯標籤</span>
+        </button>
 
-      <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkSubjectModal" title="批次編輯科目">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-        </svg>
-        <span>編輯科目</span>
-      </button>
+        <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkSubjectModal" title="批次編輯科目">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          <span>編輯科目</span>
+        </button>
 
-      <div class="toolbar-divider"></div>
+        <div class="toolbar-divider"></div>
 
-      <button class="toolbar-btn toolbar-btn-danger" @click="deleteSelectedQuestions" :disabled="isDeleting"
-        title="批量刪除">
-        <div v-if="isDeleting" class="toolbar-spinner"></div>
-        <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"></polyline>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        </svg>
-        <span>{{ isDeleting ? '刪除中...' : '刪除' }}</span>
-      </button>
-    </SelectionToolbar>
-
-    <!-- Enhanced Pagination -->
-    <PaginationControl :pagination-state="paginationState" :current-page="currentPage" :page-size="pageSize"
-      :is-loading="isLoading" @page-change="handlePageChange" @size-change="handleSizeChange" />
+        <button class="toolbar-btn toolbar-btn-danger" @click="deleteSelectedQuestions" :disabled="isDeleting"
+          title="批量刪除">
+          <div v-if="isDeleting" class="toolbar-spinner"></div>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <span>{{ isDeleting ? '刪除中...' : '刪除' }}</span>
+        </button>
+      </template>
+    </AdminDataList>
 
     <div v-if="isEditorVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
       <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -610,9 +562,8 @@ import QuestionEditor from '@/components/QuestionEditor.vue'
 import BulkTagEditor from '@/components/BulkTagEditor.vue'
 import BulkSubjectEditor from '@/components/BulkSubjectEditor.vue'
 import PdfUploadSection from '@/components/PdfUploadSection.vue'
-import SelectionToolbar from '@/components/common/SelectionToolbar.vue'
 import QuestionFilterPanel from '@/components/common/QuestionFilterPanel.vue'
-import PaginationControl from '@/components/common/PaginationControl.vue'
+import AdminDataList from '@/components/common/AdminDataList.vue'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import tagService from '@/services/tagService'
@@ -643,7 +594,7 @@ const paginationState = ref({
 })
 const deletingId = ref(null)
 const selectedIds = ref([])
-const pageSelectAllCheckbox = ref(null)
+const adminDataListRef = ref(null)
 
 const isEditorVisible = ref(false)
 const currentQuestion = ref(null)
@@ -710,47 +661,15 @@ const closeBulkSubjectModal = () => {
   bulkEditMode.value = 'list'
 }
 
-// Debugging watch to observe modal states
-watch(showBulkTagModal, (v) => console.log('showBulkTagModal changed:', v))
-watch(showBulkSubjectModal, (v) => console.log('showBulkSubjectModal changed:', v))
-
 // Affected exams state for delete confirmation
 const isDeleteConfirmModalVisible = ref(false)
 const affectedExamsForDelete = ref([])
 const isLoadingAffectedExams = ref(false)
 
 // Selection helpers
-const isRowSelected = (id) => selectedIds.value.includes(id)
 const selectedCount = computed(() => selectedIds.value.length)
 
-const isPageAllSelected = computed(() => {
-  if (!questions.value || questions.value.length === 0) return false
-  return questions.value.every(q => selectedIds.value.includes(q.id))
-})
-
 const emit = defineEmits(["update:selected-ids"])
-
-const toggleSelect = (id, checked) => {
-  const idx = selectedIds.value.indexOf(id)
-  if (checked && idx === -1) {
-    selectedIds.value = [...selectedIds.value, id]
-  } else if (!checked && idx !== -1) {
-    selectedIds.value = selectedIds.value.filter(x => x !== id)
-  }
-}
-
-const toggleSelectAll = () => {
-  if (isPageAllSelected.value) {
-    // remove current page ids from selection
-    const pageIds = questions.value.map(q => q.id)
-    selectedIds.value = selectedIds.value.filter(id => !pageIds.includes(id))
-  } else {
-    // add all page ids (avoid duplicates)
-    const pageIds = questions.value.map(q => q.id)
-    const set = new Set([...selectedIds.value, ...pageIds])
-    selectedIds.value = Array.from(set)
-  }
-}
 
 // Pending questions selection
 const isAllPendingSelected = computed(() => {
@@ -777,6 +696,23 @@ const toggleSelectAllPending = () => {
 }
 
 const clearSelection = () => { selectedIds.value = [] }
+
+// Handler methods for AdminDataList component
+const handleSelectionChange = (ids) => {
+  selectedIds.value = ids
+}
+
+const handleViewQuestion = (item) => {
+  viewQuestion(item.id)
+}
+
+const handleEditQuestion = (item) => {
+  openEditQuestion(item.id)
+}
+
+const handleDeleteQuestion = (item) => {
+  deleteQuestion(item.id)
+}
 
 // Emit selection changes to parent
 watch(selectedIds, (val) => {
@@ -1720,59 +1656,6 @@ defineExpose({
   justify-content: flex-end;
 }
 
-.question-filters {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--border, #CBD5E1);
-  flex-wrap: wrap;
-}
-
-.filter-search {
-  display: flex;
-  height: fit-content;
-  position: relative;
-  flex: 1;
-  min-width: 280px;
-}
-
-.search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-secondary, #64748B);
-  pointer-events: none;
-}
-
-.filter-input {
-  width: 100%;
-  padding: 12px 16px 12px 44px;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  background: #f9fafb;
-}
-
-.filter-input:focus {
-  outline: none;
-  border-color: var(--primary, #476996);
-  background: white;
-  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
-}
-
-/* Removed old tag styles as they are now in TagFilter.vue */
-.tag-multiselect :deep(.multiselect__content-wrapper) {
-  position: absolute;
-  width: 100%;
-  z-index: 50;
-}
-
 .filter-select-wrapper {
   display: flex;
   height: fit-content;
@@ -1812,254 +1695,8 @@ defineExpose({
   box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
 }
 
-.filter-btn {
-  display: flex;
-  align-items: center;
-  height: fit-content;
-  gap: 8px;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.filter-btn svg {
-  flex-shrink: 0;
-}
-
-.filter-btn-reset {
-  background: #f3f4f6;
-  color: var(--text-secondary, #64748B);
-}
-
-.filter-btn-reset:hover {
-  background: #e5e7eb;
-  color: var(--text-primary, #1E293B);
-}
-
-.filter-btn-search {
-  background: var(--primary, #476996);
-  color: white;
-}
-
-.filter-btn-search:hover {
-  background: var(--primary-hover, #35527a);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
-}
-
-/* Table */
-.question-table {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-}
-
-.question-table .table {
-  margin-bottom: 0;
-}
-
-.table-status {
-  text-align: center;
-  color: var(--text-secondary, #64748B);
-  font-size: 14px;
-  padding: 60px 20px !important;
-}
-
-.meta-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  margin-right: 6px;
-  margin-bottom: 4px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.tag-badge {
-  display: inline-flex;
-  align-items: center;
-  background: var(--primary-soft, #EEF2FF);
-  border: 1px solid var(--border, #CBD5E1);
-  color: var(--primary, #476996);
-  padding: 3px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 500;
-  margin-right: 6px;
-}
-
-.tag-badge.clickable {
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.tag-badge.clickable:hover {
-  background: var(--primary, #476996);
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(71, 105, 150, 0.3);
-  margin-bottom: 4px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-thead {
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-th {
-  padding: 14px 16px;
-  text-align: left;
-  font-weight: 600;
-  color: var(--text-secondary, #64748B);
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-th input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: var(--primary, #476996);
-}
-
-th:nth-child(1),
-td:nth-child(1) {
-  width: 4%;
-}
-
-/* 選取欄 */
-th:nth-child(2),
-td:nth-child(2) {
-  width: 8%;
-}
-
-/* ID */
-th:nth-child(3),
-td:nth-child(3) {
-  width: 18%;
-}
-
-/* 科目 */
-th:nth-child(4),
-td:nth-child(4) {
-  width: 22%;
-}
-
-/* 內容 */
-th:nth-child(5),
-td:nth-child(5) {
-  width: 12%;
-}
-
-/* 題型 */
-th:nth-child(6),
-td:nth-child(6) {
-  width: 10%;
-}
-
-/* 難度 */
-th:nth-child(7),
-td:nth-child(7) {
-  width: 12%;
-}
-
-/* 建立時間 */
-th:nth-child(8),
-td:nth-child(8) {
-  width: 12%;
-}
-
-/* 更新時間 */
-th:nth-child(9),
-td:nth-child(9) {
-  width: 5%;
-}
-
-/* 操作 */
-
-/* Selection Toolbar Animations */
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-up-enter-from {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translateY(-20px);
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .toolbar-content {
-    flex-wrap: wrap;
-    padding: 12px 16px;
-  }
-
-  .toolbar-actions {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .toolbar-btn span {
-    display: none;
-  }
-
-  .toolbar-btn {
-    padding: 8px 12px;
-  }
-
-  .toolbar-divider {
-    display: none;
-  }
-}
-
-
-td {
-  padding: 14px 16px;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 14px;
-  color: var(--text-primary, #1E293B);
-  overflow: visible;
-  text-overflow: ellipsis;
-}
-
-td input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: var(--primary, #476996);
-}
-
-tbody tr {
-  transition: background 0.15s;
-}
-
-tbody tr:hover {
-  background: #f8fafc;
-}
-
-tbody tr:last-child td {
-  border-bottom: none;
-}
-
 /* Modern Modal Styles */
+
 .modern-modal {
   border-radius: 16px;
   overflow: hidden;
