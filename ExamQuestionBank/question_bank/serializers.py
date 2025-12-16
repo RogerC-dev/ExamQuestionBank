@@ -31,13 +31,39 @@ class QuestionListSerializer(serializers.ModelSerializer):
     """簡化版Question序列化器，用於列表顯示"""
     created_by_username = serializers.CharField(source='created_by.username', read_only=True)
     tags = TagSerializer(many=True, read_only=True)
+    is_in_flashcard = serializers.SerializerMethodField()
+    is_bookmarked = serializers.SerializerMethodField()
+    user_note = serializers.SerializerMethodField()
 
     class Meta:
         model = Question
         fields = [
-            'id', 'subject', 'category', 'question_type', 'difficulty', 'status', 'content', 'created_at', 'created_by_username', 'tags'
+            'id', 'subject', 'category', 'question_type', 'difficulty', 'status', 'content', 'created_at', 'created_by_username', 'tags',
+            'is_in_flashcard', 'is_bookmarked', 'user_note'
         ]
         read_only_fields = ['id', 'created_at']
+
+    def get_is_in_flashcard(self, obj):
+        """檢查此題目是否已被使用者加入錯題本/快閃卡"""
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            return obj.flashcards.filter(user=request.user).exists()
+        return False
+
+    def get_is_bookmarked(self, obj):
+        """檢查此題目是否已被使用者收藏"""
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            return obj.bookmarks.filter(user=request.user).exists()
+        return False
+
+    def get_user_note(self, obj):
+        """取得使用者對此題目的筆記，若無則回傳 None"""
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            note = obj.notes.filter(user=request.user).first()
+            return note.content if note else None
+        return None
 
 
 class QuestionDetailSerializer(serializers.ModelSerializer):

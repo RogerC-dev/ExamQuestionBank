@@ -156,6 +156,7 @@ GET /api/v1/questions/
 | page | int | 頁碼 |
 | page_size | int | 每頁數量（預設 20，最大 500）|
 | search | string | 全文搜尋 |
+| source | string | 題目來源：`all`（預設）、`wrong`（錯題本）、`bookmark`（收藏）|
 
 **Response:**
 ```json
@@ -176,10 +177,21 @@ GET /api/v1/questions/
       "created_by_username": "admin",
       "tags": [
         {"id": 1, "name": "刑法第271條", "question_count": 5, "created_at": "..."}
-      ]
+      ],
+      "is_in_flashcard": true,
+      "is_bookmarked": false,
+      "user_note": "此題需注意構成要件..."
     }
   ]
 }
+```
+
+**新增欄位說明：**
+| 欄位 | 類型 | 說明 |
+|------|------|------|
+| is_in_flashcard | boolean | 此題目是否已被目前使用者加入快閃卡（錯題本）|
+| is_bookmarked | boolean | 此題目是否已被目前使用者收藏 |
+| user_note | string \| null | 目前使用者對此題目的筆記內容，若無筆記則為 `null` |
 ```
 
 ---
