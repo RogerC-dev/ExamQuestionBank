@@ -209,6 +209,10 @@ const pendingQuestionEdits = ref({})
 // 暫存的 PDF 解析題目（尚未儲存到資料庫）
 const pendingQuestions = ref([])
 
+// 暫存的現有題目連結（已存在的題目，只需建立考卷關聯）
+// 格式: [{ questionId, questionContent, questionSubject, points }]
+const pendingExamLinks = ref([])
+
 // 選中的題目
 const selectedQuestionId = ref(null)
 const selectedQuestion = ref(null)
@@ -261,10 +265,11 @@ const allQuestions = computed(() => {
   // 已儲存的題目
   const saved = examQuestions.value.map(eq => ({
     ...eq,
-    isPending: false
+    isPending: false,
+    isExistingLink: false
   }))
 
-  // 暫存的題目（加上 pending 標記）
+  // 暫存的新題目（需要建立題目 + 關聯）
   const pending = pendingQuestions.value.map((q, index) => ({
     id: `pending-${index}`,
     question: null,
@@ -274,17 +279,37 @@ const allQuestions = computed(() => {
     question_subject: q.subject || exam.value?.name || '',
     question_category: q.category || '',
     isPending: true,
+    isExistingLink: false,
     pendingData: q // 保存完整的暫存資料
   }))
 
-  return [...saved, ...pending]
+  // 暫存的現有題目連結（只需建立關聯）
+  const links = pendingExamLinks.value.map((link, index) => ({
+    id: `link-${index}`,
+    question: link.questionId,
+    order: link.order !== undefined ? link.order : (saved.length + pending.length + index + 1),
+    points: link.points || 1,
+    question_content: link.questionContent || '',
+    question_subject: link.questionSubject || '',
+    question_category: link.questionCategory || '',
+    isPending: false,
+    isExistingLink: true,
+    linkData: link
+  }))
+
+  return [...saved, ...pending, ...links]
 })
 
 // 已存在的題目 IDs（用於排除）
 const existingQuestionIds = computed(() => {
-  return examQuestions.value
+  const savedIds = examQuestions.value
     .filter(eq => eq.question)
     .map(eq => eq.question)
+
+  // Also include pending exam links
+  const pendingLinkIds = pendingExamLinks.value.map(link => link.questionId)
+
+  return [...savedIds, ...pendingLinkIds]
 })
 
 // 載入考卷資料
@@ -424,6 +449,41 @@ const handleSaveExam = async (examData) => {
       pendingQuestions.value = []
       shouldReload = true
       summaryParts.push(`題目建立：成功 ${successCount} 題，失敗 ${failCount} 題，略過 ${skipCount} 題`)
+    }
+
+    // 處理暫存的現有題目連結（不需建立題目，只需建立關聯）
+    if (pendingExamLinks.value.length > 0) {
+      savingProgressMessage.value = `加入現有題目中`
+      savingProgressPercent.value = 45
+
+      let linkSuccessCount = 0
+      let linkFailCount = 0
+      const currentOrder = examQuestions.value.length + (pendingQuestions.value.length || 0)
+
+      for (let i = 0; i < pendingExamLinks.value.length; i++) {
+        const link = pendingExamLinks.value[i]
+        savingCurrentStep.value = i + 1
+        savingProgressMessage.value = `加入現有題目中 (${i + 1}/${pendingExamLinks.value.length}題)`
+
+        try {
+          await examService.addQuestionToExam(currentExamId, {
+            question: link.questionId,
+            order: link.order !== undefined ? link.order : (currentOrder + i + 1),
+            points: link.points || 1
+          })
+          linkSuccessCount++
+        } catch (err) {
+          console.error('加入現有題目失敗', err)
+          linkFailCount++
+        }
+      }
+
+      // 清空暫存連結列表
+      pendingExamLinks.value = []
+      shouldReload = true
+      if (linkSuccessCount > 0 || linkFailCount > 0) {
+        summaryParts.push(`現有題目加入：成功 ${linkSuccessCount} 題，失敗 ${linkFailCount} 題`)
+      }
     }
 
     savingProgressMessage.value = '更新題目設定中'
@@ -962,6 +1022,22 @@ const handleRemoveQuestion = async (examQuestionId) => {
       return
     }
 
+    // 如果是暫存的現有題目連結，從陣列中移除
+    if (typeof examQuestionId === 'string' && examQuestionId.startsWith('link-')) {
+      const index = parseInt(examQuestionId.replace('link-', ''))
+      pendingExamLinks.value.splice(index, 1)
+
+      // 如果移除的是當前選中的題目，清空選擇
+      if (selectedExamQuestion.value?.id === examQuestionId) {
+        selectedQuestionId.value = null
+        selectedQuestion.value = null
+        selectedExamQuestion.value = null
+      }
+
+      alert('題目已從暫存列表移除')
+      return
+    }
+
     // 已儲存的題目，呼叫 API 移除
     if (pendingQuestionEdits.value[examQuestionId]) {
       const nextEdits = { ...pendingQuestionEdits.value }
@@ -1000,6 +1076,10 @@ const handleBulkRemove = async () => {
       if (typeof id === 'string' && id.startsWith('pending-')) {
         const index = parseInt(id.replace('pending-', ''))
         pendingQuestions.value.splice(index, 1)
+        successCount++
+      } else if (typeof id === 'string' && id.startsWith('link-')) {
+        const index = parseInt(id.replace('link-', ''))
+        pendingExamLinks.value.splice(index, 1)
         successCount++
       } else {
         if (pendingQuestionEdits.value[id]) {
@@ -1239,28 +1319,22 @@ const preloadQuestionsFromQuery = async () => {
       }
 
       const q = res.data
-      console.log('Adding question to pending:', q)
-      // Add to pending questions
-      pendingQuestions.value.push({
-        content: q.content,
-        subject: q.subject || '未分類',
-        category: q.category || '',
-        question_type: q.question_type || '選擇題',
-        difficulty: q.difficulty || 'medium',
-        tag_ids: q.tags?.map(t => t.id) || [],
-        explanation: q.explanation || '',
-        options: q.options || [],
-        points: 1,
-        // Store the original question ID for reference
-        originalQuestionId: q.id
+      console.log('Adding question to pendingExamLinks:', q)
+      // Add to pendingExamLinks (existing questions to be linked, not create new)
+      pendingExamLinks.value.push({
+        questionId: q.id,
+        questionContent: q.content,
+        questionSubject: q.subject || '未分類',
+        questionCategory: q.category || '',
+        points: 1
       })
       addedCount++
     }
 
-    console.log('pendingQuestions after preload:', pendingQuestions.value)
+    console.log('pendingExamLinks after preload:', pendingExamLinks.value)
 
     if (addedCount > 0) {
-      console.log(`Preloaded ${addedCount} questions to pending list`)
+      console.log(`Preloaded ${addedCount} questions to pendingExamLinks`)
     }
   } catch (error) {
     console.error('Failed to preload questions:', error)
