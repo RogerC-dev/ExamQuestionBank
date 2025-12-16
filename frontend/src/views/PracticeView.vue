@@ -34,140 +34,69 @@
                     <button :class="{ active: currentTab === 'exams' }" @click="setTab('exams')">考卷列表</button>
                     <button :class="{ active: currentTab === 'wrong' }" @click="setTab('wrong')">錯題本 ({{
                         wrongQuestions.length
-                    }})</button>
+                        }})</button>
                     <button :class="{ active: currentTab === 'bookmarks' }" @click="setTab('bookmarks')">收藏題目 ({{
                         bookmarks.length
-                    }})</button>
+                        }})</button>
                 </div>
 
                 <!-- Question List Tab Content -->
                 <div v-if="currentTab === 'questions'">
-                    <!-- Filter Panel -->
-                    <QuestionFilterPanel v-model="searchFilters" :tags="tagOptions" :loading="isSearching"
-                        :total-count="searchTotalCount" :show-source-filter="true" @search="searchQuestions(1)"
-                        @reset="resetSearch" />
+                    <QuestionList ref="questionListRef" mode="practice" :show-header="false" :show-mode-toggle="false"
+                        :show-source-filter="true" :tags="tagOptions" :search-results="searchResults"
+                        :search-loading="isSearching" :total-search-count="searchTotalCount"
+                        :external-filters="searchFilters" @search-questions="handleQuestionListSearch"
+                        @load-tags="loadTags" @update:selected-ids="handleSelectedIdsChange"
+                        @item-action="handleQuestionItemAction">
+                        <!-- Custom toolbar buttons for practice mode -->
+                        <template #toolbar-buttons="{ selectedIds, clearSelection }">
+                            <button class="toolbar-btn toolbar-btn-primary" @click="batchAddToFlashcard">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z">
+                                    </path>
+                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                    <polyline points="7 3 7 8 15 8"></polyline>
+                                </svg>
+                                儲存為快閃卡
+                            </button>
 
-                    <!-- Search Results Section -->
-                    <div v-if="showSearchResults" class="search-section">
-                        <div class="search-results-container">
-                            <!-- Toolbar -->
-                            <SelectionToolbar :selected-count="selectedQuestionIds.length" item-unit="題"
-                                @clear="clearSelection">
-                                <button class="toolbar-btn toolbar-btn-primary" @click="batchAddToFlashcard">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z">
-                                        </path>
-                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                                        <polyline points="7 3 7 8 15 8"></polyline>
-                                    </svg>
-                                    儲存為快閃卡
-                                </button>
+                            <button class="toolbar-btn toolbar-btn-secondary" @click="batchAddToBookmark">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                加入收藏
+                            </button>
 
-                                <button class="toolbar-btn toolbar-btn-secondary" @click="batchAddToBookmark">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                                    </svg>
-                                    加入收藏
-                                </button>
+                            <button class="toolbar-btn toolbar-btn-secondary" @click="openAddToExamModal">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                                </svg>
+                                加入考卷
+                            </button>
 
-                                <button class="toolbar-btn toolbar-btn-secondary" @click="openAddToExamModal">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                        <polyline points="14 2 14 8 20 8"></polyline>
-                                        <line x1="12" y1="18" x2="12" y2="12"></line>
-                                        <line x1="9" y1="15" x2="15" y2="15"></line>
-                                    </svg>
-                                    加入考卷
-                                </button>
+                            <button v-if="searchFilters.source === 'wrong'" class="toolbar-btn toolbar-btn-secondary"
+                                @click="batchMarkReviewed">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                已複習
+                            </button>
+                        </template>
 
-                                <button v-if="searchFilters.source === 'wrong'"
-                                    class="toolbar-btn toolbar-btn-secondary" @click="batchMarkReviewed">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                    </svg>
-                                    已複習
-                                </button>
-                            </SelectionToolbar>
-
-                            <!-- List Header Actions -->
-                            <div v-if="searchResults.length > 0 && !isSearching" class="list-header-actions">
-                                <label class="select-all-label">
-                                    <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll">
-                                    <span>全選本頁 ({{ searchResults.length }} 題)</span>
-                                </label>
-                            </div>
-
-                            <!-- Results List -->
-                            <div v-if="!searchResults.length && !isSearching" class="empty-search">
-                                找不到符合條件的題目
-                            </div>
-
-                            <div v-else-if="isSearching" class="loading-search">
-                                <div class="spinner"></div>
-                                搜尋中...
-                            </div>
-
-                            <div v-else class="question-list search-result-list">
-                                <div v-for="q in searchResults" :key="q.id" class="question-item search-item"
-                                    :class="{ selected: selectedQuestionIds.includes(q.id) }"
-                                    @click="toggleCheck(q.id)">
-                                    <div class="item-checkbox">
-                                        <input type="checkbox" :checked="selectedQuestionIds.includes(q.id)"
-                                            @click.stop="toggleCheck(q.id)" />
-                                    </div>
-
-                                    <div class="question-info">
-                                        <div class="question-meta">
-                                            <span v-if="q.subject" class="meta-badge subject-badge">{{ q.subject
-                                            }}</span>
-                                            <span v-if="q.difficulty" class="meta-badge difficulty-badge"
-                                                :class="q.difficulty">
-                                                {{ getDifficultyLabel(q.difficulty) }}
-                                            </span>
-                                            <span v-for="tag in q.tags" :key="tag.id" class="meta-badge tag-badge">{{
-                                                tag.name }}</span>
-                                            <!-- Status badges for bookmark and flashcard -->
-                                            <span v-if="q.is_bookmarked" class="meta-badge status-badge bookmark-status"
-                                                title="已收藏">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                                    viewBox="0 0 24 24" fill="currentColor" stroke="currentColor"
-                                                    stroke-width="1">
-                                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                                                </svg>
-                                                已收藏
-                                            </span>
-                                            <span v-if="q.is_in_flashcard"
-                                                class="meta-badge status-badge flashcard-status" title="已加入快閃卡">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2">
-                                                    <rect x="2" y="4" width="20" height="14" rx="2"></rect>
-                                                    <path d="M7 9h10M7 13h6"></path>
-                                                </svg>
-                                                快閃卡
-                                            </span>
-                                        </div>
-                                        <p class="question-text">{{ q.content }}</p>
-                                    </div>
-
-                                    <div class="question-actions" @click.stop>
-                                        <button class="btn btn-sm" @click="startSingleQuizFromSearch(q)">練習</button>
-                                        <button class="btn btn-sm btn-outline"
-                                            @click="openChatFromSearchQuestion(q)">Ask AI</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Pagination -->
-                            <PaginationControl v-if="searchTotalCount > 0" :pagination-state="searchPaginationState"
-                                :current-page="searchPage" :page-size="searchPageSize" :is-loading="isSearching"
-                                @page-change="goToSearchPage" @size-change="handlePageSizeChange" />
-                        </div>
-                    </div>
+                        <!-- Custom item actions for practice mode -->
+                        <template #item-actions="{ item }">
+                            <button class="btn btn-sm" @click="startSingleQuizFromSearch(item)">練習</button>
+                            <button class="btn btn-sm btn-outline" @click="openChatFromSearchQuestion(item)">Ask
+                                AI</button>
+                        </template>
+                    </QuestionList>
                 </div>
 
                 <!-- Quiz Mode -->
@@ -454,6 +383,7 @@ import questionService from '@/services/questionService'
 import flashcardService from '@/services/flashcardService'
 import tagService from '@/services/tagService'
 import AIChatInterface from '@/components/AIChatInterface.vue'
+import QuestionList from '@/components/QuestionList.vue'
 import QuestionFilterPanel from '@/components/common/QuestionFilterPanel.vue'
 import PaginationControl from '@/components/common/PaginationControl.vue'
 import SelectionToolbar from '@/components/common/SelectionToolbar.vue'
@@ -481,6 +411,9 @@ const bookmarks = ref([])
 const loadingExams = ref(false)
 const loadingWrong = ref(false)
 const loadingBookmarks = ref(false)
+
+// QuestionList component ref
+const questionListRef = ref(null)
 
 // Search state
 const searchFilters = ref({
@@ -688,6 +621,26 @@ const resetSearch = () => {
     showSearchResults.value = false
     searchPage.value = 1
     searchTotalCount.value = 0
+}
+
+// Handler functions for QuestionList component
+const handleQuestionListSearch = (filters, page, pageSize) => {
+    // Update local filter state from component
+    searchFilters.value = { ...searchFilters.value, ...filters }
+    searchPageSize.value = pageSize
+    searchQuestions(page)
+}
+
+const handleSelectedIdsChange = (ids) => {
+    selectedQuestionIds.value = ids
+}
+
+const handleQuestionItemAction = (action, item) => {
+    if (action === 'practice') {
+        startSingleQuizFromSearch(item)
+    } else if (action === 'ask-ai') {
+        openChatFromSearchQuestion(item)
+    }
 }
 
 const toggleCheck = (id) => {
@@ -1321,6 +1274,11 @@ onMounted(() => {
     loadData()
     loadTags()
     window.addEventListener('resize', handleResize)
+
+    // Trigger initial search if on questions tab
+    if (currentTab.value === 'questions') {
+        searchQuestions(1)
+    }
 })
 
 onUnmounted(() => {

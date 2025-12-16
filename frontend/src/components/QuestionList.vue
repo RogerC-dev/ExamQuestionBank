@@ -1,6 +1,7 @@
 <template>
-  <div class="question-list">
-    <div class="list-header">
+  <div class="question-list" :class="{ 'practice-mode': mode === 'practice' }">
+    <!-- Header (hidden in practice mode) -->
+    <div v-if="showHeader" class="list-header">
       <div class="header-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2">
@@ -50,8 +51,8 @@
       </div>
     </div>
 
-    <!-- View Mode Toggle -->
-    <div class="view-mode-section">
+    <!-- View Mode Toggle (hidden in practice mode) -->
+    <div v-if="showModeToggle" class="view-mode-section">
       <div class="view-mode-toggle">
         <button class="toggle-btn" :class="{ active: viewMode === 'exam' }" @click="viewMode = 'exam'">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -72,8 +73,8 @@
       </div>
     </div>
 
-    <!-- Exam Mode: Simple Search Bar -->
-    <div v-if="viewMode === 'exam'" class="search-bar">
+    <!-- Exam Mode: Simple Search Bar (only in exam mode) -->
+    <div v-if="viewMode === 'exam' && showModeToggle" class="search-bar">
       <div class="search-control">
         <input type="checkbox" :checked="isAllSelected" :indeterminate.prop="isPartialSelected"
           @change="toggleSelectAll" class="select-all-checkbox" title="全選/取消全選" />
@@ -89,24 +90,28 @@
       </div>
     </div>
 
-    <!-- Search Mode: QuestionFilterPanel -->
-    <div v-else class="filter-panel-container">
+    <!-- Search/Practice Mode: QuestionFilterPanel -->
+    <div v-if="viewMode === 'search' || mode === 'practice'" class="filter-panel-container">
       <QuestionFilterPanel v-model="searchFilters" :tags="tags" :loading="searchLoading" :total-count="totalSearchCount"
-        @search="handleSearch" @reset="handleResetFilters" />
+        :show-source-filter="showSourceFilter" @search="handleSearch" @reset="handleResetFilters" />
     </div>
 
-    <!-- Selection Toolbar (Floating) -->
-    <SelectionToolbar v-if="viewMode === 'search'" :selected-count="selectedIds.length" item-unit="題"
-      @clear="clearSelection">
-      <button class="toolbar-btn toolbar-btn-primary" @click="handleAddSearchResultsToExam"
-        :disabled="selectedIds.length === 0">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        加入考卷
-      </button>
+    <!-- Selection Toolbar (with custom slots for practice mode) -->
+    <SelectionToolbar v-if="viewMode === 'search' || mode === 'practice'" :selected-count="selectedIds.length"
+      item-unit="題" @clear="clearSelection">
+      <!-- Custom toolbar buttons slot -->
+      <slot name="toolbar-buttons" :selected-ids="selectedIds" :clear-selection="clearSelection">
+        <!-- Default button for exam mode -->
+        <button v-if="mode !== 'practice'" class="toolbar-btn toolbar-btn-primary" @click="handleAddSearchResultsToExam"
+          :disabled="selectedIds.length === 0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          加入考卷
+        </button>
+      </slot>
     </SelectionToolbar>
 
     <div v-if="loading || searchLoading" class="loading-state">
@@ -121,42 +126,77 @@
         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
       </svg>
-      <p class="empty-text">{{ viewMode === 'search' ? '沒有找到符合的題目' : (searchQuery ? '沒有符合的題目' : '尚未加入任何題目') }}</p>
-      <p v-if="!searchQuery && viewMode === 'exam'" class="empty-hint">點擊上方按鈕開始新增題目</p>
+      <p class="empty-text">{{ emptyText }}</p>
+      <p v-if="!searchQuery && viewMode === 'exam' && mode !== 'practice'" class="empty-hint">點擊上方按鈕開始新增題目</p>
     </div>
 
     <!-- Exam Mode: Use QuestionItem component -->
-    <div v-else-if="viewMode === 'exam'" class="questions">
+    <div v-else-if="viewMode === 'exam' && mode !== 'practice'" class="questions">
       <QuestionItem v-for="item in filteredQuestions" :key="item.id" :item="item"
         :is-active="selectedQuestionId === item.question" :has-pending-edit="Boolean(pendingEdits[item.id])"
         :is-checked="selectedIds.includes(item.id)" :show-checkbox="true" @select="selectQuestion"
         @remove="(id) => $emit('remove-question', id)" @toggle-check="toggleCheck" />
     </div>
 
-    <!-- Search Mode: Use AddQuestionModal-style items -->
+    <!-- Search/Practice Mode: Question items with custom actions -->
     <div v-else class="search-questions-list">
+      <!-- Select All Header -->
+      <div v-if="filteredQuestions.length > 0" class="list-header-actions">
+        <label class="select-all-label">
+          <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll">
+          <span>全選本頁 ({{ filteredQuestions.length }} 題)</span>
+        </label>
+      </div>
+
       <div v-for="item in filteredQuestions" :key="item.id" class="search-question-item"
         :class="{ selected: selectedIds.includes(item.id) }" @click="toggleCheck(item.id)">
         <input type="checkbox" :checked="selectedIds.includes(item.id)" class="search-question-checkbox" @click.stop
           @change="toggleCheck(item.id)" />
         <div class="search-question-info">
           <div class="search-question-badges">
-            <span class="search-badge search-badge-subject">{{ item.question_subject || item.subject }}</span>
-            <span class="search-badge search-badge-category">{{ item.question_category || item.category }}</span>
+            <span v-if="item.question_subject || item.subject" class="search-badge search-badge-subject">{{
+              item.question_subject || item.subject }}</span>
+            <span v-if="item.difficulty" class="search-badge search-badge-difficulty" :class="item.difficulty">
+              {{ getDifficultyLabel(item.difficulty) }}
+            </span>
             <span v-for="tag in ((item.tags || []).slice(0, 2))" :key="tag.id" class="search-badge search-badge-tag">
               {{ tag.name }}
             </span>
             <span v-if="(item.tags || []).length > 2" class="search-badge search-badge-more">
               +{{ item.tags.length - 2 }}
             </span>
+            <!-- Status badges -->
+            <span v-if="item.is_bookmarked" class="search-badge search-badge-status bookmark-status" title="已收藏">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"
+                stroke="currentColor" stroke-width="1">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+              </svg>
+              已收藏
+            </span>
+            <span v-if="item.is_in_flashcard" class="search-badge search-badge-status flashcard-status" title="已加入快閃卡">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <rect x="2" y="4" width="20" height="14" rx="2"></rect>
+                <path d="M7 9h10M7 13h6"></path>
+              </svg>
+              快閃卡
+            </span>
           </div>
           <div class="search-question-content">{{ item.question_content || item.content }}</div>
+        </div>
+
+        <!-- Custom item actions slot for practice mode -->
+        <div v-if="mode === 'practice'" class="search-question-actions" @click.stop>
+          <slot name="item-actions" :item="item">
+            <button class="btn btn-sm" @click="$emit('item-action', 'practice', item)">練習</button>
+            <button class="btn btn-sm btn-outline" @click="$emit('item-action', 'ask-ai', item)">Ask AI</button>
+          </slot>
         </div>
       </div>
     </div>
 
-    <!-- Search Mode Pagination -->
-    <PaginationControl v-if="viewMode === 'search' && totalSearchCount > searchPageSize"
+    <!-- Pagination -->
+    <PaginationControl v-if="(viewMode === 'search' || mode === 'practice') && totalSearchCount > searchPageSize"
       :pagination-state="searchPaginationState" :current-page="searchCurrentPage" :page-size="searchPageSize"
       :is-loading="searchLoading" @page-change="handleSearchPageChange" @size-change="handleSearchPageSizeChange" />
   </div>
@@ -170,6 +210,25 @@ import PaginationControl from './common/PaginationControl.vue'
 import SelectionToolbar from './common/SelectionToolbar.vue'
 
 const props = defineProps({
+  // Mode: 'exam' (default) or 'practice'
+  mode: {
+    type: String,
+    default: 'exam',
+    validator: (value) => ['exam', 'practice'].includes(value)
+  },
+  // Layout control props
+  showHeader: {
+    type: Boolean,
+    default: true
+  },
+  showModeToggle: {
+    type: Boolean,
+    default: true
+  },
+  showSourceFilter: {
+    type: Boolean,
+    default: false
+  },
   questions: {
     type: Array,
     default: () => []
@@ -217,6 +276,11 @@ const props = defineProps({
   totalSearchCount: {
     type: Number,
     default: 0
+  },
+  // External control of filters (for practice mode)
+  externalFilters: {
+    type: Object,
+    default: null
   }
 })
 
@@ -230,7 +294,9 @@ const emit = defineEmits([
   'update:selected-ids',
   'search-questions',
   'load-tags',
-  'add-search-results'
+  'add-search-results',
+  'item-action',
+  'item-click'
 ])
 
 const searchQuery = ref('')
@@ -241,14 +307,29 @@ const searchFilters = ref({
   difficulty: '',
   search: '',
   tags: [],
-  tag_mode: 'or'
+  tag_mode: 'or',
+  source: 'all'
 })
 const searchCurrentPage = ref(1)
 const searchPageSize = ref(20)
 
+// Use external filters if provided (for practice mode)
+watch(() => props.externalFilters, (newFilters) => {
+  if (newFilters) {
+    searchFilters.value = { ...searchFilters.value, ...newFilters }
+  }
+}, { immediate: true, deep: true })
+
+// Set viewMode to 'search' in practice mode
+watch(() => props.mode, (mode) => {
+  if (mode === 'practice') {
+    viewMode.value = 'search'
+  }
+}, { immediate: true })
+
 const filteredQuestions = computed(() => {
-  // In search mode, show search results
-  if (viewMode.value === 'search') {
+  // In practice mode or search mode, show search results
+  if (props.mode === 'practice' || viewMode.value === 'search') {
     return props.searchResults
   }
 
@@ -266,6 +347,21 @@ const filteredQuestions = computed(() => {
     )
   })
 })
+
+const emptyText = computed(() => {
+  if (props.mode === 'practice') {
+    return '找不到符合條件的題目'
+  }
+  if (viewMode.value === 'search') {
+    return '沒有找到符合的題目'
+  }
+  return searchQuery.value ? '沒有符合的題目' : '尚未加入任何題目'
+})
+
+const getDifficultyLabel = (difficulty) => {
+  const labels = { easy: '簡單', medium: '中等', hard: '困難' }
+  return labels[difficulty] || difficulty
+}
 
 const isAllSelected = computed(() => {
   return filteredQuestions.value.length > 0 &&
@@ -393,7 +489,6 @@ defineExpose({ selectedIds })
   height: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 /* Header */
@@ -633,6 +728,122 @@ defineExpose({ selectedIds })
 .search-badge-more {
   background: #f3f4f6;
   color: var(--text-secondary, #64748B);
+}
+
+.search-badge-difficulty {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.search-badge-difficulty.easy {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.search-badge-difficulty.medium {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.search-badge-difficulty.hard {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.search-badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.search-badge-status.bookmark-status {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.search-badge-status.flashcard-status {
+  background: #E0E7FF;
+  color: #4338CA;
+}
+
+/* List Header Actions (Select All) */
+.list-header-actions {
+  padding: 12px 16px;
+  background: var(--bg-page, #F8FAFC);
+  border-bottom: 1px solid var(--border, #E2E8F0);
+}
+
+.select-all-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-secondary, #64748B);
+  cursor: pointer;
+}
+
+.select-all-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary, #476996);
+}
+
+/* Question Item Actions */
+.search-question-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.search-question-actions .btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.search-question-actions .btn-sm {
+  background: var(--primary, #476996);
+  color: white;
+  border: none;
+}
+
+.search-question-actions .btn-sm:hover {
+  background: var(--primary-hover, #35527a);
+}
+
+.search-question-actions .btn-outline {
+  background: transparent;
+  color: var(--primary, #476996);
+  border: 1px solid var(--primary, #476996);
+}
+
+.search-question-actions .btn-outline:hover {
+  background: var(--primary-soft, #EEF2FF);
+}
+
+/* Practice Mode Specific Styles */
+.question-list.practice-mode {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+}
+
+.question-list.practice-mode .filter-panel-container {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.question-list.practice-mode .search-questions-list {
+  margin-top: 16px;
 }
 
 .search-question-content {

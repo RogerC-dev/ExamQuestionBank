@@ -60,7 +60,7 @@ defineEmits(['clear'])
 <style scoped>
 .selection-toolbar-wrapper {
     position: fixed;
-    bottom: 40px;
+    bottom: 100px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
