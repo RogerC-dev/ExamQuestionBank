@@ -191,11 +191,13 @@ import AddQuestionModal from '../components/AddQuestionModal.vue'
 import examService from '../services/examService'
 import questionService from '../services/questionService'
 import api from '../services/api'
+import { usePdfImportStore } from '../stores/pdfImport'
 
-const currentUser = inject('currentUser')
+const currentUser = inject('currentUser', null)
 
 const route = useRoute()
 const router = useRouter()
+const pdfImportStore = usePdfImportStore()
 
 // 考卷資料
 const exam = ref(null)
@@ -1201,9 +1203,74 @@ const consumePendingPdfImport = () => {
   }
 }
 
+// Preload questions from query params (when coming from "建立新考卷" with selected questions)
+const preloadQuestionsFromQuery = async () => {
+  console.log('preloadQuestionsFromQuery called')
+  console.log('route.query:', route.query)
+  console.log('examId.value:', examId.value)
+
+  const preloadParam = route.query.preload_questions
+  if (!preloadParam || examId.value) {
+    // Only preload when creating new exam, not editing existing one
+    console.log('Skipping preload - no param or editing existing exam')
+    return
+  }
+
+  const questionIds = preloadParam.split(',').map(id => parseInt(id)).filter(id => !isNaN(id))
+  console.log('Parsed question IDs:', questionIds)
+  if (questionIds.length === 0) return
+
+  console.log('Preloading questions:', questionIds)
+
+  try {
+    // Fetch question details for each ID
+    const fetchPromises = questionIds.map(id => questionService.getQuestion(id).catch(err => {
+      console.error(`Failed to fetch question ${id}:`, err)
+      return null
+    }))
+    const responses = await Promise.all(fetchPromises)
+    console.log('Fetched responses:', responses)
+
+    let addedCount = 0
+    for (const res of responses) {
+      if (!res || !res.data) {
+        console.log('Skipping null response')
+        continue
+      }
+
+      const q = res.data
+      console.log('Adding question to pending:', q)
+      // Add to pending questions
+      pendingQuestions.value.push({
+        content: q.content,
+        subject: q.subject || '未分類',
+        category: q.category || '',
+        question_type: q.question_type || '選擇題',
+        difficulty: q.difficulty || 'medium',
+        tag_ids: q.tags?.map(t => t.id) || [],
+        explanation: q.explanation || '',
+        options: q.options || [],
+        points: 1,
+        // Store the original question ID for reference
+        originalQuestionId: q.id
+      })
+      addedCount++
+    }
+
+    console.log('pendingQuestions after preload:', pendingQuestions.value)
+
+    if (addedCount > 0) {
+      console.log(`Preloaded ${addedCount} questions to pending list`)
+    }
+  } catch (error) {
+    console.error('Failed to preload questions:', error)
+  }
+}
+
 onMounted(async () => {
   await loadExam()
   consumePendingPdfImport()
+  await preloadQuestionsFromQuery()
 })
 </script>
 

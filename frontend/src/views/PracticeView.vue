@@ -34,10 +34,10 @@
                     <button :class="{ active: currentTab === 'exams' }" @click="setTab('exams')">考卷列表</button>
                     <button :class="{ active: currentTab === 'wrong' }" @click="setTab('wrong')">錯題本 ({{
                         wrongQuestions.length
-                        }})</button>
+                    }})</button>
                     <button :class="{ active: currentTab === 'bookmarks' }" @click="setTab('bookmarks')">收藏題目 ({{
                         bookmarks.length
-                        }})</button>
+                    }})</button>
                 </div>
 
                 <!-- Question List Tab Content -->
@@ -62,6 +62,25 @@
                                         <polyline points="7 3 7 8 15 8"></polyline>
                                     </svg>
                                     儲存為快閃卡
+                                </button>
+
+                                <button class="toolbar-btn toolbar-btn-secondary" @click="batchAddToBookmark">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    加入收藏
+                                </button>
+
+                                <button class="toolbar-btn toolbar-btn-secondary" @click="openAddToExamModal">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                                    </svg>
+                                    加入考卷
                                 </button>
 
                                 <button v-if="searchFilters.source === 'wrong'"
@@ -104,13 +123,33 @@
                                     <div class="question-info">
                                         <div class="question-meta">
                                             <span v-if="q.subject" class="meta-badge subject-badge">{{ q.subject
-                                                }}</span>
+                                            }}</span>
                                             <span v-if="q.difficulty" class="meta-badge difficulty-badge"
                                                 :class="q.difficulty">
                                                 {{ getDifficultyLabel(q.difficulty) }}
                                             </span>
                                             <span v-for="tag in q.tags" :key="tag.id" class="meta-badge tag-badge">{{
                                                 tag.name }}</span>
+                                            <!-- Status badges for bookmark and flashcard -->
+                                            <span v-if="q.is_bookmarked" class="meta-badge status-badge bookmark-status"
+                                                title="已收藏">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                                                    viewBox="0 0 24 24" fill="currentColor" stroke="currentColor"
+                                                    stroke-width="1">
+                                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                                                </svg>
+                                                已收藏
+                                            </span>
+                                            <span v-if="q.is_in_flashcard"
+                                                class="meta-badge status-badge flashcard-status" title="已加入快閃卡">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2">
+                                                    <rect x="2" y="4" width="20" height="14" rx="2"></rect>
+                                                    <path d="M7 9h10M7 13h6"></path>
+                                                </svg>
+                                                快閃卡
+                                            </span>
                                         </div>
                                         <p class="question-text">{{ q.content }}</p>
                                     </div>
@@ -353,6 +392,57 @@
                 </div>
             </div>
         </div>
+
+        <!-- Add to Exam Dialog -->
+        <div v-if="showAddToExamModal" class="mock-exam-overlay" @click.self="closeAddToExamModal">
+            <div class="mock-exam-dialog">
+                <div class="dialog-header">
+                    <h3>加入考卷</h3>
+                    <button class="btn-close" @click="closeAddToExamModal" aria-label="關閉">×</button>
+                </div>
+                <div class="dialog-body">
+                    <p class="dialog-desc">選擇要加入的考卷（可多選），已選取 {{ selectedQuestionIds.length }} 題</p>
+
+                    <div v-if="loadingUserExams" class="loading-exams">
+                        <div class="spinner"></div>
+                        載入考卷中...
+                    </div>
+
+                    <div v-else-if="userExamsForAdd.length === 0" class="no-exams-warning">
+                        <p>您目前沒有可加入題目的考卷</p>
+                    </div>
+
+                    <div v-else class="exam-select-list">
+                        <label v-for="exam in userExamsForAdd" :key="exam.id" class="exam-select-item"
+                            :class="{ selected: selectedExamIds.includes(exam.id) }">
+                            <input type="checkbox" :value="exam.id" v-model="selectedExamIds">
+                            <div class="exam-select-info">
+                                <span class="exam-select-name">{{ exam.name }}</span>
+                                <span class="exam-select-meta">{{ exam.question_count || 0 }} 題</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="dialog-footer">
+                    <button class="btn btn-secondary" @click="closeAddToExamModal">取消</button>
+                    <div class="dialog-footer-right">
+                        <button class="btn btn-outline" @click="goToCreateExamWithQuestions">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            建立新考卷
+                        </button>
+                        <button class="btn btn-primary" @click="batchAddToExams"
+                            :disabled="selectedExamIds.length === 0 || isAddingToExam">
+                            <span v-if="isAddingToExam">加入中...</span>
+                            <span v-else>加入 {{ selectedExamIds.length }} 張考卷</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -430,6 +520,13 @@ const mockExamSources = reactive({
 })
 const mockExamQuestionCount = ref(20)
 const allQuestionsPool = ref([])  // For "all questions" source
+
+// Add to Exam modal state
+const showAddToExamModal = ref(false)
+const userExamsForAdd = ref([])
+const loadingUserExams = ref(false)
+const selectedExamIds = ref([])
+const isAddingToExam = ref(false)
 
 const currentQuestion = computed(() => quizQuestions.value[currentIndex.value])
 const correctAnswerLabel = computed(() => {
@@ -628,13 +725,74 @@ const batchAddToFlashcard = async () => {
     if (selectedQuestionIds.value.length === 0) return
 
     try {
-        const promises = selectedQuestionIds.value.map(id => flashcardService.createFlashcard({ question: id }))
+        // Filter out questions that are already in flashcard
+        const questionsToAdd = selectedQuestionIds.value.filter(id => {
+            const question = searchResults.value.find(q => q.id === id)
+            return !question?.is_in_flashcard
+        })
+
+        if (questionsToAdd.length === 0) {
+            alert('選取的題目已全部在快閃卡中！')
+            return
+        }
+
+        const promises = questionsToAdd.map(id => flashcardService.createFlashcard({ question: id }))
         await Promise.all(promises)
-        alert(`成功加入 ${selectedQuestionIds.value.length} 題到快閃卡！`)
+
+        const skipped = selectedQuestionIds.value.length - questionsToAdd.length
+        let message = `成功加入 ${questionsToAdd.length} 題到快閃卡！`
+        if (skipped > 0) {
+            message += `（${skipped} 題已在快閃卡中，已略過）`
+        }
+        alert(message)
         clearSelection()
+
+        // Refresh search results to update flashcard status
+        if (searchResults.value.length > 0) {
+            searchQuestions(searchPage.value)
+        }
     } catch (e) {
         console.error('Batch add to flashcard failed:', e)
         alert('加入快閃卡失敗')
+    }
+}
+
+const batchAddToBookmark = async () => {
+    if (selectedQuestionIds.value.length === 0) return
+
+    try {
+        // Filter out questions that are already bookmarked
+        const questionsToAdd = selectedQuestionIds.value.filter(id => {
+            const question = searchResults.value.find(q => q.id === id)
+            return !question?.is_bookmarked
+        })
+
+        if (questionsToAdd.length === 0) {
+            alert('選取的題目已全部在收藏中！')
+            return
+        }
+
+        await examService.addBookmark(questionsToAdd)
+
+        // Refresh bookmarks list
+        const bookmarkRes = await examService.getBookmarks().catch(() => ({ data: [] }))
+        bookmarks.value = bookmarkRes.data || []
+
+        const skipped = selectedQuestionIds.value.length - questionsToAdd.length
+        let message = `成功加入 ${questionsToAdd.length} 題到收藏！`
+        if (skipped > 0) {
+            message += `（${skipped} 題已在收藏中，已略過）`
+        }
+        alert(message)
+        clearSelection()
+
+        // Refresh search results to update bookmark status
+        if (searchResults.value.length > 0) {
+            searchQuestions(searchPage.value)
+        }
+    } catch (e) {
+        console.error('Batch add to bookmark failed:', e)
+        alert('加入收藏失敗')
     }
 }
 
@@ -698,6 +856,127 @@ const batchMarkReviewed = async () => {
     } catch (e) {
         console.error('Batch mark reviewed failed:', e)
         alert('標記失敗')
+    }
+}
+
+// Add to Exam modal functions
+const openAddToExamModal = async () => {
+    if (selectedQuestionIds.value.length === 0) {
+        alert('請先選擇題目')
+        return
+    }
+
+    showAddToExamModal.value = true
+    loadingUserExams.value = true
+    selectedExamIds.value = []
+
+    try {
+        // Load user's exams
+        const res = await examService.getExams({ page_size: 100 })
+        const exams = res.data?.results || res.data || []
+        console.log('Loaded exams for add modal:', exams)
+        // Show all exams the user has access to
+        userExamsForAdd.value = exams
+    } catch (e) {
+        console.error('Failed to load exams:', e)
+        userExamsForAdd.value = []
+    } finally {
+        loadingUserExams.value = false
+    }
+}
+
+const closeAddToExamModal = () => {
+    showAddToExamModal.value = false
+    selectedExamIds.value = []
+}
+
+const goToCreateExam = () => {
+    closeAddToExamModal()
+    router.push('/exams/create')
+}
+
+const goToCreateExamWithQuestions = () => {
+    // Get question details to pass to create exam page
+    const questionIds = selectedQuestionIds.value
+    closeAddToExamModal()
+
+    // Navigate to create exam page with question IDs in query params
+    router.push({
+        path: '/exams/create',
+        query: { preload_questions: questionIds.join(',') }
+    })
+}
+
+const batchAddToExams = async () => {
+    if (selectedExamIds.value.length === 0 || selectedQuestionIds.value.length === 0) return
+
+    isAddingToExam.value = true
+
+    try {
+        // First, fetch details of each selected exam to get existing question IDs
+        const examDetailsPromises = selectedExamIds.value.map(id => examService.getExam(id))
+        const examDetailsResponses = await Promise.all(examDetailsPromises)
+
+        // Build a map of examId -> Set of existing question IDs
+        const existingQuestionsMap = {}
+        for (const res of examDetailsResponses) {
+            const exam = res.data
+            const existingIds = new Set()
+            if (exam.exam_questions) {
+                exam.exam_questions.forEach(eq => {
+                    existingIds.add(eq.question)
+                })
+            }
+            existingQuestionsMap[exam.id] = existingIds
+        }
+
+        let totalAdded = 0
+        let totalSkipped = 0
+        let errors = []
+
+        for (const examId of selectedExamIds.value) {
+            const existingQuestions = existingQuestionsMap[examId] || new Set()
+
+            for (const questionId of selectedQuestionIds.value) {
+                // Skip if question already exists in this exam
+                if (existingQuestions.has(questionId)) {
+                    totalSkipped++
+                    continue
+                }
+
+                try {
+                    await examService.addQuestionToExam(examId, { question: questionId })
+                    totalAdded++
+                } catch (e) {
+                    // May fail for other reasons
+                    errors.push(`題目 ${questionId} 加入考卷失敗`)
+                }
+            }
+        }
+
+        const examCount = selectedExamIds.value.length
+        const questionCount = selectedQuestionIds.value.length
+
+        if (totalAdded > 0 && totalSkipped === 0) {
+            alert(`成功將 ${totalAdded} 題加入 ${examCount} 張考卷！`)
+        } else if (totalAdded > 0 && totalSkipped > 0) {
+            alert(`成功加入 ${totalAdded} 筆（${totalSkipped} 筆已存在於考卷中，已略過）`)
+        } else if (totalSkipped > 0) {
+            alert('選取的題目已全部存在於選擇的考卷中！')
+        } else {
+            alert('加入考卷失敗')
+        }
+
+        closeAddToExamModal()
+        clearSelection()
+
+        // Refresh exam list
+        loadData()
+    } catch (e) {
+        console.error('Batch add to exams failed:', e)
+        alert('加入考卷失敗')
+    } finally {
+        isAddingToExam.value = false
     }
 }
 
@@ -2566,6 +2845,24 @@ onUnmounted(() => {
     color: #4b5563;
 }
 
+.status-badge {
+    gap: 4px;
+}
+
+.status-badge svg {
+    flex-shrink: 0;
+}
+
+.bookmark-status {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.flashcard-status {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
 .empty-search,
 .loading-search {
     text-align: center;
@@ -2600,5 +2897,98 @@ onUnmounted(() => {
     .search-item {
         flex-wrap: nowrap;
     }
+}
+
+/* Add to Exam Modal Styles */
+.exam-select-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.exam-select-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fbfcfd;
+}
+
+.exam-select-item:hover {
+    border-color: var(--primary);
+    background: #f3f6fa;
+}
+
+.exam-select-item.selected {
+    border-color: var(--primary);
+    background: var(--primary-soft, #EEF2FF);
+}
+
+.exam-select-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary);
+    flex-shrink: 0;
+}
+
+.exam-select-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.exam-select-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.exam-select-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.loading-exams {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 40px;
+    color: var(--text-secondary);
+}
+
+.no-exams-warning {
+    text-align: center;
+    padding: 30px;
+    color: var(--text-secondary);
+}
+
+.no-exams-warning p {
+    margin: 0 0 16px 0;
+}
+
+.dialog-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dialog-footer-right .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 </style>
