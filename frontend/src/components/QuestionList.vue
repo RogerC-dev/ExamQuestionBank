@@ -374,10 +374,14 @@ const isPartialSelected = computed(() => {
 })
 
 const toggleSelectAll = () => {
+  const pageIds = filteredQuestions.value.map(q => q.id)
   if (isAllSelected.value) {
-    selectedIds.value = []
+    // Remove current page items from selection (preserve other pages)
+    selectedIds.value = selectedIds.value.filter(id => !pageIds.includes(id))
   } else {
-    selectedIds.value = filteredQuestions.value.map(q => q.id)
+    // Add all current page items (preserve existing selections)
+    const set = new Set([...selectedIds.value, ...pageIds])
+    selectedIds.value = Array.from(set)
   }
   emit('update:selected-ids', selectedIds.value)
 }
@@ -469,13 +473,6 @@ const clearSelection = () => {
   selectedIds.value = []
   emit('update:selected-ids', selectedIds.value)
 }
-
-watch(() => props.questions, () => {
-  // 清除已不存在的選取項
-  selectedIds.value = selectedIds.value.filter(id =>
-    props.questions.some(q => q.id === id)
-  )
-})
 
 defineExpose({ selectedIds })
 </script>

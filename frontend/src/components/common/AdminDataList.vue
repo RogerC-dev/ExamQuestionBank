@@ -423,13 +423,6 @@ const closeDropdown = () => {
     openDropdownId.value = null
 }
 
-// Watch for items change to clean up selection
-watch(() => props.items, () => {
-    // Remove selected IDs that are no longer in the items
-    const itemIds = props.items.map(item => item.id)
-    selectedIds.value = selectedIds.value.filter(id => itemIds.includes(id))
-})
-
 // Expose for parent components
 defineExpose({
     selectedIds,
