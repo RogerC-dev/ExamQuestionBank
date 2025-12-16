@@ -55,119 +55,94 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
-        <!-- Exam Table -->
-        <div class="exam-table">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th style="width:4%">
-                            <input type="checkbox" :checked="isPageAllSelected" :disabled="isLoading"
-                                @change="toggleSelectAllExams" aria-label="選取全部" />
-                        </th>
-                        <th style="width:8%">考卷 ID</th>
-                        <th style="width:18%">考卷名稱</th>
-                        <th style="width:28%">考試說明</th>
-                        <th style="width:8%">題數</th>
-                        <th style="width:10%">時間限制 (分)</th>
-                        <th style="width:12%">建立時間</th>
-                        <th style="width:12%">更新時間</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-if="isLoading">
-                        <td colspan="9" class="table-status">考卷資料載入中...</td>
-                    </tr>
-                    <tr v-else-if="!filteredExams.length">
-                        <td colspan="9" class="table-status">暫無符合條件的考卷</td>
-                    </tr>
-                    <tr v-else v-for="exam in filteredExams" :key="exam.id">
-                        <td>
-                            <input type="checkbox" :checked="isExamSelected(exam.id)"
-                                :disabled="isLoading || deletingExamId === exam.id"
-                                @change="toggleSelectExam(exam.id, $event.target.checked)" aria-label="選取考卷" />
-                        </td>
-                        <td>{{ exam.id }}</td>
-                        <td>{{ exam.name }}</td>
-                        <td>{{ exam.description }}</td>
-                        <td>{{ exam.questionCount }}</td>
-                        <td>{{ exam.timeLimit != null ? exam.timeLimit : '-' }}</td>
-                        <td>{{ exam.createdAt }}</td>
-                        <td>{{ exam.updatedAt }}</td>
-                        <td>
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                    :id="`dropdownExam${exam.id}`" data-bs-toggle="dropdown" aria-expanded="false">
-                                    操作
-                                </button>
-                                <ul class="dropdown-menu" :aria-labelledby="`dropdownExam${exam.id}`">
-                                    <li>
-                                        <button class="dropdown-item" type="button"
-                                            @click="editExam(exam.id)">編輯</button>
-                                    </li>
-                                    <li>
-                                        <button class="dropdown-item" type="button"
-                                            @click="viewExam(exam.id)">檢視</button>
-                                    </li>
-                                    <li>
-                                        <hr class="dropdown-divider" />
-                                    </li>
-                                    <li>
-                                        <button class="dropdown-item" type="button" :disabled="exportingExams[exam.id]"
-                                            @click="exportExam(exam.id)">
-                                            <span v-if="exportingExams[exam.id]"
-                                                class="spinner-border spinner-border-sm me-2"></span>
-                                            {{ exportingExams[exam.id] ? '匯出中...' : '匯出' }}
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button class="dropdown-item" type="button" @click="printExam(exam.id)">
-                                            列印
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button class="dropdown-item text-danger" type="button"
-                                            :disabled="deletingExamId === exam.id" @click="deleteExam(exam.id)">
-                                            <span v-if="deletingExamId === exam.id"
-                                                class="spinner-border spinner-border-sm me-2"></span>
-                                            {{ deletingExamId === exam.id ? '刪除中...' : '刪除' }}
-                                        </button>
-                                    </li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Selection Toolbar -->
-        <SelectionToolbar :selected-count="selectedExamCount" item-unit="張考卷" @clear="clearExamSelection">
-            <button class="toolbar-btn toolbar-btn-primary" @click="exportSelectedExams" :disabled="isExporting">
-                <svg v-if="!isExporting" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <div v-else class="toolbar-spinner"></div>
-                <span>{{ isExporting ? '匯出中...' : '匯出' }}</span>
-            </button>
-            <div class="toolbar-divider"></div>
-            <button class="toolbar-btn toolbar-btn-danger" @click="deleteSelectedExams" :disabled="isDeletingSelected">
-                <div v-if="isDeletingSelected" class="toolbar-spinner"></div>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        <!-- Exam List using AdminDataList -->
+        <AdminDataList ref="adminDataListRef" type="exam" :items="filteredExams" :loading="isLoading"
+            :total-count="paginationState.totalCount" :show-header="false" :show-pagination="true" item-unit="張考卷"
+            empty-text="暫無符合條件的考卷" empty-hint="嘗試調整篩選條件或新增考卷" :current-page="currentPage" :page-size="pageSize"
+            :pagination-state="paginationState" :has-more-actions="true" @update:selected-ids="handleSelectionChange"
+            @view="handleViewExam" @edit="handleEditExam" @delete="handleDeleteExam" @page-change="handlePageChange"
+            @size-change="handleSizeChange">
+            <!-- Custom header icon -->
+            <template #header-icon>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
                 </svg>
-                <span>{{ isDeletingSelected ? '刪除中...' : '刪除' }}</span>
-            </button>
-        </SelectionToolbar>
+            </template>
 
-        <!-- Pagination -->
-        <PaginationControl :pagination-state="paginationState" :current-page="currentPage" :page-size="pageSize"
-            :is-loading="isLoading" @page-change="handlePageChange" @size-change="handleSizeChange" />
+            <!-- Custom item actions -->
+            <template #item-actions="{ item }">
+                <button class="action-btn action-btn-view" @click="viewExam(item.id)" title="檢視">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </button>
+                <button class="action-btn action-btn-edit" @click="editExam(item.id)" title="編輯">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+                <button class="action-btn action-btn-info" @click="exportExam(item.id)" title="匯出"
+                    :disabled="exportingExams[item.id]">
+                    <div v-if="exportingExams[item.id]" class="action-spinner"></div>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </button>
+                <button class="action-btn action-btn-info" @click="printExam(item.id)" title="列印">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                </button>
+                <button class="action-btn action-btn-delete" @click="deleteExam(item.id)" title="刪除"
+                    :disabled="deletingExamId === item.id">
+                    <div v-if="deletingExamId === item.id" class="action-spinner"></div>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                        </path>
+                    </svg>
+                </button>
+            </template>
+
+            <!-- Custom selection toolbar actions -->
+            <template #selection-actions="{ selectedIds, clearSelection }">
+                <button class="toolbar-btn toolbar-btn-primary" @click="exportSelectedExams" :disabled="isExporting">
+                    <svg v-if="!isExporting" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <div v-else class="toolbar-spinner"></div>
+                    <span>{{ isExporting ? '匯出中...' : '匯出' }}</span>
+                </button>
+                <div class="toolbar-divider"></div>
+                <button class="toolbar-btn toolbar-btn-danger" @click="deleteSelectedExams"
+                    :disabled="isDeletingSelected">
+                    <div v-if="isDeletingSelected" class="toolbar-spinner"></div>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                        </path>
+                    </svg>
+                    <span>{{ isDeletingSelected ? '刪除中...' : '刪除' }}</span>
+                </button>
+            </template>
+        </AdminDataList>
 
         <ExamDetailModal :visible="isExamDetailVisible" :exam="selectedExamDetail" :loading="isExamDetailLoading"
             :error="examDetailError" @close="closeExamDetail" />
@@ -185,8 +160,7 @@ import questionService from '@/services/questionService'
 import ExamDetailModal from '@/components/ExamDetailModal.vue'
 import { usePdfImportStore } from '@/stores/pdfImport'
 import examService from '@/services/examService'
-import SelectionToolbar from '@/components/common/SelectionToolbar.vue'
-import PaginationControl from '@/components/common/PaginationControl.vue'
+import AdminDataList from '@/components/common/AdminDataList.vue'
 
 const emit = defineEmits(['show-import-progress', 'hide-import-progress', 'show-import-result', 'show-export-progress', 'hide-export-progress'])
 
@@ -208,6 +182,7 @@ const exportingExams = reactive({})
 const selectedExamIds = ref([])
 const isDeletingSelected = ref(false)
 const jsonImportInput = ref(null)
+const adminDataListRef = ref(null)
 
 const router = useRouter()
 const pdfImportStore = usePdfImportStore()
@@ -235,7 +210,10 @@ const normalizeExam = (exam) => ({
     questionCount: exam.question_count ?? 0,
     timeLimit: exam.time_limit ?? null,
     createdAt: formatDateTime(exam.created_at),
-    updatedAt: formatDateTime(exam.updated_at)
+    updatedAt: formatDateTime(exam.updated_at),
+    // For AdminDataList compatibility
+    created_at: exam.created_at,
+    updated_at: exam.updated_at
 })
 
 const filteredExams = computed(() => {
@@ -248,36 +226,22 @@ const filteredExams = computed(() => {
     })
 })
 
-const selectedExamCount = computed(() => selectedExamIds.value.length)
-const isPageAllSelected = computed(() => {
-    if (exams.value.length === 0) return false
-    return exams.value.every(exam => selectedExamIds.value.includes(exam.id))
-})
-
-const toggleSelectExam = (examId, checked) => {
-    if (checked) {
-        if (!selectedExamIds.value.includes(examId)) selectedExamIds.value.push(examId)
-    } else {
-        const index = selectedExamIds.value.indexOf(examId)
-        if (index > -1) selectedExamIds.value.splice(index, 1)
-    }
+// Handler methods for AdminDataList component
+const handleSelectionChange = (ids) => {
+    selectedExamIds.value = ids
 }
 
-const toggleSelectAllExams = () => {
-    if (isPageAllSelected.value) {
-        exams.value.forEach(exam => {
-            const index = selectedExamIds.value.indexOf(exam.id)
-            if (index > -1) selectedExamIds.value.splice(index, 1)
-        })
-    } else {
-        exams.value.forEach(exam => {
-            if (!selectedExamIds.value.includes(exam.id)) selectedExamIds.value.push(exam.id)
-        })
-    }
+const handleViewExam = (item) => {
+    viewExam(item.id)
 }
 
-const isExamSelected = (examId) => selectedExamIds.value.includes(examId)
-const clearExamSelection = () => { selectedExamIds.value = [] }
+const handleEditExam = (item) => {
+    editExam(item.id)
+}
+
+const handleDeleteExam = (item) => {
+    deleteExam(item.id)
+}
 
 const fetchExams = async () => {
     isLoading.value = true
@@ -376,6 +340,10 @@ const deleteSelectedExams = async () => {
     }
     isDeletingSelected.value = false
     alert(failCount === 0 ? `成功刪除 ${successCount} 張考卷` : `刪除完成：成功 ${successCount} 張，失敗 ${failCount} 張`)
+    // Clear selection in AdminDataList component
+    if (adminDataListRef.value) {
+        adminDataListRef.value.clearSelection()
+    }
     fetchExams()
 }
 
@@ -576,71 +544,22 @@ onMounted(() => { fetchExams() })
     box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
 }
 
-/* Table */
-.exam-table {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-}
-
-.exam-table .table {
-    margin-bottom: 0;
-}
-
-.table-status {
-    text-align: center;
-    color: var(--text-secondary, #64748B);
-    padding: 60px 20px;
-    font-size: 14px;
-}
-
-.table th,
-.table td {
-    padding: 14px 20px;
-    vertical-align: middle;
-}
-
-.table th {
-    font-weight: 600;
-    color: var(--text-secondary, #64748B);
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-}
-
-.table td {
-    color: var(--text-primary, #1E293B);
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 13px;
-}
-
-.table tbody tr {
-    transition: background 0.15s;
-}
-
-.table tbody tr:hover {
-    background: #f8fafc;
-}
-
-.table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-.table input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    accent-color: var(--primary, #476996);
-}
-
+/* Toolbar spinner */
 .toolbar-spinner {
     width: 16px;
     height: 16px;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* Action spinner for loading states */
+.action-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(100, 116, 139, 0.3);
+    border-top-color: var(--text-secondary, #64748B);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }

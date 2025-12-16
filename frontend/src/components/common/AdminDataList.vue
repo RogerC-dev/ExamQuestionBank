@@ -188,7 +188,7 @@
         </SelectionToolbar>
 
         <!-- Pagination -->
-        <PaginationControl v-if="showPagination && totalCount > pageSize" :pagination-state="paginationState"
+        <PaginationControl v-if="showPagination && items.length > 0" :pagination-state="paginationState"
             :current-page="currentPage" :page-size="pageSize" :is-loading="loading" @page-change="handlePageChange"
             @size-change="handleSizeChange" />
     </div>
@@ -559,6 +559,7 @@ defineExpose({
 .list-container {
     display: flex;
     flex-direction: column;
+    min-height: 200px;
 }
 
 /* List Item */
