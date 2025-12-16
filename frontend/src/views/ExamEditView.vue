@@ -1351,7 +1351,7 @@ onMounted(async () => {
 <style scoped>
 .exam-edit-view {
   padding: 24px;
-  max-width: 1600px;
+  max-width: 1200px;
   margin: 0 auto;
   background: #f8fafc;
   min-height: 100vh;
@@ -1420,7 +1420,7 @@ onMounted(async () => {
 }
 
 .content-container {
-  height: 100vh;
+  height: auto;
 }
 
 .left-panel,

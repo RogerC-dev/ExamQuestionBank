@@ -97,8 +97,8 @@
     </div>
 
     <!-- Selection Toolbar (with custom slots for practice mode) -->
-    <SelectionToolbar v-if="viewMode === 'search' || mode === 'practice'" :selected-count="selectedIds.length"
-      item-unit="題" @clear="clearSelection">
+    <SelectionToolbar v-if="showToolbar && (viewMode === 'search' || mode === 'practice')"
+      :selected-count="selectedIds.length" item-unit="題" @clear="clearSelection">
       <!-- Custom toolbar buttons slot -->
       <slot name="toolbar-buttons" :selected-ids="selectedIds" :clear-selection="clearSelection">
         <!-- Default button for exam mode -->
@@ -210,11 +210,11 @@ import PaginationControl from './common/PaginationControl.vue'
 import SelectionToolbar from './common/SelectionToolbar.vue'
 
 const props = defineProps({
-  // Mode: 'exam' (default) or 'practice'
+  // Mode: 'exam' (default), 'practice', or 'modal'
   mode: {
     type: String,
     default: 'exam',
-    validator: (value) => ['exam', 'practice'].includes(value)
+    validator: (value) => ['exam', 'practice', 'modal'].includes(value)
   },
   // Layout control props
   showHeader: {
@@ -228,6 +228,10 @@ const props = defineProps({
   showSourceFilter: {
     type: Boolean,
     default: false
+  },
+  showToolbar: {
+    type: Boolean,
+    default: true
   },
   questions: {
     type: Array,
@@ -281,6 +285,11 @@ const props = defineProps({
   externalFilters: {
     type: Object,
     default: null
+  },
+  // Exclude specific question IDs from display (for modal mode)
+  excludeIds: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -320,17 +329,22 @@ watch(() => props.externalFilters, (newFilters) => {
   }
 }, { immediate: true, deep: true })
 
-// Set viewMode to 'search' in practice mode
+// Set viewMode to 'search' in practice/modal mode
 watch(() => props.mode, (mode) => {
-  if (mode === 'practice') {
+  if (mode === 'practice' || mode === 'modal') {
     viewMode.value = 'search'
   }
 }, { immediate: true })
 
 const filteredQuestions = computed(() => {
-  // In practice mode or search mode, show search results
-  if (props.mode === 'practice' || viewMode.value === 'search') {
-    return props.searchResults
+  // In practice/modal mode or search mode, show search results
+  if (props.mode === 'practice' || props.mode === 'modal' || viewMode.value === 'search') {
+    // Filter out excluded IDs
+    let results = props.searchResults
+    if (props.excludeIds.length > 0) {
+      results = results.filter(q => !props.excludeIds.includes(q.id))
+    }
+    return results
   }
 
   // In exam mode, show exam questions with optional filtering
@@ -474,7 +488,7 @@ const clearSelection = () => {
   emit('update:selected-ids', selectedIds.value)
 }
 
-defineExpose({ selectedIds })
+defineExpose({ selectedIds, clearSelection })
 </script>
 
 <style scoped>
@@ -494,6 +508,7 @@ defineExpose({ selectedIds })
   align-items: center;
   gap: 16px;
   padding: 20px 24px;
+  border-radius: 16px 16px 0 0;
   border-bottom: 2px solid var(--border, #CBD5E1);
   background: var(--bg-page, #F8FAFC);
 }
@@ -940,6 +955,7 @@ defineExpose({ selectedIds })
   flex: 1;
   overflow-y: auto;
   padding: 16px;
+  border-radius: 16px;
   background: var(--bg-page, #F8FAFC);
 }
 
