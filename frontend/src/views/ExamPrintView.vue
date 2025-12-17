@@ -154,6 +154,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import printJS from 'print-js'
 import examService from '@/services/examService'
 import questionService from '@/services/questionService'
 
@@ -261,8 +262,219 @@ const loadExam = async () => {
     }
 }
 
+// 取得列印用的樣式字串
+const getPrintStyles = () => {
+    return `
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+        body {
+            font-family: "Times New Roman", "DFKai-SB", "微軟正黑體", sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #000;
+        }
+        .print-header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        .exam-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+        }
+        .exam-description {
+            font-size: 14px;
+            color: #444;
+            margin: 0 0 12px 0;
+        }
+        .exam-meta {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            font-size: 13px;
+            color: #333;
+        }
+        .score-box {
+            position: absolute;
+            top: 0;
+            right: 0;
+            border: 1px solid #000;
+            width: 80px;
+            text-align: center;
+        }
+        .score-label {
+            border-bottom: 1px solid #000;
+            padding: 4px;
+            font-size: 12px;
+        }
+        .score-value {
+            height: 40px;
+        }
+        .answer-sheet-section {
+            margin-bottom: 30px;
+            padding: 16px;
+            border: 1px solid #000;
+        }
+        .answer-sheet-section h2 {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            text-align: center;
+            border-bottom: 1px dashed #999;
+            padding-bottom: 8px;
+        }
+        .answer-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px 16px;
+        }
+        .answer-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .answer-number {
+            font-weight: 700;
+            min-width: 24px;
+            font-size: 14px;
+        }
+        .answer-options {
+            display: flex;
+            gap: 4px;
+        }
+        .answer-option-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #333;
+            border-radius: 50%;
+            font-size: 11px;
+        }
+        .question-item {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px dashed #ddd;
+        }
+        .question-item:last-child {
+            border-bottom: none;
+        }
+        .question-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .question-number {
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .question-points {
+            font-size: 13px;
+            color: #666;
+        }
+        .question-subject, .question-category {
+            font-size: 12px;
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #444;
+        }
+        .question-text {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        .options-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 20px;
+        }
+        .option-item {
+            display: flex;
+            gap: 6px;
+            font-size: 14px;
+        }
+        .option-label {
+            font-weight: 600;
+        }
+        .appendix-section {
+            margin-top: 40px;
+            border-top: 3px double #000;
+            padding-top: 20px;
+            page-break-before: always;
+        }
+        .appendix-title {
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .appendix-item {
+            padding: 8px 0;
+            border-bottom: 1px dotted #ccc;
+        }
+        .appendix-header {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+        .appendix-number {
+            font-weight: 700;
+        }
+        .appendix-explanation {
+            font-size: 13px;
+            color: #444;
+            padding: 8px;
+            background: #f9f9f9;
+            border-left: 3px solid #ccc;
+            margin-top: 4px;
+        }
+        .explanation-label {
+            font-weight: 700;
+        }
+        .page-break-before {
+            page-break-before: always;
+        }
+        .no-break {
+            page-break-inside: avoid;
+        }
+        .hide-points .question-points {
+            display: none;
+        }
+        .no-print {
+            display: none !important;
+        }
+    `
+}
+
 const handlePrint = () => {
-    window.print()
+    if (!printContent.value) {
+        console.error('Print content not found')
+        return
+    }
+    
+    printJS({
+        printable: printContent.value,
+        type: 'html',
+        style: getPrintStyles(),
+        scanStyles: false,
+        targetStyles: ['*'],
+        documentTitle: exam.value?.name || '考卷列印',
+        onPrintDialogClose: () => {
+            console.log('列印對話框已關閉')
+        }
+    })
 }
 
 const goBack = () => {
