@@ -24,46 +24,19 @@
                     <span>總分：{{ totalScore }} 分</span>
                     <span>列印日期：{{ printDate }}</span>
                 </div>
-                <div v-if="showScoreBox" class="score-box no-break">
-                    <div class="score-label">分數</div>
-                    <div class="score-value"></div>
-                </div>
             </header>
 
-            <!-- Answer Sheet Section -->
-            <section v-if="showAnswerSheet" class="answer-sheet-section no-break">
-                <h2>作答欄</h2>
-                <div class="answer-grid">
-                    <div v-for="(q, index) in questions" :key="'answer-' + index" class="answer-item">
-                        <span class="answer-number">{{ index + 1 }}.</span>
-                        <span class="answer-options">
-                            <span v-for="(opt, optIndex) in getOptionLabels(q.options?.length || 4)" :key="optIndex"
-                                class="answer-option-circle">
-                                {{ opt }}
-                            </span>
-                        </span>
-                    </div>
-                </div>
-            </section>
 
             <!-- Questions Section -->
             <section class="questions-section">
-                <!-- Page Break Instruction for Screen -->
-                <div class="print-hint no-print">
-                    * 列印時每 10 題會自動分頁，可於預覽時確認
-                </div>
-
-                <article v-for="(question, index) in questions" :key="index"
-                    :class="['question-item', { 'page-break-before': shouldBreakBefore(index) }]">
-                    <header class="question-header">
-                        <span class="question-number">{{ index + 1 }}.</span>
-                        <span v-if="showPoints && question.points" class="question-points">({{ question.points }}
-                            分)</span>
-                        <span v-if="question.subject" class="question-subject">【{{ question.subject }}】</span>
-                        <span v-if="question.category" class="question-category">[{{ question.category }}]</span>
-                    </header>
+                <article v-for="(question, index) in questions" :key="index" class="question-item">
                     <div class="question-content">
-                        <div class="question-text" v-html="formatContent(question.content)"></div>
+                        <div class="question-text">
+                            <span class="question-number">{{ index + 1 }}.</span>
+                            <span v-if="showPoints && question.points" class="question-points">({{ question.points
+                                }}分)</span>
+                            <span v-html="formatContent(question.content)"></span>
+                        </div>
                         <ul v-if="question.options && question.options.length" class="options-list">
                             <li v-for="(option, optIndex) in question.options" :key="optIndex" class="option-item">
                                 <span class="option-label">({{ getOptionLabel(optIndex) }})</span>
@@ -106,16 +79,6 @@
         <div class="controls-panel no-print">
             <h3>列印設定</h3>
 
-            <div class="control-group">
-                <label class="toggle-label">
-                    <input type="checkbox" v-model="showAnswerSheet" />
-                    <span>顯示作答欄</span>
-                </label>
-                <label class="toggle-label">
-                    <input type="checkbox" v-model="showScoreBox" />
-                    <span>顯示分數格</span>
-                </label>
-            </div>
 
             <div class="control-group">
                 <label class="toggle-label">
@@ -207,10 +170,6 @@ const getCorrectAnswer = (question) => {
     return correctOpts.length ? correctOpts.join('、') : '-'
 }
 
-const shouldBreakBefore = (index) => {
-    // Add page break every 10 questions (adjust based on content density)
-    return index > 0 && index % 10 === 0
-}
 
 const formatContent = (content) => {
     if (!content) return ''
@@ -267,36 +226,36 @@ const getPrintStyles = () => {
     return `
         @page {
             size: A4;
-            margin: 15mm;
+            margin: 12mm;
         }
         body {
             font-family: "Times New Roman", "DFKai-SB", "微軟正黑體", sans-serif;
-            font-size: 14px;
-            line-height: 1.6;
+            font-size: 13px;
+            line-height: 1.4;
             color: #000;
         }
         .print-header {
             text-align: center;
             border-bottom: 2px solid #000;
-            padding-bottom: 16px;
-            margin-bottom: 24px;
+            padding-bottom: 10px;
+            margin-bottom: 16px;
             position: relative;
         }
         .exam-title {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
-            margin: 0 0 10px 0;
+            margin: 0 0 6px 0;
         }
         .exam-description {
-            font-size: 14px;
+            font-size: 13px;
             color: #444;
-            margin: 0 0 12px 0;
+            margin: 0 0 8px 0;
         }
         .exam-meta {
             display: flex;
             justify-content: center;
-            gap: 20px;
-            font-size: 13px;
+            gap: 16px;
+            font-size: 12px;
             color: #333;
         }
         .score-box {
@@ -316,22 +275,22 @@ const getPrintStyles = () => {
             height: 40px;
         }
         .answer-sheet-section {
-            margin-bottom: 30px;
-            padding: 16px;
+            margin-bottom: 20px;
+            padding: 12px;
             border: 1px solid #000;
         }
         .answer-sheet-section h2 {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
-            margin: 0 0 12px 0;
+            margin: 0 0 8px 0;
             text-align: center;
             border-bottom: 1px dashed #999;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
         }
         .answer-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 8px 16px;
+            gap: 6px 12px;
         }
         .answer-item {
             display: flex;
@@ -358,38 +317,23 @@ const getPrintStyles = () => {
             font-size: 11px;
         }
         .question-item {
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 1px dashed #ddd;
-        }
-        .question-item:last-child {
-            border-bottom: none;
-        }
-        .question-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
         }
         .question-number {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
+            margin-right: 4px;
         }
         .question-points {
-            font-size: 13px;
-            color: #666;
-        }
-        .question-subject, .question-category {
             font-size: 12px;
-            background: #eee;
-            padding: 2px 6px;
-            border-radius: 4px;
-            color: #444;
+            color: #666;
+            margin-right: 4px;
         }
         .question-text {
-            font-size: 15px;
-            line-height: 1.6;
-            margin-bottom: 12px;
+            font-size: 14px;
+            line-height: 1.4;
+            margin-bottom: 8px;
         }
         .options-list {
             list-style: none;
@@ -397,48 +341,48 @@ const getPrintStyles = () => {
             margin: 0;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px 20px;
+            gap: 5px 16px;
         }
         .option-item {
             display: flex;
-            gap: 6px;
-            font-size: 14px;
+            gap: 5px;
+            font-size: 13px;
         }
         .option-label {
             font-weight: 600;
         }
         .appendix-section {
-            margin-top: 40px;
+            margin-top: 30px;
             border-top: 3px double #000;
-            padding-top: 20px;
+            padding-top: 16px;
             page-break-before: always;
         }
         .appendix-title {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 700;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
         .appendix-item {
-            padding: 8px 0;
+            padding: 6px 0;
             border-bottom: 1px dotted #ccc;
         }
         .appendix-header {
             display: flex;
             align-items: baseline;
-            gap: 12px;
-            margin-bottom: 6px;
+            gap: 10px;
+            margin-bottom: 4px;
         }
         .appendix-number {
             font-weight: 700;
         }
         .appendix-explanation {
-            font-size: 13px;
+            font-size: 12px;
             color: #444;
-            padding: 8px;
+            padding: 6px;
             background: #f9f9f9;
             border-left: 3px solid #ccc;
-            margin-top: 4px;
+            margin-top: 3px;
         }
         .explanation-label {
             font-weight: 700;
@@ -463,7 +407,7 @@ const handlePrint = () => {
         console.error('Print content not found')
         return
     }
-    
+
     printJS({
         printable: printContent.value,
         type: 'html',
@@ -676,40 +620,20 @@ onMounted(() => {
 }
 
 .question-item {
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px dashed #ddd;
-}
-
-.question-item:last-child {
-    border-bottom: none;
-}
-
-.question-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    flex-wrap: wrap;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
 }
 
 .question-number {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
+    margin-right: 4px;
 }
 
 .question-points {
-    font-size: 13px;
-    color: #666;
-}
-
-.question-subject,
-.question-category {
     font-size: 12px;
-    background: #eee;
-    padding: 2px 6px;
-    border-radius: 4px;
-    color: #444;
+    color: #666;
+    margin-right: 4px;
 }
 
 .question-content {
@@ -717,9 +641,9 @@ onMounted(() => {
 }
 
 .question-text {
-    font-size: 15px;
-    line-height: 1.6;
-    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    margin-bottom: 8px;
     color: #000;
 }
 
@@ -730,13 +654,13 @@ onMounted(() => {
     display: grid;
     grid-template-columns: 1fr 1fr;
     /* Two columns for options */
-    gap: 8px 20px;
+    gap: 5px 16px;
 }
 
 .option-item {
     display: flex;
-    gap: 6px;
-    font-size: 14px;
+    gap: 5px;
+    font-size: 13px;
 }
 
 .option-label {
