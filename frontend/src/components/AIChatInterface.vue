@@ -258,8 +258,12 @@ const stopResize = () => {
   document.removeEventListener('touchend', stopResize)
 }
 
-onMounted(() => {
-  chatStore.initialize()
+onMounted(async () => {
+  await chatStore.initialize()
+  // Ensure we scroll to bottom after history loads
+  nextTick(() => {
+    scrollToBottom()
+  })
 })
 </script>
 
