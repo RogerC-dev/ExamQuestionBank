@@ -41,22 +41,59 @@
         <div class="progress-bar" :style="{ width: progressPercent + '%' }"></div>
       </div>
 
-      <!-- Question Navigator (for multiple questions) -->
-      <div v-if="questions.length > 1" class="question-navigator">
-        <button
-          v-for="(q, idx) in questions"
-          :key="q.id"
-          class="nav-btn"
-          :class="{
-            active: idx === currentIndex,
-            answered: answeredQuestions.has(idx),
-            correct: results[idx]?.correct,
-            wrong: results[idx]?.correct === false
-          }"
-          @click="goToQuestion(idx)"
-        >
-          {{ idx + 1 }}
-        </button>
+      <!-- Question Navigator with Left/Right Arrows -->
+      <div v-if="questions.length > 1" class="navigation-section">
+        <!-- Left/Right Navigation -->
+        <div class="nav-arrows">
+          <button 
+            class="arrow-btn prev" 
+            @click="goToQuestion(currentIndex - 1)"
+            :disabled="currentIndex === 0"
+            title="上一題"
+          >
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          
+          <div class="question-navigator">
+            <button
+              v-for="(q, idx) in questions"
+              :key="q.id"
+              class="nav-btn"
+              :class="{
+                active: idx === currentIndex,
+                answered: answeredQuestions.has(idx),
+                correct: results[idx]?.correct,
+                wrong: results[idx]?.correct === false
+              }"
+              @click="goToQuestion(idx)"
+            >
+              {{ idx + 1 }}
+            </button>
+          </div>
+          
+          <button 
+            class="arrow-btn next" 
+            @click="goToQuestion(currentIndex + 1)"
+            :disabled="currentIndex === questions.length - 1"
+            title="下一題"
+          >
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+        
+        <!-- Answer Record Summary -->
+        <div class="answer-record">
+          <span class="record-label">作答紀錄：</span>
+          <span class="record-stat correct">
+            <i class="bi bi-check-circle-fill"></i> {{ correctCount }}
+          </span>
+          <span class="record-stat wrong">
+            <i class="bi bi-x-circle-fill"></i> {{ totalCount - correctCount - unansweredCount }}
+          </span>
+          <span class="record-stat unanswered">
+            <i class="bi bi-circle"></i> {{ unansweredCount }}
+          </span>
+        </div>
       </div>
 
       <!-- Question Display -->
@@ -129,8 +166,14 @@
           確認答案
         </button>
         <template v-else>
-          <button class="btn btn-secondary" @click="addToFlashcard">
-            <i class="bi bi-bookmark-plus"></i> 加入快閃卡
+          <button 
+            class="btn btn-secondary" 
+            :class="{ 'btn-flashcard-added': currentInFlashcard }"
+            @click="addToFlashcard"
+            :disabled="currentInFlashcard"
+          >
+            <i :class="currentInFlashcard ? 'bi bi-bookmark-check-fill' : 'bi bi-bookmark-plus'"></i>
+            {{ currentInFlashcard ? '已加入快閃卡' : '加入快閃卡' }}
           </button>
           <button class="btn btn-primary btn-lg" @click="nextQuestion">
             {{ currentIndex < questions.length - 1 ? '下一題' : '查看結果' }}
@@ -196,6 +239,7 @@
         </div>
       </div>
     </div>
+    </div>
 
     <!-- Draggable Divider -->
     <div v-if="isChatOpen" class="split-divider" @mousedown="startDrag" @touchstart="startDrag">
@@ -248,6 +292,7 @@ const showResults = ref(false)
 const showExitModal = ref(false)
 const results = ref({}) // { index: { correct: boolean, selectedAnswer, correctAnswer } }
 const answeredQuestions = ref(new Set())
+const flashcardStatus = ref(new Set()) // Track which question IDs are in flashcard
 
 // Computed
 const currentQuestion = computed(() => questions.value[currentIndex.value])
@@ -263,6 +308,10 @@ const correctCount = computed(() => {
 
 const totalCount = computed(() => questions.value.length)
 
+const unansweredCount = computed(() => {
+  return totalCount.value - answeredQuestions.value.size
+})
+
 const scoreClass = computed(() => {
   const percent = (correctCount.value / totalCount.value) * 100
   if (percent >= 80) return 'high'
@@ -275,6 +324,11 @@ const correctAnswerText = computed(() => {
   if (!correct) return ''
   const idx = currentOptions.value.indexOf(correct)
   return `${getOptionLabel(idx)}. ${correct.content}`
+})
+
+const currentInFlashcard = computed(() => {
+  if (!currentQuestion.value?.id) return false
+  return flashcardStatus.value.has(currentQuestion.value.id) || currentQuestion.value.is_in_flashcard
 })
 
 // Methods
@@ -414,14 +468,21 @@ const resetQuestionState = () => {
 
 const addToFlashcard = async () => {
   if (!currentQuestion.value?.id) return
+  if (currentInFlashcard.value) return // Already in flashcard
 
   try {
     await flashcardService.createFlashcard({ question: currentQuestion.value.id })
+    flashcardStatus.value.add(currentQuestion.value.id)
     alert('已加入快閃卡！')
   } catch (e) {
-    if (e.response?.status === 400) {
+    const errorMsg = e.message || ''
+    // Check if error indicates already exists (message contains "已" meaning already)
+    if (errorMsg.includes('已') || errorMsg.includes('already') || e.response?.status === 400) {
+      // Mark as already in flashcard
+      flashcardStatus.value.add(currentQuestion.value.id)
       alert('此題目已在快閃卡中')
     } else {
+      console.error('Failed to add to flashcard:', e)
       alert('加入快閃卡失敗')
     }
   }
@@ -856,15 +917,89 @@ onUnmounted(() => {
 }
 
 /* Question Navigator */
-.question-navigator {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+/* Navigation Section */
+.navigation-section {
   margin-bottom: 20px;
   padding: 16px;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.nav-arrows {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+}
+
+.arrow-btn {
+  width: 44px;
+  height: 44px;
+  border: 2px solid #e2e8f0;
+  background: #fff;
+  border-radius: 10px;
+  font-size: 20px;
+  color: var(--primary, #476996);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: grid;
+  place-items: center;
+}
+
+.arrow-btn:hover:not(:disabled) {
+  background: var(--primary, #476996);
+  border-color: var(--primary, #476996);
+  color: #fff;
+}
+
+.arrow-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.question-navigator {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  max-width: 400px;
+}
+
+/* Answer Record Summary */
+.answer-record {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.record-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.record-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.record-stat.correct {
+  color: #22c55e;
+}
+
+.record-stat.wrong {
+  color: #ef4444;
+}
+
+.record-stat.unanswered {
+  color: #94a3b8;
 }
 
 .nav-btn {
@@ -1249,6 +1384,18 @@ onUnmounted(() => {
 
 .btn-secondary:hover:not(:disabled) {
   background: #475569;
+}
+
+.btn-flashcard-added {
+  background: #E0E7FF;
+  color: #4338CA;
+  border: 1px solid #C7D2FE;
+  cursor: default;
+}
+
+.btn-flashcard-added:hover:not(:disabled) {
+  background: #E0E7FF;
+  transform: none;
 }
 
 .btn-ghost {
