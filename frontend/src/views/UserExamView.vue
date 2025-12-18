@@ -43,6 +43,15 @@
                     <div class="section-header">
                         <h2 class="section-title">我的考卷</h2>
                         <div class="header-actions">
+                            <button class="btn btn-secondary btn-sm" @click="openPrintModal" :disabled="userExams.length === 0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                    <rect x="6" y="14" width="12" height="8"></rect>
+                                </svg>
+                                列印考卷
+                            </button>
                             <button class="btn btn-secondary btn-sm" @click="loadUserExams" :disabled="loadingExams">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2">
@@ -224,6 +233,43 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Print Exam Modal -->
+            <div v-if="showPrintModal" class="mock-exam-overlay" @click.self="closePrintModal">
+                <div class="mock-exam-dialog">
+                    <div class="dialog-header">
+                        <h3>列印考卷</h3>
+                        <button class="btn-close" @click="closePrintModal" aria-label="關閉">×</button>
+                    </div>
+                    <div class="dialog-body">
+                        <p class="dialog-desc">選擇要列印的考卷</p>
+
+                        <div v-if="userExams.length === 0" class="no-exams-warning">
+                            <p>目前沒有可用的考卷</p>
+                        </div>
+
+                        <div v-else class="exam-select-section">
+                            <div class="exam-select-list">
+                                <label v-for="exam in userExams" :key="exam.id" class="exam-select-item"
+                                    :class="{ selected: selectedExamForPrint === exam.id }">
+                                    <input type="radio" :value="exam.id" v-model="selectedExamForPrint">
+                                    <div class="exam-select-info">
+                                        <span class="exam-select-name">{{ exam.name }}</span>
+                                        <span class="exam-select-meta">{{ exam.question_count || 0 }} 題</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dialog-footer">
+                        <button class="btn btn-secondary" @click="closePrintModal">取消</button>
+                        <button class="btn btn-primary" @click="confirmPrintExam"
+                            :disabled="!selectedExamForPrint">
+                            列印
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -246,6 +292,10 @@ const selectedExamIdsForMock = ref([])
 const mockQuestionCount = ref(20)
 const creatingMockExam = ref(false)
 const examQuestionCache = ref({})
+
+// Print Modal state
+const showPrintModal = ref(false)
+const selectedExamForPrint = ref(null)
 
 // Tab state
 const activeTab = ref('list')
@@ -345,6 +395,24 @@ const loadUserExams = async () => {
 
 const startExam = (examId) => {
     router.push(`/exams/${examId}/preview`)
+}
+
+// Print Modal methods
+const openPrintModal = () => {
+    showPrintModal.value = true
+    selectedExamForPrint.value = null
+}
+
+const closePrintModal = () => {
+    showPrintModal.value = false
+    selectedExamForPrint.value = null
+}
+
+const confirmPrintExam = () => {
+    if (!selectedExamForPrint.value) return
+    const printUrl = router.resolve({ path: `/admin/exams/${selectedExamForPrint.value}/print` }).href
+    window.open(printUrl, '_blank')
+    closePrintModal()
 }
 
 const deleteExam = async (examId) => {
