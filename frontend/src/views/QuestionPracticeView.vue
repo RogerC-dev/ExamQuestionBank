@@ -1,0 +1,1054 @@
+<template>
+  <div class="question-practice-container">
+    <!-- Loading State -->
+    <div v-if="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>載入題目中...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="error-state">
+      <i class="bi bi-exclamation-triangle"></i>
+      <p>{{ error }}</p>
+      <button class="btn btn-primary" @click="loadQuestions">重試</button>
+    </div>
+
+    <!-- Quiz Content -->
+    <div v-else-if="questions.length > 0" class="quiz-content">
+      <!-- Quiz Header -->
+      <div class="quiz-header">
+        <div class="quiz-info">
+          <button class="btn-back" @click="goBack" title="返回">
+            <i class="bi bi-arrow-left"></i>
+          </button>
+          <div class="quiz-title">
+            <h2>題目練習</h2>
+            <span class="quiz-progress">第 {{ currentIndex + 1 }} / {{ questions.length }} 題</span>
+          </div>
+        </div>
+        <div class="quiz-tools">
+          <button v-if="showAnswer" class="btn btn-ghost" @click="openAIChat" title="Ask AI">
+            <i class="bi bi-robot"></i> Ask AI
+          </button>
+          <button class="btn btn-secondary" @click="confirmExit">結束練習</button>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="progress-bar-container">
+        <div class="progress-bar" :style="{ width: progressPercent + '%' }"></div>
+      </div>
+
+      <!-- Question Navigator (for multiple questions) -->
+      <div v-if="questions.length > 1" class="question-navigator">
+        <button
+          v-for="(q, idx) in questions"
+          :key="q.id"
+          class="nav-btn"
+          :class="{
+            active: idx === currentIndex,
+            answered: answeredQuestions.has(idx),
+            correct: results[idx]?.correct,
+            wrong: results[idx]?.correct === false
+          }"
+          @click="goToQuestion(idx)"
+        >
+          {{ idx + 1 }}
+        </button>
+      </div>
+
+      <!-- Question Display -->
+      <div class="question-panel">
+        <div class="question-meta">
+          <span v-if="currentQuestion?.subject" class="meta-tag subject">
+            {{ currentQuestion.subject }}
+          </span>
+          <span v-if="currentQuestion?.category" class="meta-tag category">
+            {{ currentQuestion.category }}
+          </span>
+          <span v-if="currentQuestion?.difficulty" class="meta-tag difficulty" :class="currentQuestion.difficulty">
+            {{ getDifficultyLabel(currentQuestion.difficulty) }}
+          </span>
+        </div>
+
+        <div class="question-content">
+          <p>{{ currentQuestion?.content }}</p>
+        </div>
+
+        <!-- Options -->
+        <div class="options-list">
+          <div
+            v-for="(opt, idx) in currentOptions"
+            :key="opt.id"
+            class="option-item"
+            :class="{
+              selected: selectedAnswer === opt.id,
+              correct: showAnswer && opt.is_correct,
+              wrong: showAnswer && selectedAnswer === opt.id && !opt.is_correct,
+              disabled: showAnswer
+            }"
+            @click="!showAnswer && selectAnswer(opt.id)"
+          >
+            <span class="option-label">{{ getOptionLabel(idx) }}</span>
+            <span class="option-text">{{ opt.content }}</span>
+            <span v-if="showAnswer && opt.is_correct" class="option-indicator correct">
+              <i class="bi bi-check-circle-fill"></i>
+            </span>
+            <span v-else-if="showAnswer && selectedAnswer === opt.id && !opt.is_correct" class="option-indicator wrong">
+              <i class="bi bi-x-circle-fill"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Answer Feedback -->
+        <div v-if="showAnswer" class="answer-feedback" :class="isCorrect ? 'correct' : 'wrong'">
+          <div class="feedback-header">
+            <i :class="isCorrect ? 'bi bi-check-circle-fill' : 'bi bi-x-circle-fill'"></i>
+            <span>{{ isCorrect ? '答對了！' : '答錯了' }}</span>
+          </div>
+          <p v-if="!isCorrect" class="correct-answer">
+            正確答案：{{ correctAnswerText }}
+          </p>
+          <div v-if="currentQuestion?.explanation" class="explanation">
+            <strong>解析：</strong>
+            <p>{{ currentQuestion.explanation }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="quiz-actions">
+        <button
+          v-if="!showAnswer"
+          class="btn btn-primary btn-lg"
+          :disabled="!selectedAnswer"
+          @click="checkAnswer"
+        >
+          確認答案
+        </button>
+        <template v-else>
+          <button class="btn btn-secondary" @click="addToFlashcard">
+            <i class="bi bi-bookmark-plus"></i> 加入快閃卡
+          </button>
+          <button class="btn btn-primary btn-lg" @click="nextQuestion">
+            {{ currentIndex < questions.length - 1 ? '下一題' : '查看結果' }}
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <!-- Results Panel -->
+    <div v-else-if="showResults" class="results-panel">
+      <div class="results-header">
+        <i class="bi bi-trophy"></i>
+        <h2>練習完成！</h2>
+      </div>
+
+      <div class="results-score">
+        <div class="score-circle" :class="scoreClass">
+          <span class="score-value">{{ correctCount }}</span>
+          <span class="score-total">/ {{ totalCount }}</span>
+        </div>
+        <p class="score-label">正確率 {{ Math.round((correctCount / totalCount) * 100) }}%</p>
+      </div>
+
+      <div class="results-breakdown">
+        <div class="breakdown-item correct">
+          <i class="bi bi-check-circle-fill"></i>
+          <span>答對 {{ correctCount }} 題</span>
+        </div>
+        <div class="breakdown-item wrong">
+          <i class="bi bi-x-circle-fill"></i>
+          <span>答錯 {{ totalCount - correctCount }} 題</span>
+        </div>
+      </div>
+
+      <div class="results-actions">
+        <button class="btn btn-secondary" @click="reviewQuestions">
+          <i class="bi bi-eye"></i> 查看詳解
+        </button>
+        <button class="btn btn-primary" @click="retryPractice">
+          <i class="bi bi-arrow-repeat"></i> 再練習一次
+        </button>
+        <button class="btn" @click="goBack">
+          <i class="bi bi-arrow-left"></i> 返回
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else class="empty-state">
+      <i class="bi bi-question-circle"></i>
+      <p>沒有選擇題目進行練習</p>
+      <button class="btn btn-primary" @click="goBack">返回選擇題目</button>
+    </div>
+
+    <!-- Exit Confirmation Modal -->
+    <div v-if="showExitModal" class="modal-overlay" @click.self="showExitModal = false">
+      <div class="modal-content">
+        <h3>確定要離開嗎？</h3>
+        <p>您的練習進度將不會被保存。</p>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" @click="showExitModal = false">繼續練習</button>
+          <button class="btn btn-primary" @click="exitPractice">確定離開</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import questionService from '@/services/questionService'
+import flashcardService from '@/services/flashcardService'
+import examService from '@/services/examService'
+
+const route = useRoute()
+const router = useRouter()
+
+// State
+const isLoading = ref(true)
+const error = ref(null)
+const questions = ref([])
+const currentIndex = ref(0)
+const currentOptions = ref([])
+const selectedAnswer = ref(null)
+const showAnswer = ref(false)
+const isCorrect = ref(false)
+const showResults = ref(false)
+const showExitModal = ref(false)
+const results = ref({}) // { index: { correct: boolean, selectedAnswer, correctAnswer } }
+const answeredQuestions = ref(new Set())
+
+// Computed
+const currentQuestion = computed(() => questions.value[currentIndex.value])
+
+const progressPercent = computed(() => {
+  if (questions.value.length === 0) return 0
+  return Math.round((answeredQuestions.value.size / questions.value.length) * 100)
+})
+
+const correctCount = computed(() => {
+  return Object.values(results.value).filter(r => r.correct).length
+})
+
+const totalCount = computed(() => questions.value.length)
+
+const scoreClass = computed(() => {
+  const percent = (correctCount.value / totalCount.value) * 100
+  if (percent >= 80) return 'high'
+  if (percent >= 60) return 'medium'
+  return 'low'
+})
+
+const correctAnswerText = computed(() => {
+  const correct = currentOptions.value.find(o => o.is_correct)
+  if (!correct) return ''
+  const idx = currentOptions.value.indexOf(correct)
+  return `${getOptionLabel(idx)}. ${correct.content}`
+})
+
+// Methods
+const getOptionLabel = (idx) => String.fromCharCode(65 + idx) // A, B, C, D...
+
+const getDifficultyLabel = (difficulty) => {
+  const labels = { easy: '簡單', medium: '中等', hard: '困難' }
+  return labels[difficulty] || difficulty
+}
+
+const loadQuestions = async () => {
+  isLoading.value = true
+  error.value = null
+
+  try {
+    // Get question IDs from route query
+    const idsParam = route.query.ids
+    if (!idsParam) {
+      error.value = '未指定題目'
+      isLoading.value = false
+      return
+    }
+
+    const questionIds = idsParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
+
+    if (questionIds.length === 0) {
+      error.value = '無效的題目 ID'
+      isLoading.value = false
+      return
+    }
+
+    // Load all questions
+    const loadPromises = questionIds.map(async (id) => {
+      try {
+        const [questionRes, optionsRes] = await Promise.all([
+          questionService.getQuestion(id),
+          questionService.getQuestionOptions(id)
+        ])
+        return {
+          ...questionRes.data,
+          options: optionsRes.data || []
+        }
+      } catch (e) {
+        console.error(`Failed to load question ${id}:`, e)
+        return null
+      }
+    })
+
+    const loadedQuestions = await Promise.all(loadPromises)
+    questions.value = loadedQuestions.filter(q => q !== null)
+
+    if (questions.value.length === 0) {
+      error.value = '無法載入題目'
+      return
+    }
+
+    // Load first question options
+    currentOptions.value = questions.value[0].options || []
+
+  } catch (e) {
+    console.error('Failed to load questions:', e)
+    error.value = '載入題目失敗，請稍後再試'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const selectAnswer = (optionId) => {
+  selectedAnswer.value = optionId
+}
+
+const checkAnswer = async () => {
+  if (!selectedAnswer.value) return
+
+  const selected = currentOptions.value.find(o => o.id === selectedAnswer.value)
+  isCorrect.value = selected?.is_correct || false
+  showAnswer.value = true
+
+  // Store result
+  results.value[currentIndex.value] = {
+    correct: isCorrect.value,
+    selectedAnswer: selectedAnswer.value,
+    correctAnswer: currentOptions.value.find(o => o.is_correct)?.id
+  }
+  answeredQuestions.value.add(currentIndex.value)
+
+  // Record answer to backend (for wrong question tracking)
+  try {
+    if (!isCorrect.value && currentQuestion.value?.id) {
+      // This will add to wrong questions if answer is wrong
+      await examService.saveExamResult({
+        exam_id: null, // Single question practice, no exam
+        score: 0,
+        correct_count: 0,
+        total_count: 1,
+        wrong_question_ids: [currentQuestion.value.id]
+      }).catch(() => {}) // Silent fail for practice mode
+    }
+  } catch (e) {
+    // Silent fail, don't interrupt the practice flow
+  }
+}
+
+const nextQuestion = () => {
+  if (currentIndex.value < questions.value.length - 1) {
+    currentIndex.value++
+    resetQuestionState()
+    currentOptions.value = questions.value[currentIndex.value].options || []
+  } else {
+    // Show results
+    showResults.value = true
+  }
+}
+
+const goToQuestion = (idx) => {
+  if (idx >= 0 && idx < questions.value.length) {
+    currentIndex.value = idx
+
+    // Restore state for this question if already answered
+    if (results.value[idx]) {
+      selectedAnswer.value = results.value[idx].selectedAnswer
+      showAnswer.value = true
+      isCorrect.value = results.value[idx].correct
+    } else {
+      resetQuestionState()
+    }
+
+    currentOptions.value = questions.value[idx].options || []
+  }
+}
+
+const resetQuestionState = () => {
+  selectedAnswer.value = null
+  showAnswer.value = false
+  isCorrect.value = false
+}
+
+const addToFlashcard = async () => {
+  if (!currentQuestion.value?.id) return
+
+  try {
+    await flashcardService.createFlashcard({ question: currentQuestion.value.id })
+    alert('已加入快閃卡！')
+  } catch (e) {
+    if (e.response?.status === 400) {
+      alert('此題目已在快閃卡中')
+    } else {
+      alert('加入快閃卡失敗')
+    }
+  }
+}
+
+const openAIChat = () => {
+  // Navigate to AI chat with question context
+  const content = currentQuestion.value?.content || ''
+  const optionsText = currentOptions.value.map((o, idx) => `${getOptionLabel(idx)}. ${o.content}`).join('\n')
+  const correct = currentOptions.value.find(o => o.is_correct)
+  const correctIdx = currentOptions.value.indexOf(correct)
+  const correctText = correct ? `${getOptionLabel(correctIdx)}. ${correct.content}` : ''
+
+  const prompt = encodeURIComponent(
+    `題目：${content}\n\n選項：\n${optionsText}\n\n正確答案：${correctText}\n\n請幫我解析這道題目，解釋為什麼正確答案是對的？`
+  )
+
+  router.push({ name: 'AIChat', query: { prefill: prompt } })
+}
+
+const confirmExit = () => {
+  if (answeredQuestions.value.size > 0 && !showResults.value) {
+    showExitModal.value = true
+  } else {
+    exitPractice()
+  }
+}
+
+const exitPractice = () => {
+  showExitModal.value = false
+  goBack()
+}
+
+const goBack = () => {
+  // Check if we came from a specific page
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/practice')
+  }
+}
+
+const reviewQuestions = () => {
+  showResults.value = false
+  currentIndex.value = 0
+  goToQuestion(0)
+}
+
+const retryPractice = () => {
+  showResults.value = false
+  currentIndex.value = 0
+  results.value = {}
+  answeredQuestions.value.clear()
+  resetQuestionState()
+  currentOptions.value = questions.value[0]?.options || []
+}
+
+// Lifecycle
+onMounted(() => {
+  loadQuestions()
+})
+</script>
+
+<style scoped>
+.question-practice-container {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 16px;
+  color: #64748b;
+}
+
+.loading-state .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-state i,
+.empty-state i {
+  font-size: 48px;
+  color: #94a3b8;
+}
+
+.quiz-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Quiz Header */
+.quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.quiz-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-back {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 10px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  transition: all 0.2s;
+}
+
+.btn-back:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.quiz-title h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.quiz-progress {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.quiz-tools {
+  display: flex;
+  gap: 8px;
+}
+
+/* Progress Bar */
+.progress-bar-container {
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Question Navigator */
+.question-navigator {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.nav-btn {
+  width: 36px;
+  height: 36px;
+  border: 2px solid #e2e8f0;
+  background: #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.nav-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.nav-btn.answered {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.nav-btn.correct {
+  background: #dcfce7;
+  border-color: #22c55e;
+  color: #16a34a;
+}
+
+.nav-btn.wrong {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #dc2626;
+}
+
+/* Question Panel */
+.question-panel {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+}
+
+.question-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.meta-tag {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.meta-tag.subject {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.meta-tag.category {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.meta-tag.difficulty {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.meta-tag.difficulty.easy {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.meta-tag.difficulty.hard {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.question-content {
+  font-size: 18px;
+  line-height: 1.7;
+  color: #1e293b;
+  margin-bottom: 24px;
+}
+
+/* Options */
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.option-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+}
+
+.option-item:hover:not(.disabled) {
+  border-color: #2563eb;
+  background: #f8fafc;
+}
+
+.option-item.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.option-item.correct {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.option-item.wrong {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.option-item.disabled {
+  cursor: default;
+}
+
+.option-label {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.option-item.selected .option-label {
+  background: #2563eb;
+  color: #fff;
+}
+
+.option-item.correct .option-label {
+  background: #22c55e;
+  color: #fff;
+}
+
+.option-item.wrong .option-label {
+  background: #ef4444;
+  color: #fff;
+}
+
+.option-text {
+  flex: 1;
+  line-height: 1.5;
+  color: #1e293b;
+}
+
+.option-indicator {
+  font-size: 20px;
+}
+
+.option-indicator.correct {
+  color: #22c55e;
+}
+
+.option-indicator.wrong {
+  color: #ef4444;
+}
+
+/* Answer Feedback */
+.answer-feedback {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.answer-feedback.correct {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.answer-feedback.wrong {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.feedback-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.answer-feedback.correct .feedback-header {
+  color: #16a34a;
+}
+
+.answer-feedback.wrong .feedback-header {
+  color: #dc2626;
+}
+
+.correct-answer {
+  color: #64748b;
+  margin: 8px 0;
+}
+
+.explanation {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0,0,0,0.1);
+  color: #475569;
+  line-height: 1.6;
+}
+
+/* Quiz Actions */
+.quiz-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Results Panel */
+.results-panel {
+  max-width: 500px;
+  margin: 60px auto;
+  padding: 40px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.results-header {
+  margin-bottom: 24px;
+}
+
+.results-header i {
+  font-size: 48px;
+  color: #f59e0b;
+  margin-bottom: 12px;
+}
+
+.results-header h2 {
+  font-size: 24px;
+  color: #1e293b;
+  margin: 0;
+}
+
+.results-score {
+  margin-bottom: 24px;
+}
+
+.score-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  border: 4px solid;
+}
+
+.score-circle.high {
+  background: #f0fdf4;
+  border-color: #22c55e;
+  color: #16a34a;
+}
+
+.score-circle.medium {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #d97706;
+}
+
+.score-circle.low {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #dc2626;
+}
+
+.score-value {
+  font-size: 36px;
+  font-weight: 800;
+}
+
+.score-total {
+  font-size: 18px;
+  opacity: 0.7;
+}
+
+.score-label {
+  color: #64748b;
+  font-size: 16px;
+}
+
+.results-breakdown {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.breakdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.breakdown-item.correct {
+  color: #16a34a;
+}
+
+.breakdown-item.wrong {
+  color: #dc2626;
+}
+
+.results-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Buttons */
+.btn {
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+}
+
+.btn-secondary {
+  background: #64748b;
+  color: #fff;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #475569;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #2563eb;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-ghost:hover {
+  background: #f1f5f9;
+}
+
+.btn-lg {
+  padding: 14px 32px;
+  font-size: 16px;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 24px;
+  border-radius: 16px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.modal-content h3 {
+  margin: 0 0 12px;
+  color: #1e293b;
+}
+
+.modal-content p {
+  color: #64748b;
+  margin: 0 0 24px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .quiz-content {
+    padding: 16px;
+  }
+
+  .quiz-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .quiz-tools {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .question-panel {
+    padding: 16px;
+  }
+
+  .question-content {
+    font-size: 16px;
+  }
+
+  .option-item {
+    padding: 12px;
+  }
+
+  .results-panel {
+    margin: 24px 16px;
+    padding: 24px;
+  }
+
+  .results-breakdown {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+</style>

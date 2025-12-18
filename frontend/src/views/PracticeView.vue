@@ -50,6 +50,15 @@
                         @item-action="handleQuestionItemAction">
                         <!-- Custom toolbar buttons for practice mode -->
                         <template #toolbar-buttons="{ selectedIds, clearSelection }">
+                            <button class="toolbar-btn toolbar-btn-accent" @click="batchPractice"
+                                :disabled="selectedQuestionIds.length === 0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                </svg>
+                                練習選取 ({{ selectedQuestionIds.length }})
+                            </button>
+
                             <button class="toolbar-btn toolbar-btn-primary" @click="batchAddToFlashcard">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2">
@@ -189,7 +198,10 @@
                     <div v-if="loadingWrong" class="loading">載入中...</div>
                     <div v-else-if="!wrongQuestions.length" class="empty">太棒了！目前沒有錯題</div>
                     <div v-else class="question-list">
-                        <div v-for="wq in wrongQuestions" :key="wq.id" class="question-item">
+                        <div v-for="wq in wrongQuestions" :key="wq.id" class="question-item"
+                            :class="{ 'highlight-flash': focusQuestionId === wq.question }"
+                            :data-question-id="wq.question"
+                            :ref="el => { if (focusQuestionId === wq.question) focusedQuestionEl = el }">
                             <div class="question-info">
                                 <span class="wrong-badge">錯 {{ wq.wrong_count }} 次</span>
                                 <p class="question-text">{{ wq.question_content }}</p>
@@ -376,7 +388,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import examService from '@/services/examService'
 import questionService from '@/services/questionService'
@@ -399,6 +411,13 @@ const currentTab = computed(() => {
     return t || 'questions'
 })
 
+// Focus question ID from route query (used to highlight a specific question)
+const focusQuestionId = computed(() => {
+    const f = route.query.focus
+    if (Array.isArray(f)) return parseInt(f[0]) || null
+    return parseInt(f) || null
+})
+
 const setTab = (tab) => {
     router.push({ path: '/practice', query: { ...route.query, tab } })
 }
@@ -414,6 +433,9 @@ const loadingBookmarks = ref(false)
 
 // QuestionList component ref
 const questionListRef = ref(null)
+
+// Focus question element ref (for scrolling into view)
+const focusedQuestionEl = ref(null)
 
 // Search state
 const searchFilters = ref({
@@ -672,6 +694,20 @@ const toggleSelectAll = () => {
 
 const clearSelection = () => {
     selectedQuestionIds.value = []
+}
+
+// Batch practice selected questions
+const batchPractice = () => {
+    if (selectedQuestionIds.value.length === 0) {
+        alert('請先選擇題目')
+        return
+    }
+
+    // Navigate to the question practice page with all selected question IDs
+    router.push({
+        name: 'QuestionPractice',
+        query: { ids: selectedQuestionIds.value.join(',') }
+    })
 }
 
 const batchAddToFlashcard = async () => {
@@ -942,8 +978,12 @@ const getDifficultyLabel = (difficulty) => {
     return labels[difficulty] || difficulty
 }
 
-const startSingleQuizFromSearch = async (question) => {
-    await startQuiz([{ id: question.id, content: question.content, subject: question.subject }], 'search')
+const startSingleQuizFromSearch = (question) => {
+    // Navigate to the question practice page
+    router.push({
+        name: 'QuestionPractice',
+        query: { ids: question.id.toString() }
+    })
 }
 
 const openChatFromSearchQuestion = async (question) => {
@@ -1043,17 +1083,13 @@ const startMockExam = async () => {
 
 const viewExam = (examId) => router.push({ name: 'ExamPreview', params: { id: examId } })
 
-const startQuiz = async (questions, type) => {
-    quizQuestions.value = questions.map(q => ({
-        id: q.question || q.id,
-        content: q.question_content || q.content,
-        subject: q.question_subject || q.subject
-    }))
-    currentIndex.value = 0
-    selectedAnswer.value = null
-    showAnswer.value = false
-    await loadQuestionOptions(quizQuestions.value[0].id)
-    quizMode.value = true
+const startQuiz = (questions, type) => {
+    // Navigate to the question practice page with all question IDs
+    const questionIds = questions.map(q => q.question || q.id).join(',')
+    router.push({
+        name: 'QuestionPractice',
+        query: { ids: questionIds }
+    })
 }
 
 const loadQuestionOptions = async (questionId) => {
@@ -1113,8 +1149,13 @@ const exitQuiz = () => {
     loadData() // Refresh stats
 }
 
-const startSingleQuiz = async (question) => {
-    await startQuiz([question], 'single')
+const startSingleQuiz = (question) => {
+    // Navigate to the question practice page
+    const questionId = question.question || question.id
+    router.push({
+        name: 'QuestionPractice',
+        query: { ids: questionId.toString() }
+    })
 }
 
 const addToFlashcard = async (questionId) => {
@@ -1269,6 +1310,22 @@ const handleResize = () => {
     if (splitRatio.value < minRatio) splitRatio.value = minRatio
     if (splitRatio.value > maxRatio) splitRatio.value = maxRatio
 }
+
+// Watch for focused question and scroll to it when loaded
+watch([focusedQuestionEl, () => loadingWrong.value], async ([el, loading]) => {
+    if (el && !loading) {
+        await nextTick()
+        // Scroll to the focused question with some offset
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+        // Clear the focus query param after a delay to prevent re-triggering
+        setTimeout(() => {
+            const newQuery = { ...route.query }
+            delete newQuery.focus
+            router.replace({ query: newQuery })
+        }, 2000)
+    }
+}, { immediate: true })
 
 onMounted(() => {
     loadData()
@@ -2033,6 +2090,32 @@ onUnmounted(() => {
     background: #f7f9fb;
     border-radius: 10px;
     border: 1px solid var(--border);
+    transition: all 0.3s ease;
+}
+
+/* Highlight flash animation for focused question */
+.question-item.highlight-flash {
+    animation: highlight-flash 2s ease-out;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+@keyframes highlight-flash {
+    0% {
+        background: rgba(37, 99, 235, 0.2);
+        box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.3);
+        transform: scale(1.01);
+    }
+    50% {
+        background: rgba(37, 99, 235, 0.1);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+        transform: scale(1.005);
+    }
+    100% {
+        background: #f7f9fb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        transform: scale(1);
+    }
 }
 
 .exam-info,
