@@ -850,6 +850,8 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .trend-rank {
