@@ -175,49 +175,10 @@
             <i :class="currentInFlashcard ? 'bi bi-bookmark-check-fill' : 'bi bi-bookmark-plus'"></i>
             {{ currentInFlashcard ? '已加入快閃卡' : '加入快閃卡' }}
           </button>
-          <button class="btn btn-primary btn-lg" @click="nextQuestion">
-            {{ currentIndex < questions.length - 1 ? '下一題' : '查看結果' }}
+          <button class="btn btn-primary btn-lg" @click="currentIndex < questions.length - 1 ? nextQuestion() : goBack()">
+            {{ currentIndex < questions.length - 1 ? '下一題' : '完成' }}
           </button>
         </template>
-      </div>
-    </div>
-
-    <!-- Results Panel -->
-    <div v-else-if="showResults" class="results-panel">
-      <div class="results-header">
-        <i class="bi bi-trophy"></i>
-        <h2>練習完成！</h2>
-      </div>
-
-      <div class="results-score">
-        <div class="score-circle" :class="scoreClass">
-          <span class="score-value">{{ correctCount }}</span>
-          <span class="score-total">/ {{ totalCount }}</span>
-        </div>
-        <p class="score-label">正確率 {{ Math.round((correctCount / totalCount) * 100) }}%</p>
-      </div>
-
-      <div class="results-breakdown">
-        <div class="breakdown-item correct">
-          <i class="bi bi-check-circle-fill"></i>
-          <span>答對 {{ correctCount }} 題</span>
-        </div>
-        <div class="breakdown-item wrong">
-          <i class="bi bi-x-circle-fill"></i>
-          <span>答錯 {{ totalCount - correctCount }} 題</span>
-        </div>
-      </div>
-
-      <div class="results-actions">
-        <button class="btn btn-secondary" @click="reviewQuestions">
-          <i class="bi bi-eye"></i> 查看詳解
-        </button>
-        <button class="btn btn-primary" @click="retryPractice">
-          <i class="bi bi-arrow-repeat"></i> 再練習一次
-        </button>
-        <button class="btn" @click="goBack">
-          <i class="bi bi-arrow-left"></i> 返回
-        </button>
       </div>
     </div>
 
