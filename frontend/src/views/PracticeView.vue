@@ -1293,8 +1293,6 @@ const stopDrag = () => {
 const openChat = (prefillText = '') => {
     chatPrefill.value = { text: prefillText, stamp: Date.now() }
     isChatOpen.value = true
-    // ensure AI panel shows chat tab when opened
-    setTab('chat')
 }
 
 const closeChat = () => {

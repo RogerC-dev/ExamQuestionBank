@@ -110,14 +110,11 @@ const { messages, historyItems, isLoading, isHistoryLoading, errorMessage } = st
 const inputMessage = ref('')
 const messagesContainer = ref(null)
 const chatInputRef = ref(null)
-const currentTab = computed(() => {
-  const t = route.query.tab
-  if (Array.isArray(t)) return t[0] || 'chat'
-  return t || 'chat'
-})
+// Use local state for internal tabs to avoid conflict with parent page's tab query
+const currentTab = ref('chat')
 
 const setTab = (tab) => {
-  router.push({ path: route.path, query: { ...route.query, tab } })
+  currentTab.value = tab
 }
 
 watch(messages, () => {
