@@ -95,6 +95,15 @@ export default {
   },
 
   /**
+   * Bulk get multiple questions by IDs
+   * @param {Array<number>} ids - Array of question IDs (max 500)
+   * @returns {Promise<{count: number, questions: Array, missing_ids?: Array}>}
+   */
+  bulkGetQuestions(ids) {
+    return api.post(`${BASE_PREFIX}/bulk-get/`, { ids })
+  },
+
+  /**
    * Delete a question
    * @param {number} questionId - Question ID
    */

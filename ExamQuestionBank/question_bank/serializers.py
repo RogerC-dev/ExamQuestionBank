@@ -24,6 +24,9 @@ class TagSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'question_count', 'created_at']
 
     def get_question_count(self, obj):
+        # 優先使用預先 annotated 的值（避免 N+1 查詢）
+        if hasattr(obj, 'annotated_question_count'):
+            return obj.annotated_question_count
         return obj.questions.count()
 
 

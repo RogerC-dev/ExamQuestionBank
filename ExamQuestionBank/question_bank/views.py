@@ -128,12 +128,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
     - tags: 依標籤 ID 篩選（逗號分隔，如 tags=1,2,3）
     - page_size: 每頁數量（預設 20，最大 500）
     """
-    queryset = (
-        Question.objects.all()
-        .prefetch_related('options', 'tags')
-        .select_related('created_by')
-        .order_by('id')  # 明確排序以避免分頁警告
-    )
+    queryset = Question.objects.all()  # 基本 queryset，get_queryset() 會覆蓋並優化
     permission_classes = [IsAuthenticated]
     pagination_class = QuestionPagination
     filter_backends = [filters.SearchFilter]
@@ -141,7 +136,20 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """支援 keyword、tags 和 source 篩選"""
-        queryset = super().get_queryset()
+        from django.db.models import Count, Prefetch
+        
+        # 預先載入標籤並 annotate 題目數量以避免 N+1 查詢
+        tags_with_count = Tag.objects.annotate(annotated_question_count=Count('questions'))
+        
+        queryset = (
+            Question.objects.all()
+            .prefetch_related(
+                'options',
+                Prefetch('tags', queryset=tags_with_count)
+            )
+            .select_related('created_by')
+            .order_by('id')
+        )
         user = self.request.user
         
         # source 篩選（題目來源：wrong=錯題本, bookmark=收藏, all=全部）
@@ -328,6 +336,79 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 results.append({'success': False, 'index': idx, 'errors': msg})
 
         return Response({'results': results}, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        operation_summary="批量取得題目",
+        operation_description="根據多個 ID 一次取得多個題目的詳細資訊；接收一個 ids 陣列，最多支援 500 個 ID",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['ids'],
+            properties={
+                'ids': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(type=openapi.TYPE_INTEGER),
+                    description='題目 ID 列表'
+                )
+            }
+        ),
+        responses={200: QuestionDetailSerializer(many=True)}
+    )
+    @action(detail=False, methods=['post'], url_path='bulk-get')
+    def bulk_get(self, request, *args, **kwargs):
+        """根據多個 ID 批量取得題目詳細資訊"""
+        ids = request.data.get('ids', [])
+        
+        if not isinstance(ids, list):
+            return Response({'detail': 'ids 必須是一個陣列'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if len(ids) == 0:
+            return Response({'detail': 'ids 不能為空'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if len(ids) > 500:
+            return Response({'detail': '一次最多只能查詢 500 個題目'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 過濾並確保所有 ID 都是整數
+        try:
+            valid_ids = [int(id) for id in ids]
+        except (ValueError, TypeError):
+            return Response({'detail': 'ids 中的所有元素必須是整數'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 查詢題目，使用 Prefetch 預載標籤並 annotate 題目數量以避免 N+1 查詢
+        from django.db.models import Count, Prefetch
+        
+        # 預先載入標籤並 annotate 題目數量
+        tags_with_count = Tag.objects.annotate(annotated_question_count=Count('questions'))
+        
+        questions = (
+            Question.objects.filter(id__in=valid_ids)
+            .prefetch_related(
+                'options',
+                Prefetch('tags', queryset=tags_with_count)
+            )
+            .select_related('created_by')
+        )
+        
+        # 建立 id -> question 的映射以保持順序
+        question_map = {q.id: q for q in questions}
+        
+        # 按照請求的順序排列結果
+        ordered_questions = [question_map[id] for id in valid_ids if id in question_map]
+        
+        # 找出不存在的 ID
+        found_ids = set(question_map.keys())
+        missing_ids = [id for id in valid_ids if id not in found_ids]
+        
+        serializer = QuestionDetailSerializer(ordered_questions, many=True, context={'request': request})
+        
+        response_data = {
+            'count': len(ordered_questions),
+            'questions': serializer.data
+        }
+        
+        if missing_ids:
+            response_data['missing_ids'] = missing_ids
+        
+        return Response(response_data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_summary="刪除題目",

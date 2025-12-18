@@ -186,33 +186,48 @@ const loadExam = async () => {
         const { data } = await examService.getExam(examId)
         exam.value = data
 
-        // Load detailed question data with options
-        const questionPromises = (data.exam_questions || []).map(async (eq, index) => {
-            try {
-                if (eq.question) {
-                    const { data: questionData } = await questionService.getQuestion(eq.question)
-                    return {
-                        ...eq, // id, order, points
-                        ...questionData, // content, options, explanation, etc.
-                        points: eq.points
-                    }
-                }
+        const examQuestions = data.exam_questions || []
+        
+        // 收集所有題目 ID
+        const questionIds = examQuestions
+            .filter(eq => eq.question)
+            .map(eq => eq.question)
+        
+        if (questionIds.length === 0) {
+            questions.value = examQuestions.map(eq => ({
+                ...eq,
+                content: eq.question_content || '無題目內容',
+                options: []
+            }))
+            return
+        }
+
+        // 使用批量 API 一次取得所有題目詳細資訊
+        const { data: bulkData } = await questionService.bulkGetQuestions(questionIds)
+        
+        // 建立 questionId -> questionData 的映射
+        const questionMap = {}
+        for (const q of bulkData.questions) {
+            questionMap[q.id] = q
+        }
+
+        // 按照 exam_questions 的順序組合資料
+        questions.value = examQuestions.map((eq) => {
+            const questionData = questionMap[eq.question]
+            if (questionData) {
                 return {
                     ...eq,
-                    content: eq.question_content,
-                    options: [],
-                }
-            } catch (err) {
-                console.error(`Failed to load question ${eq.question}`, err)
-                return {
-                    ...eq,
-                    content: eq.question_content || '無法載入題目內容',
-                    options: []
+                    ...questionData,
+                    points: eq.points // 保留考卷中設定的配分
                 }
             }
+            // 如果題目不存在，使用 fallback
+            return {
+                ...eq,
+                content: eq.question_content || '無法載入題目內容',
+                options: []
+            }
         })
-
-        questions.value = await Promise.all(questionPromises)
     } catch (err) {
         console.error('Failed to load exam:', err)
         error.value = err.response?.data?.detail || '無法載入考卷資料'
@@ -724,7 +739,7 @@ onMounted(() => {
 /* Controls Panel (Fixed Right) */
 .controls-panel {
     position: fixed;
-    top: 20px;
+    top: 160px;
     right: 20px;
     width: 250px;
     background: white;
