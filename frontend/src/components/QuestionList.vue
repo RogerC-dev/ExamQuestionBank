@@ -91,13 +91,13 @@
     </div>
 
     <!-- Search/Practice Mode: QuestionFilterPanel -->
-    <div v-if="viewMode === 'search' || mode === 'practice'" class="filter-panel-container">
+    <div v-if="(viewMode === 'search' || mode === 'practice') && listMode === 'search'" class="filter-panel-container">
       <QuestionFilterPanel v-model="searchFilters" :tags="tags" :loading="searchLoading" :total-count="totalSearchCount"
         :show-source-filter="showSourceFilter" @search="handleSearch" @reset="handleResetFilters" />
     </div>
 
     <!-- Selection Toolbar (with custom slots for practice mode) -->
-    <SelectionToolbar v-if="showToolbar && (viewMode === 'search' || mode === 'practice')"
+    <SelectionToolbar v-if="showToolbar && (viewMode === 'search' || mode === 'practice') && selectedIds.length > 0"
       :selected-count="selectedIds.length" item-unit="題" @clear="clearSelection">
       <!-- Custom toolbar buttons slot -->
       <slot name="toolbar-buttons" :selected-ids="selectedIds" :clear-selection="clearSelection">
@@ -165,6 +165,8 @@
             <span v-if="(item.tags || []).length > 2" class="search-badge search-badge-more">
               +{{ item.tags.length - 2 }}
             </span>
+            <!-- Extra badges slot (e.g., wrong count) -->
+            <slot name="item-extra-badges" :item="item"></slot>
             <!-- Status badges -->
             <span v-if="item.is_bookmarked" class="search-badge search-badge-status bookmark-status" title="已收藏">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"
@@ -221,6 +223,12 @@ const props = defineProps({
     type: String,
     default: 'exam',
     validator: (value) => ['exam', 'practice', 'modal'].includes(value)
+  },
+  // List mode: 'search' (default), 'wrong', 'bookmark'
+  listMode: {
+    type: String,
+    default: 'search',
+    validator: (value) => ['search', 'wrong', 'bookmark'].includes(value)
   },
   // Layout control props
   showHeader: {
@@ -787,6 +795,18 @@ defineExpose({ selectedIds, clearSelection })
 .search-badge-status.flashcard-status {
   background: #E0E7FF;
   color: #4338CA;
+}
+
+/* Wrong count badge - use :deep() for slot content */
+:deep(.search-badge-wrong) {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #FEE2E2;
+  color: #991B1B;
 }
 
 /* List Header Actions (Select All) */

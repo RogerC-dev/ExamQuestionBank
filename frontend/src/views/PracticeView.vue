@@ -195,33 +195,55 @@
                                 @click="startQuiz(wrongQuestions, 'wrong')">全部重測</button>
                         </div>
                     </div>
-                    <div v-if="loadingWrong" class="loading">載入中...</div>
-                    <div v-else-if="!wrongQuestions.length" class="empty">太棒了！目前沒有錯題</div>
-                    <div v-else class="question-list">
-                        <div v-for="wq in wrongQuestions" :key="wq.id" class="question-item"
-                            :class="{ 'highlight-flash': focusQuestionId === wq.question }"
-                            :data-question-id="wq.question"
-                            :ref="el => { if (focusQuestionId === wq.question) focusedQuestionEl = el }">
-                            <div class="question-info">
-                                <span class="wrong-badge">錯 {{ wq.wrong_count }} 次</span>
-                                <p class="question-text">{{ wq.question_content }}</p>
-                                <span class="question-subject">{{ wq.question_subject }}</span>
-                            </div>
-                            <div class="question-actions">
-                                <button class="btn btn-sm" @click="startSingleQuiz(wq)">重測</button>
-                                <button 
-                                  class="btn btn-sm" 
-                                  :class="{ 'btn-flashcard-added': wq.is_in_flashcard }"
-                                  @click="toggleFlashcard(wq)"
-                                >
-                                  <i :class="wq.is_in_flashcard ? 'bi bi-bookmark-x-fill' : 'bi bi-bookmark-plus'"></i>
-                                  {{ wq.is_in_flashcard ? '移除快閃卡' : '加入快閃卡' }}
-                                </button>
-                                <button class="btn btn-sm btn-secondary" @click="markReviewed(wq.id)">已複習</button>
-                                <button class="btn btn-sm btn-outline" @click="openChatFromQuestion(wq)">Ask AI</button>
-                            </div>
-                        </div>
-                    </div>
+                    <QuestionList 
+                        mode="practice" 
+                        list-mode="wrong"
+                        :show-header="false" 
+                        :show-mode-toggle="false"
+                        :show-source-filter="false"
+                        :loading="loadingWrong"
+                        :search-results="wrongQuestionsForList"
+                        :total-search-count="wrongQuestions.length"
+                        @update:selected-ids="handleWrongSelectedIds"
+                        @item-action="handleWrongItemAction">
+                        <!-- Extra badges slot for wrong count -->
+                        <template #item-extra-badges="{ item }">
+                            <span v-if="item.wrong_count" class="search-badge search-badge-wrong">
+                                錯 {{ item.wrong_count }} 次
+                            </span>
+                        </template>
+                        <!-- Custom toolbar buttons -->
+                        <template #toolbar-buttons="{ selectedIds, clearSelection }">
+                            <button class="toolbar-btn toolbar-btn-accent" 
+                                @click="batchWrongQuiz(selectedIds); clearSelection()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                </svg>
+                                重測 ({{ selectedIds.length }})
+                            </button>
+                            <button class="toolbar-btn toolbar-btn-secondary" 
+                                @click="batchMarkReviewedFromWrong(selectedIds); clearSelection()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                已複習
+                            </button>
+                        </template>
+                        <!-- Custom item actions -->
+                        <template #item-actions="{ item }">
+                            <button class="btn btn-sm" @click="startSingleQuiz(item)">重測</button>
+                            <button class="btn btn-sm" 
+                                :class="{ 'btn-flashcard-added': item.is_in_flashcard }"
+                                @click="toggleFlashcard(item)">
+                                <i :class="item.is_in_flashcard ? 'bi bi-bookmark-x-fill' : 'bi bi-bookmark-plus'"></i>
+                                {{ item.is_in_flashcard ? '移除快閃卡' : '加入快閃卡' }}
+                            </button>
+                            <button class="btn btn-sm btn-secondary" @click="markReviewed(item.id)">已複習</button>
+                            <button class="btn btn-sm btn-outline" @click="openChatFromQuestion(item)">Ask AI</button>
+                        </template>
+                    </QuestionList>
                 </section>
 
                 <!-- Bookmarks Tab -->
@@ -233,29 +255,50 @@
                                 @click="startQuiz(bookmarks, 'bookmark')">全部練習</button>
                         </div>
                     </div>
-                    <div v-if="loadingBookmarks" class="loading">載入中...</div>
-                    <div v-else-if="!bookmarks.length" class="empty">尚無收藏題目</div>
-                    <div v-else class="question-list">
-                        <div v-for="bm in bookmarks" :key="bm.id" class="question-item">
-                            <div class="question-info">
-                                <p class="question-text">{{ bm.question_content }}</p>
-                                <span class="question-subject">{{ bm.question_subject }}</span>
-                            </div>
-                            <div class="question-actions">
-                                <button class="btn btn-sm" @click="startSingleQuiz(bm)">練習</button>
-                                <button 
-                                  class="btn btn-sm" 
-                                  :class="{ 'btn-flashcard-added': bm.is_in_flashcard }"
-                                  @click="toggleFlashcard(bm)"
-                                >
-                                  <i :class="bm.is_in_flashcard ? 'bi bi-bookmark-x-fill' : 'bi bi-bookmark-plus'"></i>
-                                  {{ bm.is_in_flashcard ? '移除快閃卡' : '加入快閃卡' }}
-                                </button>
-                                <button class="btn btn-sm btn-danger" @click="removeBookmark(bm.question)">移除</button>
-                                <button class="btn btn-sm btn-outline" @click="openChatFromQuestion(bm)">Ask AI</button>
-                            </div>
-                        </div>
-                    </div>
+                    <QuestionList 
+                        mode="practice" 
+                        list-mode="bookmark"
+                        :show-header="false" 
+                        :show-mode-toggle="false"
+                        :show-source-filter="false"
+                        :loading="loadingBookmarks"
+                        :search-results="bookmarksForList"
+                        :total-search-count="bookmarks.length"
+                        @update:selected-ids="handleBookmarkSelectedIds"
+                        @item-action="handleBookmarkItemAction">
+                        <!-- Custom toolbar buttons -->
+                        <template #toolbar-buttons="{ selectedIds, clearSelection }">
+                            <button class="toolbar-btn toolbar-btn-accent" 
+                                @click="batchBookmarkQuiz(selectedIds); clearSelection()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                </svg>
+                                練習 ({{ selectedIds.length }})
+                            </button>
+                            <button class="toolbar-btn toolbar-btn-danger" 
+                                @click="batchRemoveBookmarks(selectedIds); clearSelection()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                                移除
+                            </button>
+                        </template>
+                        <!-- Custom item actions -->
+                        <template #item-actions="{ item }">
+                            <button class="btn btn-sm" @click="startSingleQuiz(item)">練習</button>
+                            <button class="btn btn-sm" 
+                                :class="{ 'btn-flashcard-added': item.is_in_flashcard }"
+                                @click="toggleFlashcard(item)">
+                                <i :class="item.is_in_flashcard ? 'bi bi-bookmark-x-fill' : 'bi bi-bookmark-plus'"></i>
+                                {{ item.is_in_flashcard ? '移除快閃卡' : '加入快閃卡' }}
+                            </button>
+                            <button class="btn btn-sm btn-danger" @click="removeBookmark(item.question)">移除</button>
+                            <button class="btn btn-sm btn-outline" @click="openChatFromQuestion(item)">Ask AI</button>
+                        </template>
+                    </QuestionList>
                 </section>
             </div>
         </div>
@@ -531,6 +574,116 @@ const availableMockExamCount = computed(() => {
 
     return questionIds.size
 })
+
+// Computed: transform wrongQuestions for QuestionList component
+const wrongQuestionsForList = computed(() => {
+    return wrongQuestions.value.map(wq => ({
+        ...wq,
+        id: wq.id,
+        content: wq.question_content,
+        question_content: wq.question_content,
+        question_subject: wq.question_subject,
+        subject: wq.question_subject
+    }))
+})
+
+// Computed: transform bookmarks for QuestionList component
+const bookmarksForList = computed(() => {
+    return bookmarks.value.map(bm => ({
+        ...bm,
+        id: bm.id,
+        content: bm.question_content,
+        question_content: bm.question_content,
+        question_subject: bm.question_subject,
+        subject: bm.question_subject
+    }))
+})
+
+// Handler for wrong questions list selected IDs
+const handleWrongSelectedIds = (ids) => {
+    // Store selected wrong question IDs if needed
+    console.log('Selected wrong question IDs:', ids)
+}
+
+// Handler for bookmark list selected IDs
+const handleBookmarkSelectedIds = (ids) => {
+    // Store selected bookmark IDs if needed
+    console.log('Selected bookmark IDs:', ids)
+}
+
+// Handler for wrong questions item actions
+const handleWrongItemAction = (action, item) => {
+    if (action === 'practice') {
+        startSingleQuiz(item)
+    } else if (action === 'ask-ai') {
+        openChatFromQuestion(item)
+    } else if (action === 'flashcard') {
+        toggleFlashcard(item)
+    }
+}
+
+// Handler for bookmark item actions
+const handleBookmarkItemAction = (action, item) => {
+    if (action === 'practice') {
+        startSingleQuiz(item)
+    } else if (action === 'ask-ai') {
+        openChatFromQuestion(item)
+    } else if (action === 'flashcard') {
+        toggleFlashcard(item)
+    }
+}
+
+// Batch quiz for wrong questions
+const batchWrongQuiz = (selectedIds) => {
+    if (!selectedIds || selectedIds.length === 0) return
+    const selected = wrongQuestions.value.filter(wq => selectedIds.includes(wq.id))
+    if (selected.length > 0) {
+        startQuiz(selected, 'wrong')
+    }
+}
+
+// Batch mark reviewed from wrong questions
+const batchMarkReviewedFromWrong = async (selectedIds) => {
+    if (!selectedIds || selectedIds.length === 0) return
+    try {
+        const promises = selectedIds.map(id => examService.markWrongQuestionReviewed(id))
+        await Promise.all(promises)
+        wrongQuestions.value = wrongQuestions.value.filter(wq => !selectedIds.includes(wq.id))
+        alert(`成功標記 ${selectedIds.length} 題已複習！`)
+    } catch (e) {
+        console.error('Batch mark reviewed failed:', e)
+        alert('標記失敗')
+    }
+}
+
+// Batch quiz for bookmarks
+const batchBookmarkQuiz = (selectedIds) => {
+    if (!selectedIds || selectedIds.length === 0) return
+    const selected = bookmarks.value.filter(bm => selectedIds.includes(bm.id))
+    if (selected.length > 0) {
+        startQuiz(selected, 'bookmark')
+    }
+}
+
+// Batch remove bookmarks
+const batchRemoveBookmarks = async (selectedIds) => {
+    if (!selectedIds || selectedIds.length === 0) return
+    if (!confirm(`確定要移除 ${selectedIds.length} 個收藏嗎？`)) return
+    try {
+        // Get question IDs from bookmark IDs
+        const questionIds = bookmarks.value
+            .filter(bm => selectedIds.includes(bm.id))
+            .map(bm => bm.question)
+        
+        const promises = questionIds.map(qid => examService.removeBookmark(qid))
+        await Promise.all(promises)
+        bookmarks.value = bookmarks.value.filter(bm => !selectedIds.includes(bm.id))
+        alert(`成功移除 ${questionIds.length} 個收藏！`)
+    } catch (e) {
+        console.error('Batch remove bookmarks failed:', e)
+        alert('移除失敗')
+    }
+}
 
 const getLabel = (order) => String.fromCharCode(64 + (order || 1))
 
