@@ -194,15 +194,15 @@ defineEmits(['clear'])
 
 /* Accent Button (for primary actions like Practice) */
 :deep(.toolbar-btn-accent) {
-    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    background: linear-gradient(135deg, var(--primary, #476996), #35527a);
     color: white;
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 2px 8px rgba(71, 105, 150, 0.2);
 }
 
 :deep(.toolbar-btn-accent:hover:not(:disabled)) {
-    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    background: linear-gradient(135deg, #35527a, var(--primary, #476996));
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 4px 16px rgba(71, 105, 150, 0.3);
 }
 
 :deep(.toolbar-btn:disabled) {

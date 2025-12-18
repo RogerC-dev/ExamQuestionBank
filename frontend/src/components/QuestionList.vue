@@ -189,6 +189,12 @@
         <div v-if="mode === 'practice'" class="search-question-actions" @click.stop>
           <slot name="item-actions" :item="item">
             <button class="btn btn-sm" @click="$emit('item-action', 'practice', item)">練習</button>
+            <button class="btn btn-sm" :class="item.is_in_flashcard ? 'btn-flashcard-added' : ''" 
+                    @click="$emit('item-action', 'flashcard', item)" 
+                    :title="item.is_in_flashcard ? '已加入快閃卡' : '加入快閃卡'">
+              <i :class="item.is_in_flashcard ? 'bi bi-bookmark-check-fill' : 'bi bi-bookmark-plus'"></i>
+              {{ item.is_in_flashcard ? '已收藏' : '快閃卡' }}
+            </button>
             <button class="btn btn-sm btn-outline" @click="$emit('item-action', 'ask-ai', item)">Ask AI</button>
           </slot>
         </div>
@@ -839,6 +845,20 @@ defineExpose({ selectedIds, clearSelection })
 
 .search-question-actions .btn-outline:hover {
   background: var(--primary-soft, #EEF2FF);
+}
+
+.search-question-actions .btn-flashcard-added {
+  background: #E0E7FF;
+  color: #4338CA;
+  border: 1px solid #C7D2FE;
+}
+
+.search-question-actions .btn-flashcard-added:hover {
+  background: #C7D2FE;
+}
+
+.search-question-actions .btn i {
+  margin-right: 4px;
 }
 
 /* Practice Mode Specific Styles */

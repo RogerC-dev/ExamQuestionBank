@@ -90,8 +90,9 @@
               <span class="col-date">測驗日期</span>
               <span class="col-action">操作</span>
             </div>
-            <div v-for="(item, index) in displayedTrend" :key="item.key" class="trend-item"
-              :class="{ 'glow-pulse': glowTarget === item.key }">
+            <div v-for="(item, index) in displayedTrend" :key="item.key" class="trend-item clickable-row"
+              :class="{ 'glow-pulse': glowTarget === item.key }"
+              @click="drillToPractice(item)" title="點擊前往練習">
               <div class="col-name">
                 <span class="trend-rank">{{ (trendPage - 1) * trendPageSize + index + 1 }}</span>
                 <div class="trend-info">
@@ -116,10 +117,8 @@
                 <span v-else class="delta-badge new">首次</span>
               </div>
               <div class="col-date">{{ formatDate(item.date) }}</div>
-              <div class="col-action">
-                <button class="btn-action" @click="drillToPractice(item)" title="前往練習">
-                  <i class="bi bi-arrow-right-circle"></i>
-                </button>
+              <div class="col-action trend-action">
+                <i class="bi bi-arrow-right-circle"></i>
               </div>
             </div>
           </div>
@@ -823,9 +822,28 @@ onMounted(loadData)
   background: #fff;
 }
 
-.trend-item:hover {
+.trend-item.clickable-row {
+  cursor: pointer;
+}
+
+.trend-item.clickable-row:hover {
   border-color: var(--primary);
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 4px 16px rgba(71, 105, 150, 0.12);
+  transform: translateX(4px);
+}
+
+/* Trend action arrow - hidden until hover */
+.trend-action {
+  text-align: center;
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+  font-size: 18px;
+}
+
+.trend-item.clickable-row:hover .trend-action {
+  opacity: 1;
+  color: var(--primary);
 }
 
 .col-name {
