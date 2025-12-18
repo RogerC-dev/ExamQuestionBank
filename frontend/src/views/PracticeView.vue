@@ -209,7 +209,15 @@
                             </div>
                             <div class="question-actions">
                                 <button class="btn btn-sm" @click="startSingleQuiz(wq)">重測</button>
-                                <button class="btn btn-sm" @click="addToFlashcard(wq.question)">快閃卡</button>
+                                <button 
+                                  class="btn btn-sm" 
+                                  :class="{ 'btn-flashcard-added': wq.is_in_flashcard }"
+                                  @click="!wq.is_in_flashcard && addToFlashcard(wq.question)"
+                                  :disabled="wq.is_in_flashcard"
+                                >
+                                  <i :class="wq.is_in_flashcard ? 'bi bi-bookmark-check-fill' : 'bi bi-bookmark-plus'"></i>
+                                  {{ wq.is_in_flashcard ? '已加入' : '快閃卡' }}
+                                </button>
                                 <button class="btn btn-sm btn-secondary" @click="markReviewed(wq.id)">已複習</button>
                                 <button class="btn btn-sm btn-outline" @click="openChatFromQuestion(wq)">Ask AI</button>
                             </div>
@@ -236,7 +244,14 @@
                             </div>
                             <div class="question-actions">
                                 <button class="btn btn-sm" @click="startSingleQuiz(bm)">練習</button>
-                                <button class="btn btn-sm" @click="addToFlashcard(bm.question)">快閃卡</button>
+                                <button 
+                                  class="btn btn-sm" 
+                                  :class="{ 'btn-flashcard-added': bm.is_in_flashcard }"
+                                  @click="toggleFlashcard(bm)"
+                                >
+                                  <i :class="bm.is_in_flashcard ? 'bi bi-bookmark-x-fill' : 'bi bi-bookmark-plus'"></i>
+                                  {{ bm.is_in_flashcard ? '移除快閃卡' : '加入快閃卡' }}
+                                </button>
                                 <button class="btn btn-sm btn-danger" @click="removeBookmark(bm.question)">移除</button>
                                 <button class="btn btn-sm btn-outline" @click="openChatFromQuestion(bm)">Ask AI</button>
                             </div>
@@ -1166,9 +1181,49 @@ const addToFlashcard = async (questionId) => {
     try {
         await flashcardService.createFlashcard({ question: questionId })
         alert('已加入快閃卡！')
+        // Refresh bookmarks to update is_in_flashcard status
+        loadBookmarks()
     } catch (e) {
-        console.error('Failed to add to flashcard:', e)
-        alert('加入快閃卡失敗')
+        const errorMsg = e.message || ''
+        if (errorMsg.includes('已') || errorMsg.includes('already')) {
+            alert('此題目已在快閃卡中')
+        } else {
+            console.error('Failed to add to flashcard:', e)
+            alert('加入快閃卡失敗')
+        }
+    }
+}
+
+const removeFromFlashcard = async (questionId) => {
+    try {
+        // First, find the flashcard ID for this question
+        const flashcards = await flashcardService.getFlashcards()
+        const flashcard = flashcards.find(fc => fc.question === questionId)
+        if (flashcard) {
+            await flashcardService.deleteFlashcard(flashcard.id)
+            alert('已從快閃卡移除！')
+            // Refresh bookmarks to update is_in_flashcard status
+            loadBookmarks()
+        } else {
+            alert('找不到對應的快閃卡')
+        }
+    } catch (e) {
+        console.error('Failed to remove from flashcard:', e)
+        alert('從快閃卡移除失敗')
+    }
+}
+
+const toggleFlashcard = async (item) => {
+    const questionId = item.question || item.id
+    if (item.is_in_flashcard) {
+        // Double confirm before removal
+        if (confirm('確定要從快閃卡移除此題目嗎？')) {
+            if (confirm('再次確認：移除後需重新加入。確定移除？')) {
+                await removeFromFlashcard(questionId)
+            }
+        }
+    } else {
+        await addToFlashcard(questionId)
     }
 }
 
@@ -2194,6 +2249,18 @@ onUnmounted(() => {
 
 .btn-secondary:hover {
     background: #e3e8ef;
+}
+
+.btn-flashcard-added {
+    background: #E0E7FF !important;
+    color: #4338CA !important;
+    border: 1px solid #C7D2FE !important;
+    cursor: default;
+}
+
+.btn-flashcard-added:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .btn-danger {
