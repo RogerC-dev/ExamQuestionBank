@@ -468,8 +468,30 @@ class WrongQuestionView(APIView):
 
     def get(self, request):
         """取得錯題列表"""
-        wrong_qs = WrongQuestion.objects.filter(user=request.user).select_related('question').order_by('-wrong_count', '-last_wrong_at')
-        return Response(WrongQuestionSerializer(wrong_qs, many=True).data)
+        from flashcards.models import Flashcard
+        from question_bank.models import Note, Bookmark
+        
+        user = request.user
+        
+        # 預先查詢所有相關資料，避免 N+1
+        wrong_qs = WrongQuestion.objects.filter(user=user).select_related('question').order_by('-wrong_count', '-last_wrong_at')
+        
+        # 取得所有錯題的 question_id
+        question_ids = list(wrong_qs.values_list('question_id', flat=True))
+        
+        # 批次查詢使用者的 flashcard、bookmark、note
+        flashcard_question_ids = set(Flashcard.objects.filter(user=user, question_id__in=question_ids).values_list('question_id', flat=True))
+        bookmark_question_ids = set(Bookmark.objects.filter(user=user, question_id__in=question_ids).values_list('question_id', flat=True))
+        notes_dict = {n.question_id: n.content for n in Note.objects.filter(user=user, question_id__in=question_ids)}
+        
+        # 傳遞預查詢的資料給 serializer
+        context = {
+            'request': request,
+            'flashcard_question_ids': flashcard_question_ids,
+            'bookmark_question_ids': bookmark_question_ids,
+            'notes_dict': notes_dict
+        }
+        return Response(WrongQuestionSerializer(wrong_qs, many=True, context=context).data)
 
     def patch(self, request, pk):
         """標記錯題為已複習"""
@@ -477,7 +499,7 @@ class WrongQuestionView(APIView):
             wq = WrongQuestion.objects.get(pk=pk, user=request.user)
             wq.reviewed = request.data.get('reviewed', True)
             wq.save()
-            return Response(WrongQuestionSerializer(wq).data)
+            return Response(WrongQuestionSerializer(wq, context={'request': request}).data)
         except WrongQuestion.DoesNotExist:
             return Response({"error": "錯題不存在"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -493,14 +515,31 @@ class BookmarkView(APIView):
 
     def get(self, request):
         """取得收藏列表"""
-        bookmarks = Bookmark.objects.filter(user=request.user).select_related('question')
-        data = [{
-            'id': b.id,
-            'question': b.question.id,
-            'question_content': b.question.content,
-            'question_subject': b.question.subject,
-            'created_at': b.created_at
-        } for b in bookmarks]
+        from flashcards.models import Flashcard
+        from question_bank.models import Note
+        
+        user = request.user
+        bookmarks = Bookmark.objects.filter(user=user).select_related('question')
+        
+        # 取得所有收藏的 question_id
+        question_ids = list(bookmarks.values_list('question_id', flat=True))
+        
+        # 批次查詢使用者的 flashcard 和 note，避免 N+1
+        flashcard_question_ids = set(Flashcard.objects.filter(user=user, question_id__in=question_ids).values_list('question_id', flat=True))
+        notes_dict = {n.question_id: n.content for n in Note.objects.filter(user=user, question_id__in=question_ids)}
+        
+        data = []
+        for b in bookmarks:
+            data.append({
+                'id': b.id,
+                'question': b.question.id,
+                'question_content': b.question.content,
+                'question_subject': b.question.subject,
+                'created_at': b.created_at,
+                'is_in_flashcard': b.question_id in flashcard_question_ids,
+                'is_bookmarked': True,  # 在收藏列表中的題目一定是已收藏的
+                'user_note': notes_dict.get(b.question_id)
+            })
         return Response(data)
 
     def post(self, request):

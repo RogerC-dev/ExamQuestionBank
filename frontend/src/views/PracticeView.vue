@@ -212,11 +212,10 @@
                                 <button 
                                   class="btn btn-sm" 
                                   :class="{ 'btn-flashcard-added': wq.is_in_flashcard }"
-                                  @click="!wq.is_in_flashcard && addToFlashcard(wq.question)"
-                                  :disabled="wq.is_in_flashcard"
+                                  @click="toggleFlashcard(wq)"
                                 >
-                                  <i :class="wq.is_in_flashcard ? 'bi bi-bookmark-check-fill' : 'bi bi-bookmark-plus'"></i>
-                                  {{ wq.is_in_flashcard ? '已加入' : '快閃卡' }}
+                                  <i :class="wq.is_in_flashcard ? 'bi bi-bookmark-x-fill' : 'bi bi-bookmark-plus'"></i>
+                                  {{ wq.is_in_flashcard ? '移除快閃卡' : '加入快閃卡' }}
                                 </button>
                                 <button class="btn btn-sm btn-secondary" @click="markReviewed(wq.id)">已複習</button>
                                 <button class="btn btn-sm btn-outline" @click="openChatFromQuestion(wq)">Ask AI</button>
@@ -1180,9 +1179,11 @@ const startSingleQuiz = (question) => {
 const addToFlashcard = async (questionId) => {
     try {
         await flashcardService.createFlashcard({ question: questionId })
-        alert('已加入快閃卡！')
-        // Refresh bookmarks to update is_in_flashcard status
-        loadBookmarks()
+        // Refresh data to update is_in_flashcard status
+        const bookmarkRes = await examService.getBookmarks().catch(() => ({ data: [] }))
+        bookmarks.value = bookmarkRes.data || []
+        const wrongRes = await examService.getWrongQuestions().catch(() => ({ data: [] }))
+        wrongQuestions.value = wrongRes.data || []
     } catch (e) {
         const errorMsg = e.message || ''
         if (errorMsg.includes('已') || errorMsg.includes('already')) {
@@ -1201,9 +1202,11 @@ const removeFromFlashcard = async (questionId) => {
         const flashcard = flashcards.find(fc => fc.question === questionId)
         if (flashcard) {
             await flashcardService.deleteFlashcard(flashcard.id)
-            alert('已從快閃卡移除！')
-            // Refresh bookmarks to update is_in_flashcard status
-            loadBookmarks()
+            // Refresh data to update is_in_flashcard status
+            const bookmarkRes = await examService.getBookmarks().catch(() => ({ data: [] }))
+            bookmarks.value = bookmarkRes.data || []
+            const wrongRes = await examService.getWrongQuestions().catch(() => ({ data: [] }))
+            wrongQuestions.value = wrongRes.data || []
         } else {
             alert('找不到對應的快閃卡')
         }
@@ -1216,11 +1219,9 @@ const removeFromFlashcard = async (questionId) => {
 const toggleFlashcard = async (item) => {
     const questionId = item.question || item.id
     if (item.is_in_flashcard) {
-        // Double confirm before removal
+        // Only one confirmation is needed
         if (confirm('確定要從快閃卡移除此題目嗎？')) {
-            if (confirm('再次確認：移除後需重新加入。確定移除？')) {
-                await removeFromFlashcard(questionId)
-            }
+            await removeFromFlashcard(questionId)
         }
     } else {
         await addToFlashcard(questionId)

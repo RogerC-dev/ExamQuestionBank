@@ -27,11 +27,55 @@ class WrongQuestionSerializer(serializers.ModelSerializer):
     """錯題序列化器"""
     question_content = serializers.CharField(source='question.content', read_only=True)
     question_subject = serializers.CharField(source='question.subject', read_only=True)
+    is_in_flashcard = serializers.SerializerMethodField()
+    is_bookmarked = serializers.SerializerMethodField()
+    user_note = serializers.SerializerMethodField()
 
     class Meta:
         model = WrongQuestion
-        fields = ['id', 'question', 'question_content', 'question_subject', 'wrong_count', 'last_wrong_at', 'reviewed']
+        fields = [
+            'id', 'question', 'question_content', 'question_subject',
+            'wrong_count', 'last_wrong_at', 'reviewed',
+            'is_in_flashcard', 'is_bookmarked', 'user_note'
+        ]
         read_only_fields = ['id', 'wrong_count', 'last_wrong_at']
+
+    def get_is_in_flashcard(self, obj):
+        """檢查此題目是否已被使用者加入快閃卡"""
+        # 優先使用預查詢的資料（避免 N+1）
+        flashcard_ids = self.context.get('flashcard_question_ids')
+        if flashcard_ids is not None:
+            return obj.question_id in flashcard_ids
+        # Fallback: 單題查詢
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            return obj.question.flashcards.filter(user=request.user).exists()
+        return False
+
+    def get_is_bookmarked(self, obj):
+        """檢查此題目是否已被使用者收藏"""
+        # 優先使用預查詢的資料（避免 N+1）
+        bookmark_ids = self.context.get('bookmark_question_ids')
+        if bookmark_ids is not None:
+            return obj.question_id in bookmark_ids
+        # Fallback: 單題查詢
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            return obj.question.bookmarks.filter(user=request.user).exists()
+        return False
+
+    def get_user_note(self, obj):
+        """取得使用者對此題目的筆記，若無則回傳 None"""
+        # 優先使用預查詢的資料（避免 N+1）
+        notes_dict = self.context.get('notes_dict')
+        if notes_dict is not None:
+            return notes_dict.get(obj.question_id)
+        # Fallback: 單題查詢
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            note = obj.question.notes.filter(user=request.user).first()
+            return note.content if note else None
+        return None
 
 
 class ExamListSerializer(serializers.ModelSerializer):
