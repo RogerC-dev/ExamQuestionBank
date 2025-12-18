@@ -175,9 +175,11 @@
                 <span class="rtbl-name">考卷名稱</span>
                 <span class="rtbl-score">分數</span>
                 <span class="rtbl-date">測驗時間</span>
+                <span class="rtbl-action"></span>
               </div>
-              <div v-for="(result, index) in paginatedResults" :key="result.id" class="results-table-row"
-                :class="{ 'row-pass': result.score >= 60, 'row-fail': result.score < 60 }">
+              <div v-for="(result, index) in paginatedResults" :key="result.id" class="results-table-row clickable-row"
+                :class="{ 'row-pass': result.score >= 60, 'row-fail': result.score < 60 }"
+                @click="goToExam(result)" title="點擊前往此考卷">
                 <div class="rtbl-rank">
                   <span class="rank-badge" :class="result.score >= 60 ? 'pass' : 'fail'">
                     {{ (resultsPage - 1) * resultsPageSize + index + 1 }}
@@ -203,6 +205,9 @@
                 <div class="rtbl-date">
                   <i class="bi bi-calendar3"></i>
                   {{ formatDate(result.completed_at) }}
+                </div>
+                <div class="rtbl-action">
+                  <i class="bi bi-arrow-right-circle"></i>
                 </div>
               </div>
             </div>
@@ -230,7 +235,7 @@
           <div class="analytics-card wrong-card">
             <div class="card-header">
               <div class="card-title-row">
-                <h3><i class="bi bi-exclamation-triangle"></i> 常錯考卷 / 題目</h3>
+                <h3><i class="bi bi-exclamation-triangle"></i> 常錯題目</h3>
               </div>
               <div class="card-controls">
                 <div class="search-filter small">
@@ -248,7 +253,8 @@
             </div>
             <div v-if="displayedWrong.length" class="hot-list">
               <div v-for="(item, index) in displayedWrong" :key="item.key" class="hot-item"
-                :class="{ 'glow-pulse': glowTarget === item.key }" @click="drillToPractice(item)">
+                :class="{ 'glow-pulse': glowTarget === item.key }" @click="goToWrongQuestions(item)"
+                title="點擊前往錯題本查看此題">
                 <div class="hot-left">
                   <div class="hot-rank">{{ (wrongPage - 1) * wrongPageSize + index + 1 }}</div>
                   <div class="hot-info">
@@ -256,8 +262,11 @@
                     <div class="hot-tag">{{ item.tag }}</div>
                   </div>
                 </div>
-                <div class="hot-count">
-                  <i class="bi bi-x-lg"></i> {{ item.count }} 次
+                <div class="hot-right">
+                  <div class="hot-count">
+                    <i class="bi bi-x-lg"></i> {{ item.count }} 次
+                  </div>
+                  <i class="bi bi-arrow-right-circle hot-arrow"></i>
                 </div>
               </div>
             </div>
@@ -524,6 +533,26 @@ const drillToPractice = (item) => {
     return
   }
   router.push({ path: '/practice', query: { focus: item.question_id || item.key } })
+}
+
+// Navigate to exam preview from recent results
+const goToExam = (result) => {
+  if (result.exam_id || result.exam) {
+    router.push({ name: 'ExamPreview', params: { id: result.exam_id || result.exam } })
+  }
+}
+
+// Navigate to 錯題本 with focus on specific question
+const goToWrongQuestions = (item) => {
+  triggerGlow(item.key)
+  // Navigate to practice page's wrong questions tab with focus parameter
+  router.push({
+    path: '/practice',
+    query: {
+      tab: 'wrong',
+      focus: item.question_id || item.key
+    }
+  })
 }
 
 onMounted(loadData)
@@ -1121,6 +1150,13 @@ onMounted(loadData)
   gap: 4px;
 }
 
+.hot-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
 .hot-count {
   font-weight: 700;
   color: #dc2626;
@@ -1132,6 +1168,19 @@ onMounted(loadData)
   padding: 6px 12px;
   border-radius: 20px;
   flex-shrink: 0;
+}
+
+.hot-arrow {
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s, transform 0.2s;
+  font-size: 18px;
+}
+
+.hot-item:hover .hot-arrow {
+  opacity: 1;
+  color: #dc2626;
+  transform: translateX(4px);
 }
 
 /* Results */
@@ -1169,7 +1218,7 @@ onMounted(loadData)
 
 .results-table-header {
   display: grid;
-  grid-template-columns: 50px 1fr 140px 100px;
+  grid-template-columns: 50px 1fr 140px 100px 40px;
   gap: 12px;
   padding: 10px 16px;
   background: #f8fafc;
@@ -1182,7 +1231,7 @@ onMounted(loadData)
 
 .results-table-row {
   display: grid;
-  grid-template-columns: 50px 1fr 140px 100px;
+  grid-template-columns: 50px 1fr 140px 100px 40px;
   gap: 12px;
   padding: 14px 16px;
   border: 1px solid #e6e8ed;
@@ -1191,6 +1240,28 @@ onMounted(loadData)
   align-items: center;
   transition: all 0.2s;
   background: #fff;
+}
+
+.results-table-row.clickable-row {
+  cursor: pointer;
+}
+
+.results-table-row.clickable-row:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.12);
+  transform: translateX(4px);
+}
+
+.rtbl-action {
+  text-align: center;
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.results-table-row.clickable-row:hover .rtbl-action {
+  opacity: 1;
+  color: var(--primary);
 }
 
 .results-table-row:hover {
@@ -1337,7 +1408,7 @@ onMounted(loadData)
 /* Results card responsive */
 @media (max-width: 640px) {
   .results-table-header {
-    grid-template-columns: 40px 1fr 80px;
+    grid-template-columns: 40px 1fr 80px 30px;
   }
 
   .results-table-header .rtbl-date {
@@ -1345,7 +1416,7 @@ onMounted(loadData)
   }
 
   .results-table-row {
-    grid-template-columns: 40px 1fr 80px;
+    grid-template-columns: 40px 1fr 80px 30px;
   }
 
   .results-table-row .rtbl-date {
@@ -1354,6 +1425,10 @@ onMounted(loadData)
 
   .score-bar-container {
     display: none;
+  }
+
+  .rtbl-action {
+    opacity: 1;
   }
 }
 

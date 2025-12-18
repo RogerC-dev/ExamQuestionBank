@@ -112,6 +112,12 @@ const router = createRouter({
       name: 'UserExam',
       component: () => import('@/views/UserExamView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/practice/questions',
+      name: 'QuestionPractice',
+      component: () => import('@/views/QuestionPracticeView.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 })
