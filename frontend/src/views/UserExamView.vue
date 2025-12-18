@@ -27,6 +27,14 @@
                     </svg>
                     建立新考卷
                 </button>
+                <button class="tab-btn" @click="openMockExamModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    建立模擬考題
+                </button>
             </div>
 
             <!-- Exam List Tab -->
@@ -149,12 +157,79 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Mock Exam Modal -->
+            <div v-if="showMockExamModal" class="mock-exam-overlay" @click.self="closeMockExamModal">
+                <div class="mock-exam-dialog">
+                    <div class="dialog-header">
+                        <h3>建立模擬考題</h3>
+                        <button class="btn-close" @click="closeMockExamModal" aria-label="關閉">×</button>
+                    </div>
+                    <div class="dialog-body">
+                        <p class="dialog-desc">選擇考卷來源並設定題數，系統將隨機抽取題目組成模擬試卷。</p>
+
+                        <div v-if="loadingAvailableExams" class="loading-exams">
+                            <div class="spinner"></div>
+                            載入考卷中...
+                        </div>
+
+                        <div v-else-if="availableExams.length === 0" class="no-exams-warning">
+                            <p>目前沒有可用的考卷</p>
+                        </div>
+
+                        <div v-else class="exam-select-section">
+                            <h4>選擇考卷來源（可多選）</h4>
+                            <div class="exam-select-list">
+                                <label v-for="exam in availableExams" :key="exam.id" class="exam-select-item"
+                                    :class="{ selected: selectedExamIdsForMock.includes(exam.id) }">
+                                    <input type="checkbox" :value="exam.id" v-model="selectedExamIdsForMock">
+                                    <div class="exam-select-info">
+                                        <span class="exam-select-name">{{ exam.name }}</span>
+                                        <span class="exam-select-meta">{{ exam.question_count || 0 }} 題</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="question-count-setting">
+                            <h4>設定題數</h4>
+                            <div class="count-options">
+                                <button v-for="count in [10, 20, 30, 50]" :key="count" class="count-btn"
+                                    :class="{ active: mockQuestionCount === count }"
+                                    @click="mockQuestionCount = count">
+                                    {{ count }} 題
+                                </button>
+                            </div>
+                            <div class="custom-count">
+                                <span>或自訂：</span>
+                                <input type="number" v-model.number="mockQuestionCount" min="1" max="200"
+                                    class="count-input">
+                                <span>題</span>
+                            </div>
+                        </div>
+
+                        <div v-if="totalAvailableQuestions > 0" class="available-count">
+                            選中考卷共有 {{ totalAvailableQuestions }} 題可用
+                        </div>
+                        <div v-else-if="selectedExamIdsForMock.length > 0" class="no-questions-warning">
+                            選中的考卷沒有題目
+                        </div>
+                    </div>
+                    <div class="dialog-footer">
+                        <button class="btn btn-secondary" @click="closeMockExamModal">取消</button>
+                        <button class="btn btn-primary" @click="confirmMockExam"
+                            :disabled="selectedExamIdsForMock.length === 0 || totalAvailableQuestions === 0 || creatingMockExam">
+                            {{ creatingMockExam ? '處理中...' : `建立模擬考題 (${Math.min(mockQuestionCount, totalAvailableQuestions)} 題)` }}
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api, { fetchSubjects } from '@/services/api'
 import examService from '@/services/examService'
@@ -162,6 +237,15 @@ import questionService from '@/services/questionService'
 import QuestionList from '@/components/QuestionList.vue'
 
 const router = useRouter()
+
+// Mock Exam Modal state
+const showMockExamModal = ref(false)
+const availableExams = ref([])
+const loadingAvailableExams = ref(false)
+const selectedExamIdsForMock = ref([])
+const mockQuestionCount = ref(20)
+const creatingMockExam = ref(false)
+const examQuestionCache = ref({})
 
 // Tab state
 const activeTab = ref('list')
@@ -480,6 +564,98 @@ const createExam = async () => {
         errorMessage.value = error.response?.data?.detail || error.response?.data?.error || '建立考卷失敗，請稍後再試'
     } finally {
         creating.value = false
+    }
+}
+
+// Computed: total available questions from selected exams
+const totalAvailableQuestions = computed(() => {
+    let total = 0
+    for (const examId of selectedExamIdsForMock.value) {
+        const exam = availableExams.value.find(e => e.id === examId)
+        if (exam) {
+            total += exam.question_count || 0
+        }
+    }
+    return total
+})
+
+// Mock Exam Modal methods
+const openMockExamModal = async () => {
+    showMockExamModal.value = true
+    loadingAvailableExams.value = true
+    selectedExamIdsForMock.value = []
+    examQuestionCache.value = {}
+
+    try {
+        // Load practice exams (admin + user's own)
+        const res = await examService.getPracticeExams({ page_size: 100 })
+        const exams = res.data?.results || res.data || []
+        // Filter to only exams with questions
+        availableExams.value = exams.filter(e => (e.question_count || 0) > 0)
+    } catch (e) {
+        console.error('Failed to load exams:', e)
+        availableExams.value = []
+    } finally {
+        loadingAvailableExams.value = false
+    }
+}
+
+const closeMockExamModal = () => {
+    showMockExamModal.value = false
+    selectedExamIdsForMock.value = []
+}
+
+const confirmMockExam = async () => {
+    if (selectedExamIdsForMock.value.length === 0) return
+
+    creatingMockExam.value = true
+
+    try {
+        // Fetch question IDs from all selected exams
+        const allQuestionIds = []
+
+        for (const examId of selectedExamIdsForMock.value) {
+            try {
+                const examRes = await examService.getExam(examId)
+                const examQuestions = examRes.data?.exam_questions || []
+                for (const eq of examQuestions) {
+                    if (eq.question && !allQuestionIds.includes(eq.question)) {
+                        allQuestionIds.push(eq.question)
+                    }
+                }
+            } catch (e) {
+                console.error(`Failed to fetch exam ${examId}:`, e)
+            }
+        }
+
+        if (allQuestionIds.length === 0) {
+            alert('選中的考卷沒有題目')
+            return
+        }
+
+        // Shuffle using Fisher-Yates algorithm
+        const shuffled = [...allQuestionIds]
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+        }
+
+        // Take first N questions
+        const count = Math.min(mockQuestionCount.value, shuffled.length)
+        const selectedIds = shuffled.slice(0, count)
+
+        closeMockExamModal()
+
+        // Navigate to create exam page with preload_questions
+        router.push({
+            path: '/exams/create',
+            query: { preload_questions: selectedIds.join(',') }
+        })
+    } catch (e) {
+        console.error('Failed to create mock exam:', e)
+        alert('建立模擬考題失敗')
+    } finally {
+        creatingMockExam.value = false
     }
 }
 
@@ -1140,4 +1316,232 @@ onMounted(async () => {
         justify-content: flex-end;
     }
 }
+
+/* Mock Exam Modal Styles */
+.mock-exam-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.mock-exam-dialog {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.dialog-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary, #1E293B);
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-close:hover {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.dialog-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.dialog-desc {
+    color: var(--text-secondary, #64748B);
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.exam-select-section {
+    margin-bottom: 24px;
+}
+
+.exam-select-section h4,
+.question-count-setting h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #1E293B);
+    margin: 0 0 12px 0;
+}
+
+.exam-select-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 290px;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.exam-select-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.exam-select-item:hover {
+    border-color: var(--primary, #476996);
+    background: var(--primary-soft, #EEF2FF);
+}
+
+.exam-select-item.selected {
+    border-color: var(--primary, #476996);
+    background: var(--primary-soft, #EEF2FF);
+}
+
+.exam-select-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary, #476996);
+}
+
+.exam-select-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: start;
+}
+
+.exam-select-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary, #1E293B);
+}
+
+.exam-select-meta {
+    font-size: 13px;
+    color: var(--text-secondary, #64748B);
+}
+
+.question-count-setting {
+    margin-bottom: 20px;
+}
+
+.count-options {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.count-btn {
+    padding: 8px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary, #1E293B);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.count-btn:hover {
+    border-color: var(--primary, #476996);
+}
+
+.count-btn.active {
+    border-color: var(--primary, #476996);
+    background: var(--primary, #476996);
+    color: white;
+}
+
+.custom-count {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-secondary, #64748B);
+}
+
+.count-input {
+    width: 80px;
+    padding: 8px 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.count-input:focus {
+    outline: none;
+    border-color: var(--primary, #476996);
+}
+
+.available-count {
+    padding: 12px 16px;
+    background: #dcfce7;
+    color: #16a34a;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.no-exams-warning,
+.no-questions-warning {
+    padding: 16px;
+    background: #fef3c7;
+    color: #d97706;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.loading-exams {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px;
+    color: var(--text-secondary, #64748B);
+}
+
+.dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+}
 </style>
+
