@@ -662,6 +662,10 @@ const handleQuestionItemAction = (action, item) => {
         startSingleQuizFromSearch(item)
     } else if (action === 'ask-ai') {
         openChatFromSearchQuestion(item)
+    } else if (action === 'flashcard') {
+        addToFlashcard(item.id)
+        // Refresh search results to update flashcard status
+        searchQuestions(searchPage.value)
     }
 }
 

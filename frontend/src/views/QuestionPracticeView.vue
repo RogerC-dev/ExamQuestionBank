@@ -1,5 +1,7 @@
 <template>
-  <div class="question-practice-container">
+  <div class="split-view-container">
+    <!-- Main Content Panel -->
+    <div class="main-panel" :style="mainPanelStyle">
     <!-- Loading State -->
     <div v-if="isLoading" class="loading-state">
       <div class="spinner"></div>
@@ -194,15 +196,41 @@
         </div>
       </div>
     </div>
+
+    <!-- Draggable Divider -->
+    <div v-if="isChatOpen" class="split-divider" @mousedown="startDrag" @touchstart="startDrag">
+      <div class="divider-handle"></div>
+    </div>
+
+    <!-- AI Chat Panel (Split View) -->
+    <div v-if="isChatOpen" class="chat-panel-split" :style="chatPanelStyle">
+      <div class="chat-panel-header">
+        <div class="chat-panel-title">
+          <span class="chat-icon">AI</span>
+          <span>Ask AI</span>
+        </div>
+        <button class="btn-close" @click="closeChat" aria-label="關閉">×</button>
+      </div>
+      <AIChatInterface :prefill="chatPrefill" class="chat-panel-content" />
+    </div>
+
+    <!-- Mobile Overlay Background -->
+    <div v-if="isChatOpen" class="mobile-overlay" @click="closeChat"></div>
+
+    <!-- Floating Ask AI Button -->
+    <button v-if="!isChatOpen" class="floating-ai-btn" @click="openAIChat" aria-label="Ask AI">
+      <span class="floating-ai-icon">AI</span>
+    </button>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import questionService from '@/services/questionService'
 import flashcardService from '@/services/flashcardService'
 import examService from '@/services/examService'
+import AIChatInterface from '@/components/AIChatInterface.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -400,18 +428,92 @@ const addToFlashcard = async () => {
 }
 
 const openAIChat = () => {
-  // Navigate to AI chat with question context
+  // Open AI chat sidebar instead of navigating
   const content = currentQuestion.value?.content || ''
   const optionsText = currentOptions.value.map((o, idx) => `${getOptionLabel(idx)}. ${o.content}`).join('\n')
   const correct = currentOptions.value.find(o => o.is_correct)
   const correctIdx = currentOptions.value.indexOf(correct)
   const correctText = correct ? `${getOptionLabel(correctIdx)}. ${correct.content}` : ''
 
-  const prompt = encodeURIComponent(
-    `題目：${content}\n\n選項：\n${optionsText}\n\n正確答案：${correctText}\n\n請幫我解析這道題目，解釋為什麼正確答案是對的？`
-  )
+  const prefillText = `題目：${content}\n\n選項：\n${optionsText}\n\n正確答案：${correctText}\n\n請幫我解析這道題目，解釋為什麼正確答案是對的？`
 
-  router.push({ name: 'AIChat', query: { prefill: prompt } })
+  chatPrefill.value = { text: prefillText, stamp: Date.now() }
+  isChatOpen.value = true
+}
+
+// Split View State
+const isChatOpen = ref(false)
+const chatPrefill = ref({ text: '', stamp: Date.now() })
+const splitRatio = ref(0.6) // Main panel takes 60% by default
+const isDragging = ref(false)
+const minPanelWidth = 300 // Minimum width for each panel in pixels
+
+// Computed styles for split view
+const mainPanelStyle = computed(() => {
+  if (!isChatOpen.value) {
+    return { width: '100%' }
+  }
+  return { width: `calc(${splitRatio.value * 100}% - 4px)` }
+})
+
+const chatPanelStyle = computed(() => {
+  if (!isChatOpen.value) {
+    return { display: 'none' }
+  }
+  return { width: `calc(${(1 - splitRatio.value) * 100}% - 4px)` }
+})
+
+// Drag handlers for the divider
+const startDrag = (e) => {
+  isDragging.value = true
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+
+  document.addEventListener('mousemove', onDrag)
+  document.addEventListener('mouseup', stopDrag)
+  document.addEventListener('touchmove', onDrag)
+  document.addEventListener('touchend', stopDrag)
+}
+
+const onDrag = (e) => {
+  if (!isDragging.value) return
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  const containerWidth = window.innerWidth
+
+  let newRatio = clientX / containerWidth
+
+  // Enforce minimum panel widths
+  const minRatio = minPanelWidth / containerWidth
+  const maxRatio = 1 - minRatio
+
+  newRatio = Math.max(minRatio, Math.min(maxRatio, newRatio))
+  splitRatio.value = newRatio
+}
+
+const stopDrag = () => {
+  isDragging.value = false
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', stopDrag)
+  document.removeEventListener('touchmove', onDrag)
+  document.removeEventListener('touchend', stopDrag)
+}
+
+const closeChat = () => {
+  isChatOpen.value = false
+}
+
+const handleResize = () => {
+  // Ensure split ratio respects minimum widths on resize
+  const containerWidth = window.innerWidth
+  const minRatio = minPanelWidth / containerWidth
+  const maxRatio = 1 - minRatio
+
+  if (splitRatio.value < minRatio) splitRatio.value = minRatio
+  if (splitRatio.value > maxRatio) splitRatio.value = maxRatio
 }
 
 const confirmExit = () => {
@@ -454,13 +556,201 @@ const retryPractice = () => {
 // Lifecycle
 onMounted(() => {
   loadQuestions()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  // Clean up any lingering drag state
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', stopDrag)
+  document.removeEventListener('touchmove', onDrag)
+  document.removeEventListener('touchend', stopDrag)
 })
 </script>
 
 <style scoped>
-.question-practice-container {
+/* Split View Container */
+.split-view-container {
+  display: flex;
+  width: 100%;
   min-height: 100vh;
+  overflow: hidden;
   background: #f8fafc;
+}
+
+/* Main Content Panel */
+.main-panel {
+  height: 100vh;
+  overflow-y: auto;
+  background: #f8fafc;
+  transition: width 0.1s ease;
+}
+
+/* Draggable Divider */
+.split-divider {
+  width: 8px;
+  background: #e5e7eb;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  position: relative;
+}
+
+.split-divider:hover,
+.split-divider:active {
+  background: #d3d8df;
+}
+
+.divider-handle {
+  width: 4px;
+  height: 40px;
+  background: #9ca3af;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.split-divider:hover .divider-handle,
+.split-divider:active .divider-handle {
+  background: #6b7280;
+}
+
+/* AI Chat Split Panel */
+.chat-panel-split {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-left: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: width 0.1s ease;
+}
+
+.chat-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: #f6f8fb;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.chat-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.chat-icon {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.btn-close:hover {
+  background: #eef1f5;
+  color: #1e293b;
+}
+
+.chat-panel-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Mobile Overlay */
+.mobile-overlay {
+  display: none;
+}
+
+/* Floating AI Button */
+.floating-ai-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary, #476996), #35527a);
+  box-shadow: 0 4px 16px rgba(71, 105, 150, 0.35);
+  border: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s;
+  z-index: 100;
+}
+
+.floating-ai-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 24px rgba(71, 105, 150, 0.45);
+}
+
+.floating-ai-icon {
+  font-weight: 800;
+  font-size: 18px;
+  color: #fff;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .split-view-container {
+    display: block;
+  }
+
+  .main-panel {
+    width: 100% !important;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .chat-panel-split {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    max-width: 400px;
+    z-index: 1000;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .split-divider {
+    display: none;
+  }
+
+  .mobile-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 999;
+  }
 }
 
 .loading-state,
@@ -591,13 +881,13 @@ onMounted(() => {
 }
 
 .nav-btn:hover {
-  border-color: #2563eb;
-  color: #2563eb;
+  border-color: var(--primary, #476996);
+  color: var(--primary, #476996);
 }
 
 .nav-btn.active {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--primary, #476996);
+  border-color: var(--primary, #476996);
   color: #fff;
 }
 
@@ -693,12 +983,12 @@ onMounted(() => {
 }
 
 .option-item:hover:not(.disabled) {
-  border-color: #2563eb;
+  border-color: var(--primary, #476996);
   background: #f8fafc;
 }
 
 .option-item.selected {
-  border-color: #2563eb;
+  border-color: var(--primary, #476996);
   background: #eff6ff;
 }
 
@@ -730,7 +1020,7 @@ onMounted(() => {
 }
 
 .option-item.selected .option-label {
-  background: #2563eb;
+  background: var(--primary, #476996);
   color: #fff;
 }
 
@@ -942,14 +1232,14 @@ onMounted(() => {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  background: linear-gradient(135deg, var(--primary, #476996), #35527a);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.25);
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 6px 20px rgba(71, 105, 150, 0.35);
 }
 
 .btn-secondary {
@@ -963,7 +1253,7 @@ onMounted(() => {
 
 .btn-ghost {
   background: transparent;
-  color: #2563eb;
+  color: var(--primary, #476996);
   border: 1px solid #e2e8f0;
 }
 
