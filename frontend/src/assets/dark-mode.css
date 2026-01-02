@@ -1,0 +1,2410 @@
+/**
+ * Global Dark Mode Override Styles
+ * This file provides dark mode styling with high specificity
+ * to override component-level scoped styles.
+ */
+
+/* Aggressive dark mode overrides with html.dark for maximum specificity */
+
+/* All white backgrounds → dark surface */
+html.dark .admin-data-list,
+html.dark .list-item,
+html.dark .exam-card,
+html.dark .question-card,
+html.dark .mode-card,
+html.dark .feature-card,
+html.dark .benefit-card,
+html.dark .pricing-card,
+html.dark .analytics-card,
+html.dark .overview-card,
+html.dark .stat-card,
+html.dark .trend-card,
+html.dark .results-card,
+html.dark .wrong-card,
+html.dark .chart-card,
+html.dark .flashcard-item,
+html.dark .feature-box,
+html.dark .exam-list-section,
+html.dark .filters-section,
+html.dark .questions-section,
+html.dark .exam-config-section,
+html.dark .sidebar,
+html.dark .input-container {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Cards with featured/white forced state */
+html.dark .pricing-card.featured {
+  background: var(--surface) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Hover states */
+html.dark .list-item:hover,
+html.dark .exam-card:hover,
+html.dark .question-card:hover,
+html.dark .mode-card:hover,
+html.dark .feature-card:hover,
+html.dark .benefit-card:hover,
+html.dark .feature-box:hover {
+  background: var(--surface-muted) !important;
+}
+
+/* Selected states */
+html.dark .list-item.selected,
+html.dark .question-card.selected {
+  background: var(--primary-soft) !important;
+}
+
+/* Form inputs and selects */
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark select,
+html.dark textarea {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--text-secondary) !important;
+}
+
+/* Tabs and navigation with background */
+html.dark .admin-tabs,
+html.dark .tabs-container,
+html.dark .subject-tabs {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .tab-btn.active {
+  background: var(--surface) !important;
+  color: var(--primary) !important;
+}
+
+/* Headers and bars with background */
+html.dark .list-header,
+html.dark .select-all-bar,
+html.dark .filter-bar,
+html.dark .search-filter {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Badges with light bg */
+html.dark .badge-type,
+html.dark .tag-more,
+html.dark .id-badge,
+html.dark .stat-item {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border) !important;
+}
+
+/* Button secondary */
+html.dark .btn-secondary,
+html.dark .action-btn-secondary {
+  background: var(--surface-muted) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Modals and dialogs */
+html.dark .modal-content,
+html.dark .dialog-body,
+html.dark .mock-exam-dialog {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Extension section with hardcoded #f8fafc */
+html.dark .extension-section {
+  background: var(--surface) !important;
+}
+
+html.dark .extension-demo {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Pricing features list items */
+html.dark .pricing-features li {
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Stats section */
+html.dark .stats-section {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Integration/Features sections */
+html.dark .features-section,
+html.dark .integration-section {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Pricing section bg */
+html.dark .pricing-section {
+  background: var(--bg-page) !important;
+}
+
+/* QuestionList specific rows  */
+html.dark .question-list-container,
+html.dark .question-list-item,
+html.dark .filter-section,
+html.dark .search-box {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Quiz mode elements */
+html.dark .quiz-container,
+html.dark .quiz-question-card,
+html.dark .quiz-header,
+html.dark .option-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .option-card:hover {
+  background: var(--surface-muted) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Chart containers may have white bg */
+html.dark .heatmap-card,
+html.dark .chart-card {
+  background: var(--surface) !important;
+}
+
+/* Error banners */
+html.dark .error-banner,
+html.dark .error-message,
+html.dark .alert-danger {
+  background: var(--destructive-soft) !important;
+  border-color: var(--destructive) !important;
+  color: var(--destructive) !important;
+}
+
+/* Pagination */
+html.dark .pagination-controls,
+html.dark .pagination-container {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .btn-page {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Results table rows */
+html.dark .results-table-row,
+html.dark .trend-item,
+html.dark .hot-item {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .results-table-row:hover,
+html.dark .trend-item:hover,
+html.dark .hot-item:hover {
+  background: var(--surface-muted) !important;
+}
+
+/* Table headers */
+html.dark .results-table-header,
+html.dark .trend-list-header {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Review header in flashcard */
+html.dark .review-header {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Rating buttons */
+html.dark .rating-btn {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .rating-btn:hover {
+  background: var(--primary-soft) !important;
+  border-color: var(--primary) !important;
+}
+
+/* History items */
+html.dark .history-item:hover {
+  background: var(--surface-muted) !important;
+}
+
+html.dark .history-item.active {
+  background: var(--primary-soft) !important;
+}
+
+/* Message input container */
+html.dark .input-container:focus-within {
+  border-color: var(--primary) !important;
+}
+
+/* Exam card footer border */
+html.dark .exam-card-footer,
+html.dark .filter-actions,
+html.dark .dialog-footer {
+  border-color: var(--border) !important;
+}
+
+/* Tags */
+html.dark .tag-badge {
+  background: var(--primary-soft) !important;
+  color: var(--primary) !important;
+}
+
+/* Subject badge */
+html.dark .meta-badge {
+  background: var(--surface-muted) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Dropdown menus */
+html.dark .dropdown-menu {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Empty states */
+html.dark .empty-state,
+html.dark .empty-chart,
+html.dark .empty-results {
+  background: var(--surface) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* ===== ADDITIONAL FIXES FOR REMAINING WHITE ELEMENTS ===== */
+
+/* Admin exam filters */
+html.dark .exam-filters,
+html.dark .filter-group,
+html.dark .filter-row,
+html.dark .filter-wrapper,
+html.dark .filters-container {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Practice page question list */
+html.dark .question-item,
+html.dark .practice-question-item,
+html.dark .question-row,
+html.dark .practice-list,
+html.dark .practice-list-container {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .question-item:hover,
+html.dark .practice-question-item:hover,
+html.dark .question-row:hover {
+  background: var(--surface-muted) !important;
+}
+
+/* Exam preview question cards (第1題, 第2題, etc) */
+html.dark .exam-question-item,
+html.dark .exam-question-card,
+html.dark .question-preview-card,
+html.dark .preview-item {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .exam-question-item:hover,
+html.dark .exam-question-card:hover {
+  background: var(--surface-muted) !important;
+}
+
+/* Exam preview container/header */
+html.dark .exam-preview-container,
+html.dark .exam-preview-header,
+html.dark .exam-info-card,
+html.dark .exam-header-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Quiz mode - Navigation sidebar */
+html.dark .quiz-navigation,
+html.dark .quiz-nav,
+html.dark .question-nav,
+html.dark .question-navigation,
+html.dark .nav-sidebar,
+html.dark .navigation-panel {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Quiz mode - Answer options */
+html.dark .option-item,
+html.dark .answer-option,
+html.dark .quiz-option,
+html.dark .choice-item,
+html.dark .answer-item {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .option-item:hover,
+html.dark .answer-option:hover,
+html.dark .quiz-option:hover,
+html.dark .choice-item:hover {
+  background: var(--surface-muted) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Quiz mode - Question card and content area */
+html.dark .question-content-area,
+html.dark .quiz-main,
+html.dark .quiz-content,
+html.dark .question-display,
+html.dark .quiz-question-container {
+  background: var(--surface) !important;
+}
+
+/* Analytics - Stat cards with white backgrounds */
+html.dark .stat-box,
+html.dark .stat-container,
+html.dark .overview-stat,
+html.dark .metric-card,
+html.dark .data-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Analytics - Chart containers and graphs */
+html.dark .chart-container,
+html.dark .graph-container,
+html.dark .heatmap-container,
+html.dark .chart-wrapper,
+html.dark .chart-area {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Analytics - Learning activity section */
+html.dark .activity-card,
+html.dark .learning-activity,
+html.dark .activity-section {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* AI Essay Analysis - Feature boxes with icons */
+html.dark .analysis-feature,
+html.dark .essay-feature,
+html.dark .feature-item,
+html.dark .welcome-feature {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .analysis-feature:hover,
+html.dark .essay-feature:hover,
+html.dark .feature-item:hover {
+  background: var(--surface-muted) !important;
+}
+
+/* Filter input areas */
+html.dark .filter-input-wrapper,
+html.dark .search-wrapper,
+html.dark .input-group {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Tab button group backgrounds */
+html.dark .tab-group,
+html.dark .tabs-wrapper,
+html.dark .nav-tabs {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Practice mode cards (with gradient icons) */
+html.dark .historical-card,
+html.dark .mock-exam-card,
+html.dark .wrong-card,
+html.dark .bookmark-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Select dropdowns */
+html.dark .tag-select,
+html.dark .filter-select,
+html.dark .dropdown-select {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Pagination bar at bottom */
+html.dark .pagination-bar,
+html.dark .page-controls,
+html.dark .pager {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .page-btn,
+html.dark .page-link,
+html.dark .page-number {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .page-btn.active,
+html.dark .page-link.active,
+html.dark .page-number.active {
+  background: var(--primary) !important;
+  color: #fff !important;
+}
+
+/* Question badges and tags styling */
+html.dark .question-badge,
+html.dark .difficulty-badge,
+html.dark .subject-badge,
+html.dark .year-badge {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Toolbar and action bars */
+html.dark .toolbar,
+html.dark .action-bar,
+html.dark .control-bar {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Card bodies and content sections */
+html.dark .card-body,
+html.dark .card-content,
+html.dark .panel-body {
+  background: var(--surface) !important;
+}
+
+/* Exam list containers in various views */
+html.dark .exam-list,
+html.dark .exams-container,
+html.dark .exam-grid-item {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Select all bar in lists */
+html.dark .select-all-container,
+html.dark .bulk-actions {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Progress bars container */
+html.dark .progress-container,
+html.dark .progress-wrapper {
+  background: var(--surface-muted) !important;
+}
+
+/* ===== EXACT CLASS NAMES FROM SOURCE CODE ===== */
+
+/* QuestionPracticeView - Quiz mode container */
+html.dark .split-view-container,
+html.dark .main-panel,
+html.dark .quiz-content,
+html.dark .quiz-header,
+html.dark .quiz-info,
+html.dark .quiz-tools,
+html.dark .navigation-section,
+html.dark .question-panel,
+html.dark .options-list {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* QuestionPracticeView - Question navigator buttons */
+html.dark .question-navigator {
+  background: var(--surface) !important;
+}
+
+html.dark .nav-btn {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .nav-btn.current {
+  background: var(--primary) !important;
+  color: #fff !important;
+}
+
+html.dark .nav-btn.answered {
+  background: var(--success-soft) !important;
+  border-color: var(--success) !important;
+}
+
+html.dark .nav-btn.wrong {
+  background: var(--destructive-soft) !important;
+  border-color: var(--destructive) !important;
+}
+
+/* ExamPreviewView - Question cards (第1題, 第2題) */
+html.dark .exam-preview-container,
+html.dark .exam-preview,
+html.dark .question-list,
+html.dark .question-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .question-card:hover {
+  background: var(--surface-muted) !important;
+}
+
+/* ExamPreviewView - Testing interface (quiz mode sidebar) */
+html.dark .testing-interface,
+html.dark .testing-header,
+html.dark .testing-content,
+html.dark .testing-sidebar,
+html.dark .testing-main,
+html.dark .results-panel {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* EssayAnalysisView - Feature boxes explicitly */
+html.dark .welcome-section,
+html.dark .feature-grid,
+html.dark .feature-box {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* AnalyticsView - All card types explicitly */
+html.dark .overview-card,
+html.dark .analytics-card,
+html.dark .heatmap-card,
+html.dark .trend-card,
+html.dark .results-card,
+html.dark .wrong-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Admin filters explicitly */
+html.dark .exam-filters {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .filter-search,
+html.dark .filter-select-wrapper,
+html.dark .filter-btn {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Progress bar container */
+html.dark .progress-bar-container {
+  background: var(--surface-muted) !important;
+}
+
+/* Answer record section */
+html.dark .answer-record {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Arrow buttons in navigation */
+html.dark .arrow-btn {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .arrow-btn:hover:not(:disabled) {
+  background: var(--primary-soft) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Meta tags */
+html.dark .meta-tag {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Question content area */
+html.dark .question-content {
+  background: var(--surface) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ===== FINAL FIXES FOR REMAINING WHITE ELEMENTS ===== */
+
+/* Timer Component */
+html.dark .timer-component {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .timer-label,
+html.dark .timer-value {
+  color: var(--text-primary) !important;
+}
+
+/* Pagination wrapper and items (Bootstrap pagination) */
+html.dark .pagination-wrapper {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .pagination-info,
+html.dark .page-jumper {
+  background: var(--surface) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .pagination .page-link {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .pagination .page-item.active .page-link {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #fff !important;
+}
+
+html.dark .pagination .page-link:hover:not(.disabled) {
+  background: var(--primary-soft) !important;
+  border-color: var(--primary) !important;
+}
+
+html.dark .page-size-select {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Heatmap grid and cells */
+html.dark .heatmap-header,
+html.dark .heatmap-container,
+html.dark .heatmap-grid {
+  background: var(--surface) !important;
+}
+
+html.dark .heatmap-cell[style*="background: white"],
+html.dark .heatmap-cell[style*="background: #fff"],
+html.dark .heatmap-cell {
+  border-color: var(--border) !important;
+}
+
+html.dark .heatmap-tooltip {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Exam header and info section */
+html.dark .exam-header,
+html.dark .exam-info,
+html.dark .exam-title,
+html.dark .exam-details {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Subject tags in quiz mode */
+html.dark .subject-tag,
+html.dark .category-tag,
+html.dark .topic-tag,
+html.dark [class*="-tag"]:not(.tag-badge) {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Question number badge */
+html.dark .question-number,
+html.dark .question-order {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Points badge in exam */
+html.dark .points,
+html.dark .points-badge {
+  background: var(--success-soft) !important;
+  color: var(--success) !important;
+}
+
+/* Quiz actions buttons container */
+html.dark .quiz-actions {
+  background: var(--surface) !important;
+}
+
+/* Quiz question display title and badge area */
+html.dark .question-header h2,
+html.dark .question-title {
+  color: var(--text-primary) !important;
+}
+
+/* Form select dropdowns (Bootstrap) */
+html.dark .form-select {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .form-control {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* General buttons that might have white bg */
+html.dark .btn-outline-primary,
+html.dark .btn-outline-secondary {
+  background: transparent !important;
+  color: var(--primary) !important;
+}
+
+/* ===== USER REQUESTED FIXES - [2026-01-02] ===== */
+
+/* 1. Question List & Search Results */
+html.dark .search-question-item,
+html.dark .question-list-item,
+html.dark .search-result-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .search-question-badges .badge,
+html.dark .item-badges .badge {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* 2. AI Chat Interface (Split View & Mobile) */
+html.dark .ai-chat-interface,
+html.dark .chat-panel,
+html.dark .chat-panel-split,
+html.dark .chat-tabs,
+html.dark .chat-messages,
+html.dark .history-panel,
+html.dark .chat-input-container {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .message.assistant .message-content {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .chat-input {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .history-item {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .history-reuse,
+html.dark .history-edit {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .chat-tabs button {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .chat-tabs button.active {
+  background: var(--surface-muted) !important;
+  color: var(--primary) !important;
+}
+
+/* 3. Start Exam / Practice Mode */
+html.dark .question-header,
+html.dark .question-meta,
+html.dark .progress-tracker,
+html.dark .quiz-header {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .quiz-panel,
+html.dark .quiz-question {
+  background: var(--surface) !important;
+}
+
+/* 4. Exam Edit View */
+html.dark .exam-edit-view,
+html.dark .content-container,
+html.dark .exam-form-container {
+  background: var(--bg-page) !important;
+}
+
+html.dark .saving-modal,
+html.dark .auto-distribute-modal {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 5. Mock Exam & Count Options */
+html.dark .count-options .count-btn {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .count-options .count-btn.active {
+  background: var(--primary) !important;
+  color: #fff !important;
+  border-color: var(--primary) !important;
+}
+
+html.dark .source-checkbox {
+  color: var(--text-primary) !important;
+}
+
+/* 6. Analytics Header */
+html.dark .analytics-header,
+html.dark .page-header,
+html.dark .section-header {
+  color: var(--text-primary) !important;
+}
+
+/* 7. Mode Cards (Specific) */
+html.dark .mode-card.mock-exam-card,
+html.dark .mode-card.historical-card,
+html.dark .mode-card.wrong-card,
+html.dark .mode-card.bookmark-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .mode-card:hover {
+  background: var(--surface-muted) !important;
+}
+
+/* 8. Multiselect (Vue Multiselect) */
+html.dark .multiselect__tags {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .multiselect__input,
+html.dark .multiselect__single {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .multiselect__content-wrapper {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .multiselect__option {
+  color: var(--text-primary) !important;
+  background: var(--surface) !important;
+}
+
+html.dark .multiselect__option--highlight {
+  background: var(--primary) !important;
+  color: #fff !important;
+}
+
+html.dark .multiselect__tag {
+  background: var(--primary-soft) !important;
+  color: var(--primary) !important;
+}
+
+/* 9. General Buttons & Inputs Fixes */
+html.dark .btn-light,
+html.dark .btn-white {
+  background: var(--surface-muted) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+/* Fix "cant even read the words in dark mode when the fonts greyish" */
+html.dark .text-muted,
+html.dark .text-secondary {
+  color: #94a3b8 !important;
+  /* Make sure it's readable on dark bg */
+}
+
+/* Fix for "search-question-badges" specifically */
+html.dark .search-question-badges span {
+  background: var(--surface-muted) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .btn-outline-primary:hover,
+html.dark .btn-outline-secondary:hover {
+  background: var(--primary) !important;
+  color: #fff !important;
+}
+
+/* Fix any remaining Bootstrap card body */
+html.dark .card,
+html.dark .card-header,
+html.dark .card-body,
+html.dark .card-footer {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Loading spinner containers */
+html.dark .loading-state {
+  background: var(--surface) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Quiz message alerts */
+html.dark .quiz-message {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ===== CRITICAL TEXT COLOR FIXES FOR QUIZ MODE ===== */
+
+/* Question text content - override hardcoded #1e293b */
+html.dark .question-content,
+html.dark .question-content p,
+html.dark .question-content span,
+html.dark .question-text,
+html.dark .quiz-content p,
+html.dark .question-panel p,
+html.dark .question-panel span,
+html.dark .main-panel p,
+html.dark .split-view-container p {
+  color: var(--text-primary) !important;
+}
+
+/* Answer options - ensure readable text */
+html.dark .option-item,
+html.dark .option-text,
+html.dark .option-label,
+html.dark .option-content {
+  color: var(--text-primary) !important;
+}
+
+html.dark .option-item:hover {
+  background: var(--surface-muted) !important;
+}
+
+/* Quiz header text */
+html.dark .quiz-title,
+html.dark .quiz-progress,
+html.dark .quiz-info span,
+html.dark .quiz-header span {
+  color: var(--text-primary) !important;
+}
+
+/* Navigation buttons - override white background */
+html.dark .nav-btn:not(.current):not(.answered):not(.wrong) {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Back button */
+html.dark .btn-back {
+  color: var(--text-primary) !important;
+}
+
+html.dark .btn-back:hover {
+  background: var(--surface-muted) !important;
+}
+
+/* Answer record section */
+html.dark .record-label {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .record-stat {
+  color: var(--text-primary) !important;
+}
+
+/* Meta tags in question panel */
+html.dark .meta-tag.subject,
+html.dark .meta-tag.category,
+html.dark .meta-tag.difficulty {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Arrow navigation buttons */
+html.dark .arrow-btn.prev,
+html.dark .arrow-btn.next {
+  background: var(--surface-muted) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Heatmap cells - fix white empty cells */
+html.dark .heatmap-cell,
+html.dark .heatmap-day {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Active heatmap cells should keep their color gradients but with darker empty state */
+html.dark .heatmap-cell[style*="0"] {
+  background: var(--surface) !important;
+}
+
+/* Time range buttons in analytics */
+html.dark .time-range-btn,
+html.dark .range-btn {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .time-range-btn.active,
+html.dark .range-btn.active {
+  background: var(--primary) !important;
+  color: #fff !important;
+}
+
+/* AI Essay Analysis - remove glow */
+html.dark .welcome-content,
+html.dark .essay-container {
+  box-shadow: none !important;
+}
+
+/* Exam preview title card */
+html.dark .exam-preview-header,
+html.dark .preview-header,
+html.dark .exam-title-card {
+  background: var(--surface) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Question card content text in exam preview */
+html.dark .question-card p,
+html.dark .question-card .content,
+html.dark .question-card span {
+  color: var(--text-primary) !important;
+}
+
+/* Order badge text */
+html.dark .order,
+html.dark .question-order span {
+  color: var(--text-secondary) !important;
+}
+
+/* General text readability across all views */
+html.dark p,
+html.dark span:not([class*="icon"]):not([class*="bi-"]),
+html.dark label,
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark h6 {
+  color: var(--text-primary);
+}
+
+/* Muted text should use secondary color */
+html.dark .text-muted,
+html.dark .text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+/* ===== ADDITIONAL COMPREHENSIVE DARK MODE FIXES ===== */
+
+/* FlashcardView - CardList Component */
+html.dark .card-list-section {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .list-header {
+  border-color: var(--border) !important;
+}
+
+html.dark .list-header h3 {
+  color: var(--text-primary) !important;
+}
+
+html.dark .list-header select {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .list-card {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .list-card:hover {
+  background: var(--primary-soft) !important;
+}
+
+html.dark .list-card-question,
+html.dark .list-card-content p {
+  color: var(--text-primary) !important;
+}
+
+html.dark .list-card-meta {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .list-card-meta span {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .list-card-subject {
+  background: var(--primary-soft) !important;
+  color: var(--primary) !important;
+}
+
+html.dark .delete-modal,
+html.dark .delete-modal-overlay .delete-modal {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .delete-modal h4 {
+  color: var(--text-primary) !important;
+}
+
+html.dark .delete-modal p {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .delete-card-preview {
+  background: var(--surface-muted) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .btn-cancel {
+  background: var(--surface-muted) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .btn-cancel:hover {
+  background: var(--border) !important;
+}
+
+/* FlashcardView - StatsGrid Component */
+html.dark .stats-grid .stat-card:not(.primary) {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--primary) !important;
+}
+
+html.dark .stats-grid .stat-card:not(.primary) .stat-value {
+  color: var(--text-primary) !important;
+}
+
+html.dark .stats-grid .stat-card:not(.primary) .stat-label {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .btn-secondary-action {
+  background: transparent !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+html.dark .btn-secondary-action:hover {
+  background: var(--primary-soft) !important;
+}
+
+/* AnalyticsView - Overview Cards with white backgrounds */
+html.dark .overview-cards .overview-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .overview-card .overview-value {
+  color: var(--text-primary) !important;
+}
+
+html.dark .overview-card .overview-label {
+  color: var(--text-secondary) !important;
+}
+
+/* AnalyticsView - Search filter and sort controls */
+html.dark .search-filter {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .search-filter i {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .search-input {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .search-input::placeholder {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .sort-control select {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .trend-list-header {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .trend-item {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .trend-item:hover {
+  border-color: var(--primary) !important;
+}
+
+html.dark .trend-title {
+  color: var(--text-primary) !important;
+}
+
+html.dark .trend-subject {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .trend-rank {
+  background: var(--primary-soft) !important;
+  color: var(--primary) !important;
+}
+
+/* AnalyticsView - Hot items list */
+html.dark .hot-list .hot-item {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .hot-item:hover {
+  border-color: var(--primary) !important;
+}
+
+html.dark .hot-title {
+  color: var(--text-primary) !important;
+}
+
+html.dark .hot-tag {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .hot-rank {
+  background: var(--primary-soft) !important;
+  color: var(--primary) !important;
+}
+
+html.dark .hot-count {
+  color: var(--text-secondary) !important;
+}
+
+/* AnalyticsView - Results table */
+html.dark .rtbl-row {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .rtbl-row:hover {
+  background: var(--surface-muted) !important;
+}
+
+html.dark .rtbl-name,
+html.dark .rtbl-accuracy,
+html.dark .rtbl-date {
+  color: var(--text-primary) !important;
+}
+
+/* AnalyticsView - Delta badges */
+html.dark .delta-badge.up {
+  background: var(--success-soft) !important;
+  color: var(--success) !important;
+}
+
+html.dark .delta-badge.down {
+  background: var(--destructive-soft) !important;
+  color: var(--destructive) !important;
+}
+
+html.dark .delta-badge.neutral {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .delta-badge.new {
+  background: var(--primary-soft) !important;
+  color: var(--primary) !important;
+}
+
+/* EssayAnalysisView - Sidebar */
+html.dark .sidebar {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .sidebar-header {
+  border-color: var(--border) !important;
+}
+
+html.dark .history-item {
+  color: var(--text-primary) !important;
+}
+
+html.dark .history-item:hover {
+  background: var(--surface-muted) !important;
+}
+
+html.dark .history-item.active {
+  background: var(--primary-soft) !important;
+  color: var(--primary) !important;
+}
+
+html.dark .history-item i {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .history-edit-btn {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .history-edit-btn:hover {
+  background: var(--surface-muted) !important;
+  color: var(--primary) !important;
+}
+
+/* EssayAnalysisView - Main content */
+html.dark .main-content {
+  background: var(--bg-page) !important;
+}
+
+html.dark .chat-container {
+  background: transparent !important;
+}
+
+html.dark .welcome-section h1 {
+  color: var(--text-primary) !important;
+}
+
+html.dark .welcome-subtitle {
+  color: var(--text-secondary) !important;
+}
+
+/* EssayAnalysisView - Feature boxes */
+html.dark .feature-box {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .feature-box:hover {
+  border-color: var(--primary) !important;
+}
+
+html.dark .feature-box i {
+  color: var(--primary) !important;
+}
+
+html.dark .feature-box span {
+  color: var(--text-primary) !important;
+}
+
+/* EssayAnalysisView - Input area */
+html.dark .input-area {
+  background: linear-gradient(to top, var(--bg-page) 80%, transparent) !important;
+}
+
+html.dark .input-container {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .input-container:focus-within {
+  border-color: var(--primary) !important;
+}
+
+html.dark .input-container textarea {
+  color: var(--text-primary) !important;
+  background: transparent !important;
+}
+
+html.dark .input-container textarea::placeholder {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .input-hint {
+  color: var(--text-secondary) !important;
+}
+
+/* EssayAnalysisView - Messages */
+html.dark .message-row {
+  border-color: var(--border) !important;
+}
+
+html.dark .message-sender {
+  color: var(--text-primary) !important;
+}
+
+html.dark .message-text {
+  color: var(--text-primary) !important;
+}
+
+/* EssayAnalysisView - Error banner dark mode */
+html.dark .error-banner {
+  background: var(--destructive-soft) !important;
+  border-color: var(--destructive) !important;
+  color: var(--destructive) !important;
+}
+
+/* ExamEditView - Modals and overlays */
+html.dark .saving-modal,
+html.dark .auto-distribute-modal {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .saving-title,
+html.dark .ad-modal-title {
+  color: var(--text-primary) !important;
+}
+
+html.dark .saving-subtitle,
+html.dark .ad-modal-subtitle {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .ad-modal-header,
+html.dark .ad-modal-body,
+html.dark .ad-modal-footer {
+  border-color: var(--border) !important;
+}
+
+html.dark .ad-input-wrapper {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .ad-input {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .ad-input-label {
+  color: var(--text-primary) !important;
+}
+
+html.dark .ad-result-section {
+  background: var(--surface-muted) !important;
+}
+
+html.dark .ad-result-label {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .ad-result-value {
+  color: var(--text-primary) !important;
+}
+
+html.dark .ad-message {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .ad-btn-secondary {
+  background: var(--surface-muted) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .ad-close-btn {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .ad-close-btn:hover {
+  color: var(--text-primary) !important;
+}
+
+/* General loading states */
+html.dark .loading {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .empty {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .empty .hint {
+  color: var(--text-secondary) !important;
+}
+
+/* Bootstrap modal overrides */
+html.dark .modal-content {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .modal-header {
+  border-color: var(--border) !important;
+}
+
+html.dark .modal-header .modal-title {
+  color: var(--text-primary) !important;
+}
+
+html.dark .modal-body {
+  background: var(--surface) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .modal-footer {
+  border-color: var(--border) !important;
+}
+
+/* Button close overrides */
+html.dark .btn-close {
+  filter: invert(1) !important;
+}
+
+/* Analytics header text */
+html.dark .analytics-header h2 {
+  color: var(--text-primary) !important;
+}
+
+html.dark .header-subtitle {
+  color: var(--text-secondary) !important;
+}
+
+/* Card hover effects */
+html.dark .card-hover:hover {
+  border-color: var(--primary) !important;
+}
+
+/* Pagination info and controls */
+html.dark .pagination-info {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .page-info {
+  color: var(--text-primary) !important;
+}
+
+/* Review header in flashcard view */
+html.dark .review-header {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .progress-text {
+  color: var(--text-primary) !important;
+}
+
+html.dark .progress-bar {
+  background: var(--surface-muted) !important;
+}
+
+html.dark .btn-exit {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .btn-exit:hover {
+  background: var(--primary-soft) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+/* Overview icon backgrounds in dark mode */
+html.dark .overview-icon.blue {
+  background: var(--primary-soft) !important;
+}
+
+html.dark .overview-icon.green {
+  background: var(--success-soft) !important;
+}
+
+html.dark .overview-icon.purple {
+  background: rgba(124, 58, 237, 0.15) !important;
+}
+
+html.dark .overview-icon.amber {
+  background: rgba(217, 119, 6, 0.15) !important;
+}
+
+/* ===== EXAM FORM COMPONENT ===== */
+html.dark .exam-form-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .exam-form {
+  background: var(--surface) !important;
+}
+
+html.dark .form-label {
+  color: var(--text-primary) !important;
+}
+
+html.dark .form-label svg {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .form-input,
+html.dark .form-textarea {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .form-input::placeholder,
+html.dark .form-textarea::placeholder {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .form-input:hover,
+html.dark .form-textarea:hover {
+  background: var(--surface) !important;
+  border-color: var(--text-secondary) !important;
+}
+
+html.dark .form-input:focus,
+html.dark .form-textarea:focus {
+  background: var(--surface) !important;
+  border-color: var(--primary) !important;
+}
+
+html.dark .form-error {
+  background: var(--destructive-soft) !important;
+  border-color: var(--destructive) !important;
+  color: var(--destructive) !important;
+}
+
+html.dark .btn-cancel {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .btn-cancel:hover {
+  background: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ===== PRACTICE VIEW EXAM LIST CARDS ===== */
+html.dark .exam-item,
+html.dark .content-section {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .exam-item:hover {
+  background: var(--surface-muted) !important;
+}
+
+html.dark .exam-name {
+  color: var(--text-primary) !important;
+}
+
+html.dark .exam-meta {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .section-header h3 {
+  color: var(--text-primary) !important;
+}
+
+/* Practice Mode Cards */
+html.dark .mode-card,
+html.dark .historical-card,
+html.dark .mock-exam-card,
+html.dark .wrong-card,
+html.dark .bookmark-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .mode-card:hover,
+html.dark .historical-card:hover,
+html.dark .mock-exam-card:hover,
+html.dark .wrong-card:hover,
+html.dark .bookmark-card:hover {
+  background: var(--surface-muted) !important;
+  border-color: var(--primary) !important;
+}
+
+html.dark .mode-title {
+  color: var(--text-primary) !important;
+}
+
+html.dark .mode-desc {
+  color: var(--text-secondary) !important;
+}
+
+/* Question items in practice view */
+html.dark .question-item {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .question-item:hover {
+  background: var(--surface-muted) !important;
+}
+
+html.dark .question-text {
+  color: var(--text-primary) !important;
+}
+
+html.dark .question-subject {
+  color: var(--text-secondary) !important;
+}
+
+/* Tabs in practice view */
+html.dark .tabs button {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .tabs button:hover {
+  background: var(--surface) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .tabs button.active {
+  background: var(--primary) !important;
+  color: #fff !important;
+  border-color: var(--primary) !important;
+}
+
+/* Option items in quiz */
+html.dark .option-item {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .option-item:hover {
+  background: var(--surface-muted) !important;
+}
+
+html.dark .option-item.selected {
+  background: var(--primary-soft) !important;
+  border-color: var(--primary) !important;
+}
+
+html.dark .option-label {
+  color: var(--text-secondary) !important;
+}
+
+/* ===== QUESTION LIST COMPONENT ===== */
+html.dark .content-container {
+  background: var(--bg-page) !important;
+}
+
+html.dark .question-list-wrapper {
+  background: var(--surface) !important;
+}
+
+html.dark .search-item {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .search-item:hover {
+  background: var(--surface-muted) !important;
+}
+
+html.dark .search-item.selected {
+  background: var(--primary-soft) !important;
+}
+
+html.dark .subject-badge {
+  background: var(--primary-soft) !important;
+  color: var(--primary) !important;
+}
+
+/* ===== TOOLBAR BUTTONS ===== */
+html.dark .toolbar-btn-secondary {
+  background: var(--surface-muted) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .toolbar-btn-secondary:hover {
+  background: var(--surface) !important;
+}
+
+/* ===== USER EXAM VIEW CARDS ===== */
+html.dark .exam-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .exam-card:hover {
+  background: var(--surface-muted) !important;
+}
+
+html.dark .exam-card-header {
+  border-color: var(--border) !important;
+}
+
+html.dark .exam-card-footer {
+  border-color: var(--border) !important;
+}
+
+/* Section containers */
+html.dark .section-content,
+html.dark .search-section {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Empty and loading states */
+html.dark .empty-search,
+html.dark .loading-search {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Badges */
+html.dark .meta-badge {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .difficulty-badge.easy {
+  background: var(--success-soft) !important;
+  color: var(--success) !important;
+}
+
+html.dark .difficulty-badge.medium {
+  background: rgba(217, 119, 6, 0.15) !important;
+  color: #ca8a04 !important;
+}
+
+html.dark .difficulty-badge.hard {
+  background: var(--destructive-soft) !important;
+  color: var(--destructive) !important;
+}
+
+html.dark .tag-badge {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .bookmark-status {
+  background: rgba(217, 119, 6, 0.15) !important;
+  color: #ca8a04 !important;
+}
+
+html.dark .flashcard-status {
+  background: var(--primary-soft) !important;
+  color: var(--primary) !important;
+}
+
+/* Answer feedback */
+html.dark .correct-msg {
+  background: var(--success-soft) !important;
+  color: var(--success) !important;
+}
+
+html.dark .wrong-msg {
+  background: var(--destructive-soft) !important;
+  color: var(--destructive) !important;
+}
+
+/* btn-secondary */
+html.dark .btn-secondary {
+  background: var(--surface-muted) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .btn-secondary:hover {
+  background: var(--surface) !important;
+}
+
+/* ===== MOCK EXAM DIALOG ===== */
+html.dark .mock-exam-dialog,
+html.dark .dialog-content {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .dialog-header {
+  border-color: var(--border) !important;
+}
+
+html.dark .dialog-header h3 {
+  color: var(--text-primary) !important;
+}
+
+html.dark .dialog-body {
+  background: var(--surface) !important;
+}
+
+html.dark .dialog-footer {
+  border-color: var(--border) !important;
+}
+
+/* ===== ROUND 2 FIXES [2026-01-02] ===== */
+
+/* 1. Chat Panel Header (Split View) */
+html.dark .chat-panel-header {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .chat-panel-title {
+  color: var(--text-primary) !important;
+}
+
+html.dark .chat-icon {
+  background: var(--surface-muted) !important;
+  color: var(--primary) !important;
+}
+
+/* 2. Question View Meta Tags */
+html.dark .question-meta .meta-tag {
+  color: var(--text-primary) !important;
+}
+
+html.dark .meta-tag.subject {
+  background: rgba(37, 99, 235, 0.2) !important;
+  /* Blue tint */
+  color: #60a5fa !important;
+}
+
+html.dark .meta-tag.category {
+  background: rgba(22, 163, 74, 0.2) !important;
+  /* Green tint */
+  color: #4ade80 !important;
+}
+
+html.dark .meta-tag.difficulty.easy {
+  background: rgba(22, 163, 74, 0.2) !important;
+  color: #4ade80 !important;
+}
+
+html.dark .meta-tag.difficulty.medium {
+  background: rgba(217, 119, 6, 0.2) !important;
+  /* Orange tint */
+  color: #fbbf24 !important;
+}
+
+html.dark .meta-tag.difficulty.hard {
+  background: rgba(220, 38, 38, 0.2) !important;
+  /* Red tint */
+  color: #f87171 !important;
+}
+
+/* 3. Analytics Header Font */
+html.dark .analytics-header h2 {
+  color: var(--text-primary) !important;
+}
+
+/* 4. Landing Page Stats Section */
+html.dark .stats-section {
+  background: var(--bg-page) !important;
+  /* Blend with page bg */
+  border-color: var(--border) !important;
+}
+
+html.dark .stats-grid .stat-item {
+  background: transparent !important;
+}
+
+html.dark .stats-grid .stat-label {
+  color: var(--text-secondary) !important;
+}
+
+/* 5. Search Question Badges - Color Differentiation */
+/* Targeting specific classes to override the generic span rule */
+html.dark .search-question-badges .search-badge-status.bookmark-status {
+  background: rgba(217, 119, 6, 0.2) !important;
+  /* Yellow/Orange */
+  color: #fbbf24 !important;
+  border-color: rgba(217, 119, 6, 0.3) !important;
+}
+
+html.dark .search-question-badges .search-badge-status.flashcard-status {
+  background: rgba(67, 56, 202, 0.3) !important;
+  /* Indigo/Blue */
+  color: #818cf8 !important;
+  /* Lighter indigo */
+  border-color: rgba(67, 56, 202, 0.3) !important;
+}
+
+/* 6. Fix Navigation Arrows in Question Practice */
+html.dark .arrow-btn,
+html.dark .nav-btn {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .arrow-btn:hover:not(:disabled),
+html.dark .nav-btn:hover {
+  background: var(--primary) !important;
+  color: #fff !important;
+  border-color: var(--primary) !important;
+}
+
+html.dark .nav-btn.active {
+  background: var(--primary) !important;
+  color: #fff !important;
+  border-color: var(--primary) !important;
+}
+
+/* ===== ROUND 3 FIXES [2026-01-02] ===== */
+
+/* 1. Mock Exam Overlay */
+html.dark .mock-exam-overlay {
+  background: rgba(15, 23, 42, 0.85) !important;
+}
+
+html.dark .mock-exam-content,
+html.dark .mock-exam-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 2. AI Essay Welcome Section */
+/* Removing blocky look and blending in */
+html.dark .essay-analysis-view {
+  background: var(--bg-soft) !important;
+}
+
+html.dark .welcome-section {
+  background: transparent !important;
+}
+
+html.dark .feature-box {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .feature-box:hover {
+  background: var(--surface-muted) !important;
+}
+
+/* 3. Selection Toolbar & Flashcard Select All */
+html.dark .selection-toolbar {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .toolbar-info {
+  background: var(--surface-muted) !important;
+}
+
+html.dark .toolbar-text {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .toolbar-divider {
+  background-color: var(--border) !important;
+}
+
+/* Fix for "squarely block frame" on buttons */
+html.dark .toolbar-btn-secondary,
+html.dark .action-btn-secondary {
+  background: var(--surface-muted) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .toolbar-btn-secondary:hover {
+  background: var(--surface) !important;
+}
+
+/* 4. Question List Headers & Search Bars */
+html.dark .list-header,
+html.dark .view-mode-section,
+html.dark .filter-panel-container,
+html.dark .search-bar {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .search-control {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Fix "select all" label container background if any */
+html.dark .list-header-actions,
+html.dark .select-all-label {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+/* 5. Analytics Header Visibility */
+html.dark .analytics-header h2,
+html.dark .analytics-title {
+  color: var(--text-primary) !important;
+  background: transparent !important;
+  /* Ensure no white bg behind text */
+}
+
+/* 6. Admin Exam Edit View */
+html.dark .exam-edit-view {
+  background: var(--bg-page) !important;
+}
+
+/* 7. Input/Select Dark Mode General Fix */
+html.dark input[type="text"],
+html.dark input[type="search"],
+html.dark textarea,
+html.dark select {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--text-secondary) !important;
+}
+
+/* ===== ROUND 4 FIXES [2026-01-02 22:00] ===== */
+
+/* 1. List Header Actions (Select All Bar) */
+html.dark .list-header-actions {
+  background: var(--primary-soft) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+html.dark .list-header-actions .select-all-label {
+  color: var(--text-primary) !important;
+}
+
+/* 2. Admin Tag Management - White Table/Cards */
+html.dark .tag-table,
+html.dark .tag-admin .tag-table,
+html.dark .tag-filters .filter-input {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .table-header {
+  background: var(--surface-muted) !important;
+  border-bottom: 1px solid var(--border) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .table-row {
+  border-bottom: 1px solid var(--border) !important;
+}
+
+html.dark .table-row:hover {
+  background: var(--surface-muted) !important;
+}
+
+html.dark .count-badge {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* 3. Analytics Header - White Background Fix */
+/* The user says "text still white in white bg". 
+   If text is white (good), bg must be dark. */
+html.dark .analytics-header {
+  background-color: var(--bg-page) !important;
+  /* Ensure it matches page */
+}
+
+/* Just in case the container has a bg color set inline or via specificity */
+html.dark .analytics-view {
+  background: var(--bg-page) !important;
+}
+
+/* 4. AI Essay Feature Grid - Margins/Gap */
+html.dark .feature-grid {
+  background: transparent !important;
+}
+
+html.dark .welcome-section {
+  background: transparent !important;
+}
+
+/* 5. Question Header Input Fields (Start Exam) */
+/* Image 2 shows "Question 1" and a white input box */
+html.dark .question-header input,
+html.dark .question-header .input-group-text,
+html.dark .quiz-header input,
+html.dark .quiz-tools input {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .question-header .btn-light {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ===== ROUND 5 FIXES [2026-01-02 22:05] ===== */
+
+/* 1. Analytics Badges (Hot Count & Rank Badges) */
+/* Targeted fix for "X 1 次" badge being white */
+html.dark .hot-count {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .rank-badge.pass,
+html.dark .rank-badge.fail {
+  background: var(--surface-muted) !important;
+  /* Keep colored text for semantics if desired, or override */
+}
+
+/* 2. Mock Exam Dialog Background & Warnings */
+/* Dialog Body Background */
+html.dark .mock-exam-dialog .dialog-body,
+html.dark .modal-content .dialog-body {
+  background: var(--surface) !important;
+}
+
+/* No Questions Warning (often pinkish in light mode) */
+html.dark .no-questions-warning {
+  background: rgba(220, 38, 38, 0.15) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(220, 38, 38, 0.3) !important;
+}
+
+/* Source Checkbox Container (the big white boxes) */
+html.dark .source-checkbox {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .source-checkbox:hover {
+  background: var(--surface-muted) !important;
+  border-color: var(--primary) !important;
+}
+
+/* 3. Dialog Footer & Actions */
+html.dark .dialog-footer {
+  background: var(--surface) !important;
+  border-top-color: var(--border) !important;
+}
+
+/* ===== ROUND 6 FIXES [2026-01-02 22:10] ===== */
+
+/* 1. Mock Exam Dialog Header - Fix White Background & Hover */
+html.dark .dialog-header {
+  background: var(--surface) !important;
+  border-bottom-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .dialog-header h3 {
+  color: var(--text-primary) !important;
+}
+
+/* Ensure no weird hover effects on the header container itself */
+html.dark .dialog-header:hover {
+  background: var(--surface) !important;
+}
+
+/* 2. Analytics "Hot Tag" Super Long Frame */
+/* The user reported a "super long square frame" around the tag.
+   It might be a background color leaking or set explicitly. */
+html.dark .hot-tag,
+html.dark .hot-tag span {
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  box-shadow: none !important;
+}
+
+/* Also fix the line-item container just in case */
+html.dark .hot-item {
+  border-bottom: 1px solid var(--border) !important;
+}
+
+/* ===== ROUND 7 FIXES [2026-01-02 22:15] ===== */
+
+/* 1. Analytics Card Header - Remove Blocky/Square Look */
+html.dark .analytics-card .card-header,
+html.dark .wrong-card .card-header,
+html.dark .card-header {
+  background: transparent !important;
+  border-bottom: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  /* Remove any border-radius conflict if present */
+  border-radius: 0 !important;
+}
+
+/* 2. Container/Div Fixes inside Cards */
+/* The user says "those div in containers cmon" */
+html.dark .card-title-row,
+html.dark .card-controls {
+  background: transparent !important;
+}
+
+/* 3. Card Header Hover Fix */
+/* User says "hover will very ugly squarely cut" */
+html.dark .card-header:hover {
+  background: transparent !important;
+  /* Disable hover bg change */
+}

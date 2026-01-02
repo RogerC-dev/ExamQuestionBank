@@ -959,4 +959,57 @@ defineExpose({
         gap: 8px;
     }
 }
+
+/* Dark Mode Overrides */
+:global(.dark) .admin-data-list {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .list-item {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .list-item.hover-enabled:hover {
+    background: var(--surface-muted) !important;
+}
+
+:global(.dark) .list-item.selected {
+    background: var(--primary-soft) !important;
+}
+
+:global(.dark) .list-header,
+:global(.dark) .select-all-bar {
+    background: var(--surface-muted) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .stat-item,
+:global(.dark) .id-badge {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+    color: var(--text-secondary) !important;
+}
+
+:global(.dark) .badge-type,
+:global(.dark) .tag-more {
+    background: var(--surface-muted) !important;
+    color: var(--text-secondary) !important;
+}
+
+:global(.dark) .tag-badge {
+    background: var(--primary-soft) !important;
+    color: var(--primary) !important;
+}
+
+:global(.dark) .dropdown-menu {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .empty-state {
+    background: var(--surface) !important;
+    color: var(--text-secondary) !important;
+}
 </style>

@@ -11,28 +11,28 @@
       <template v-else>
         <!-- Analytics Overview Cards -->
         <div class="overview-cards">
-          <div class="overview-card">
+          <div class="overview-card card-hover">
             <div class="overview-icon blue"><i class="bi bi-clipboard-check"></i></div>
             <div class="overview-content">
               <span class="overview-value">{{ stats.total_answered || 0 }}</span>
               <span class="overview-label">已作答題數</span>
             </div>
           </div>
-          <div class="overview-card">
+          <div class="overview-card card-hover">
             <div class="overview-icon green"><i class="bi bi-bullseye"></i></div>
             <div class="overview-content">
               <span class="overview-value">{{ stats.accuracy || 0 }}%</span>
               <span class="overview-label">整體正確率</span>
             </div>
           </div>
-          <div class="overview-card">
+          <div class="overview-card card-hover">
             <div class="overview-icon purple"><i class="bi bi-journal-text"></i></div>
             <div class="overview-content">
               <span class="overview-value">{{ stats.exam_count || 0 }}</span>
               <span class="overview-label">測驗次數</span>
             </div>
           </div>
-          <div class="overview-card">
+          <div class="overview-card card-hover">
             <div class="overview-icon amber"><i class="bi bi-x-circle"></i></div>
             <div class="overview-content">
               <span class="overview-value">{{ stats.wrong_count || 0 }}</span>
@@ -1572,5 +1572,80 @@ onMounted(loadData)
     flex-direction: column;
     gap: 12px;
   }
+}
+
+/* Dark Mode Overrides */
+:global(.dark) .overview-card,
+:global(.dark) .analytics-card,
+:global(.dark) .trend-card,
+:global(.dark) .results-card,
+:global(.dark) .wrong-card,
+:global(.dark) .chart-card,
+:global(.dark) .heatmap-card {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .trend-item,
+:global(.dark) .results-table-row,
+:global(.dark) .hot-item {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .trend-item:hover,
+:global(.dark) .results-table-row:hover,
+:global(.dark) .hot-item:hover {
+    background: var(--surface-muted) !important;
+}
+
+:global(.dark) .trend-list-header,
+:global(.dark) .results-table-header {
+    background: var(--surface-muted) !important;
+    color: var(--text-secondary) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .search-filter,
+:global(.dark) .sort-control select {
+    background: var(--surface-muted) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .accuracy-bar-container,
+:global(.dark) .score-bar-container,
+:global(.dark) .progress-bar {
+    background: var(--surface-muted) !important;
+}
+
+:global(.dark) .results-tabs button {
+    color: var(--text-secondary) !important;
+    background: transparent !important;
+}
+
+:global(.dark) .results-tabs button.active {
+    color: var(--primary) !important;
+    background: var(--primary-soft) !important;
+}
+
+:global(.dark) .pagination-controls {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .btn-page {
+    background: var(--surface-muted) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .overview-icon.blue,
+:global(.dark) .overview-icon.green,
+:global(.dark) .overview-icon.purple,
+:global(.dark) .overview-icon.amber {
+    opacity: 0.9;
 }
 </style>

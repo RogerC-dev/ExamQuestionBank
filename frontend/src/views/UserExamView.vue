@@ -1611,5 +1611,84 @@ onMounted(async () => {
     padding: 16px 24px;
     border-top: 1px solid #e5e7eb;
 }
+
+/* Dark Mode Overrides */
+:global(.dark) .exam-card,
+:global(.dark) .question-card,
+:global(.dark) .exam-list-section,
+:global(.dark) .filters-section,
+:global(.dark) .questions-section,
+:global(.dark) .exam-config-section {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .exam-card:hover,
+:global(.dark) .question-card:hover {
+    background: var(--surface-muted) !important;
+    border-color: var(--primary) !important;
+}
+
+:global(.dark) .tabs-container,
+:global(.dark) .exam-card-footer,
+:global(.dark) .filter-actions,
+:global(.dark) .dialog-footer {
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .filter-select,
+:global(.dark) .filter-input,
+:global(.dark) .form-input {
+    background: var(--surface-muted) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .filter-select:focus,
+:global(.dark) .filter-input:focus,
+:global(.dark) .form-input:focus {
+    background: var(--surface) !important;
+    border-color: var(--primary) !important;
+}
+
+:global(.dark) .exam-select-item {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .exam-select-item:hover,
+:global(.dark) .exam-select-item.selected {
+    background: var(--surface-muted) !important;
+}
+
+:global(.dark) .modal-content,
+:global(.dark) .mock-exam-dialog {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .btn-secondary {
+    background: var(--surface-muted) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .btn-danger {
+    background: var(--destructive-soft) !important;
+    border-color: var(--destructive) !important;
+}
+
+:global(.dark) .error-message {
+    background: var(--destructive-soft) !important;
+    color: var(--destructive) !important;
+}
+
+:global(.dark) .meta-badge {
+    background: var(--surface-muted) !important;
+}
+
+:global(.dark) .tag {
+    background: var(--primary-soft) !important;
+    color: var(--primary) !important;
+}
 </style>
 

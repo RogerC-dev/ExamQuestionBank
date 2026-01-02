@@ -663,5 +663,54 @@ const handleSubscribe = () => {
     grid-template-columns: 1fr;
   }
 }
+
+/* Dark Mode Overrides */
+:global(.dark) .features-section,
+:global(.dark) .integration-section,
+:global(.dark) .extension-section {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .feature-card,
+:global(.dark) .benefit-card {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .feature-card:hover,
+:global(.dark) .benefit-card:hover {
+    background: var(--surface-muted) !important;
+    border-color: var(--primary) !important;
+}
+
+:global(.dark) .extension-demo {
+    background: var(--surface-muted) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .pricing-section {
+    background: var(--bg-page) !important;
+}
+
+:global(.dark) .pricing-card {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .pricing-card.featured {
+    background: var(--surface) !important;
+    border-color: var(--primary) !important;
+}
+
+:global(.dark) .pricing-features li {
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .stats-section {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
 </style>
 

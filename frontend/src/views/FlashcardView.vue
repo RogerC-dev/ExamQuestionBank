@@ -841,4 +841,34 @@ onMounted(() => {
   color: #0284c7;
   transform: translateY(-1px);
 }
+
+/* Dark Mode Overrides */
+:global(.dark) .stat-card,
+:global(.dark) .stats-section,
+:global(.dark) .exam-info,
+:global(.dark) .review-header {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .toolbar-btn-info {
+    background: var(--primary-soft) !important;
+    color: var(--primary) !important;
+}
+
+:global(.dark) .flashcard-swiper-container {
+    background: var(--bg-page) !important;
+}
+
+:global(.dark) .rating-btn {
+    background: var(--surface-muted) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .rating-btn:hover {
+    background: var(--primary-soft) !important;
+    border-color: var(--primary) !important;
+}
 </style>

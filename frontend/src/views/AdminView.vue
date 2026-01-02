@@ -345,4 +345,29 @@ const addTag = () => {
     padding: 10px 14px;
   }
 }
+
+/* Dark Mode Overrides */
+:global(.dark) .admin-tabs {
+    background: var(--surface-muted) !important;
+}
+
+:global(.dark) .tab-btn.active {
+    background: var(--surface) !important;
+    color: var(--primary) !important;
+}
+
+:global(.dark) .tab-btn:hover {
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .action-btn-secondary {
+    background: var(--surface-muted) !important;
+    color: var(--text-secondary) !important;
+}
+
+:global(.dark) .action-btn-secondary:hover {
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+}
 </style>

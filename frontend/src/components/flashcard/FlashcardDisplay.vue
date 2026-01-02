@@ -71,8 +71,9 @@ defineExpose({
   position: relative;
   width: 100%;
   height: 100%;
+  perspective: 1000px;
   transform-style: preserve-3d;
-  transition: transform 0.7s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
   cursor: pointer;
 }
 
@@ -104,10 +105,37 @@ defineExpose({
 
 /* Back Side - Answer */
 .card-back {
-  background: white;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   border: 2px solid #CBD5E1;
   transform: rotateY(180deg);
   color: #1E293B;
+}
+
+/* Dark Mode Support */
+:global(.dark) .card-front {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+}
+
+:global(.dark) .card-back {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+:global(.dark) .answer-option {
+  background: #334155;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+:global(.dark) .answer-option:hover {
+  background: #1e3a5f;
+  border-color: #60a5fa;
+}
+
+:global(.dark) .answer-option.correct {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+  border-color: #10b981;
 }
 
 /* Badge Styling */

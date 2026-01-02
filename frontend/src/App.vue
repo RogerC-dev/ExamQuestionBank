@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import LoginModal from './components/LoginModal.vue'
+import ThemeToggle from './components/common/ThemeToggle.vue'
 import authService from './services/authService'
 
 const router = useRouter()
@@ -110,6 +111,7 @@ onMounted(() => {
           <p>整合歷屆司法官／律師考題，提供智慧複習、學習追蹤與快閃卡管理</p>
         </div>
         <div class="user-section">
+          <ThemeToggle />
           <div v-if="isAuthenticated" class="user-info">
             <span class="username">{{ currentUser?.username }}</span>
             <span v-if="currentUser?.isAdmin" class="admin-badge">管理員</span>
@@ -142,33 +144,67 @@ onMounted(() => {
 
 <style scoped>
 :global(:root) {
-  /* Palette: Professional Slate & Steel */
+  /* Light Mode - Professional Slate & Steel */
   --bg-page: #F8FAFC;
-  /* Slate 50 - Cool Light Base */
   --surface: #FFFFFF;
   --surface-muted: #E2E8F0;
-  /* Slate 200 - Cool Grey */
-
+  
   /* Primary: Professional Slate Blue */
   --primary: #476996;
-  /* Calm, authoritative Blue */
   --primary-hover: #35527a;
   --primary-soft: #EEF2FF;
-  /* Indigo 50 - Very light cool blue */
-
+  
   /* Text */
   --text-primary: #1E293B;
-  /* Slate 800 - Deep, readable contrast */
   --text-secondary: #64748B;
-  /* Slate 500 - Professional Grey */
-
+  
+  /* Status Colors */
+  --success: #22c55e;
+  --success-soft: #dcfce7;
+  --warning: #f59e0b;
+  --warning-soft: #fef3c7;
+  --destructive: #ef4444;
+  --destructive-soft: #fee2e2;
+  
   /* Borders & Shadows */
   --border: #CBD5E1;
-  /* Slate 300 */
   --shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06);
   --shadow-hover: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
+  --shadow-card: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
   --radius: 12px;
-  /* Slightly less rounded for professional look */
+  
+  /* Gradient tokens */
+  --gradient-hero: linear-gradient(135deg, rgba(71, 105, 150, 0.08) 0%, #EEF2FF 50%, #E2E8F0 100%);
+  --gradient-card: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+}
+
+/* Dark Mode */
+:global(.dark) {
+  --bg-page: #0f172a;
+  --surface: #1e293b;
+  --surface-muted: #334155;
+  
+  --primary: #60a5fa;
+  --primary-hover: #3b82f6;
+  --primary-soft: #1e3a5f;
+  
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  
+  --success: #4ade80;
+  --success-soft: #14532d;
+  --warning: #fbbf24;
+  --warning-soft: #713f12;
+  --destructive: #f87171;
+  --destructive-soft: #7f1d1d;
+  
+  --border: #334155;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-hover: 0 20px 40px -10px rgba(96, 165, 250, 0.15), 0 8px 16px -4px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  
+  --gradient-hero: linear-gradient(135deg, rgba(96, 165, 250, 0.1) 0%, #1e293b 50%, #0f172a 100%);
+  --gradient-card: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
 }
 
 .app-container {
@@ -354,5 +390,318 @@ main {
     padding: 12px 14px;
     font-size: 14px;
   }
+}
+
+/* ============================================
+   GLOBAL UTILITY CLASSES
+   ============================================ */
+
+/* Glass Effect */
+:global(.glass) {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+:global(.dark .glass) {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Card Hover Effect */
+:global(.card-hover) {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+:global(.card-hover:hover) {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Animations */
+:global(.animate-fade-up) {
+  animation: fadeUp 0.6s ease-out forwards;
+}
+
+:global(.animate-fade-in) {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+:global(.animate-slide-in) {
+  animation: slideIn 0.4s ease-out forwards;
+}
+
+:global(.animate-scale-in) {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+/* Animation Delays */
+:global(.delay-100) { animation-delay: 100ms; }
+:global(.delay-200) { animation-delay: 200ms; }
+:global(.delay-300) { animation-delay: 300ms; }
+:global(.delay-400) { animation-delay: 400ms; }
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Custom Scrollbar */
+:global(::-webkit-scrollbar) {
+  width: 8px;
+  height: 8px;
+}
+
+:global(::-webkit-scrollbar-track) {
+  background: var(--surface-muted);
+  border-radius: 4px;
+}
+
+:global(::-webkit-scrollbar-thumb) {
+  background: var(--text-secondary);
+  border-radius: 4px;
+  opacity: 0.3;
+}
+
+:global(::-webkit-scrollbar-thumb:hover) {
+  opacity: 0.5;
+}
+
+/* Flashcard 3D Flip Utilities */
+:global(.perspective-1000) {
+  perspective: 1000px;
+}
+
+:global(.transform-style-3d) {
+  transform-style: preserve-3d;
+}
+
+:global(.backface-hidden) {
+  backface-visibility: hidden;
+}
+
+:global(.rotate-y-180) {
+  transform: rotateY(180deg);
+}
+
+/* Status Colors Utilities */
+:global(.text-success) { color: var(--success); }
+:global(.text-warning) { color: var(--warning); }
+:global(.text-destructive) { color: var(--destructive); }
+:global(.bg-success-soft) { background: var(--success-soft); }
+:global(.bg-warning-soft) { background: var(--warning-soft); }
+:global(.bg-destructive-soft) { background: var(--destructive-soft); }
+
+/* ============================================
+   GLOBAL DARK MODE OVERRIDES
+   ============================================ */
+
+/* Cards and Surfaces */
+:global(.dark) .analytics-card,
+:global(.dark) .overview-card,
+:global(.dark) .exam-card,
+:global(.dark) .mode-card,
+:global(.dark) .feature-card,
+:global(.dark) .stat-card,
+:global(.dark) .chart-card,
+:global(.dark) .results-card,
+:global(.dark) .wrong-card,
+:global(.dark) .trend-card,
+:global(.dark) .pricing-card,
+:global(.dark) .exam-item,
+:global(.dark) .flashcard-item,
+:global(.dark) .question-item,
+:global(.dark) .card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Form Inputs */
+:global(.dark) input,
+:global(.dark) select,
+:global(.dark) textarea {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+:global(.dark) input::placeholder,
+:global(.dark) textarea::placeholder {
+  color: var(--text-secondary) !important;
+}
+
+/* Search filters and controls */
+:global(.dark) .search-filter,
+:global(.dark) .filter-section,
+:global(.dark) .search-box,
+:global(.dark) .filter-bar {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Table rows and list items */
+:global(.dark) .trend-item,
+:global(.dark) .results-table-row,
+:global(.dark) .question-row,
+:global(.dark) .search-item,
+:global(.dark) .list-item,
+:global(.dark) .hot-item {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+:global(.dark) .trend-item:hover,
+:global(.dark) .results-table-row:hover,
+:global(.dark) .question-row:hover,
+:global(.dark) .hot-item:hover {
+  background: var(--surface-muted) !important;
+}
+
+/* Table headers */
+:global(.dark) .trend-list-header,
+:global(.dark) .results-table-header,
+:global(.dark) .table-header {
+  background: var(--surface-muted) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border) !important;
+}
+
+/* Progress bars */
+:global(.dark) .progress-bar,
+:global(.dark) .accuracy-bar-container,
+:global(.dark) .score-bar-container {
+  background: var(--surface-muted) !important;
+}
+
+/* Modal/Dialog backgrounds */
+:global(.dark) .modal-content,
+:global(.dark) .dialog-body,
+:global(.dark) .mock-exam-dialog {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Tabs */
+:global(.dark) .tabs button,
+:global(.dark) .results-tabs button {
+  color: var(--text-secondary) !important;
+  background: transparent !important;
+}
+
+:global(.dark) .tabs button.active,
+:global(.dark) .results-tabs button.active {
+  color: var(--primary) !important;
+  background: var(--primary-soft) !important;
+}
+
+/* Badges and Tags */
+:global(.dark) .badge,
+:global(.dark) .tag,
+:global(.dark) .status-tag {
+  background: var(--surface-muted) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Empty states */
+:global(.dark) .empty-chart,
+:global(.dark) .empty-results,
+:global(.dark) .empty-state {
+  color: var(--text-secondary) !important;
+}
+
+/* Pagination */
+:global(.dark) .pagination-controls,
+:global(.dark) .pagination-buttons button {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* QuestionList specific - white rows issue */
+:global(.dark) .question-list-item,
+:global(.dark) .search-result-item {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Landing page - pricing cards */
+:global(.dark) .pricing-plan,
+:global(.dark) .plan-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+:global(.dark) .pricing-plan ul li,
+:global(.dark) .plan-features li {
+  color: var(--text-secondary) !important;
+}
+
+/* Alert box */
+:global(.dark) .alert {
+  background: var(--surface-muted) !important;
+  border-color: var(--border) !important;
+}
+
+/* Review header in flashcard */
+:global(.dark) .review-header {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* AI Essay Analysis cards */
+:global(.dark) .analysis-card,
+:global(.dark) .essay-card,
+:global(.dark) .chat-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Admin page - override white backgrounds */
+:global(.dark) .admin-card,
+:global(.dark) .admin-section,
+:global(.dark) .data-table,
+:global(.dark) .form-group {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
 }
 </style>

@@ -793,4 +793,61 @@ onMounted(() => {
     font-size: 14px;
   }
 }
+
+/* Dark Mode Overrides */
+:global(.dark) .sidebar {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .feature-box {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .feature-box:hover {
+    background: var(--surface-muted) !important;
+}
+
+:global(.dark) .input-container {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .input-container:focus-within {
+    border-color: var(--primary) !important;
+}
+
+:global(.dark) .input-container textarea {
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .history-item:hover {
+    background: var(--surface-muted) !important;
+}
+
+:global(.dark) .history-item.active {
+    background: var(--primary-soft) !important;
+}
+
+:global(.dark) .error-banner {
+    background: var(--destructive-soft) !important;
+    border-color: var(--destructive) !important;
+    color: var(--destructive) !important;
+}
+
+:global(.dark) .messages-area::-webkit-scrollbar-thumb,
+:global(.dark) .sidebar-content::-webkit-scrollbar-thumb {
+    background: var(--text-secondary) !important;
+}
+
+:global(.dark) .btn-submit:disabled {
+    background: var(--surface-muted) !important;
+    color: var(--text-secondary) !important;
+}
+
+:global(.dark) .message-row {
+    border-color: var(--border) !important;
+}
 </style>

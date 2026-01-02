@@ -113,6 +113,15 @@
                     <div class="quiz-header">
                         <span>第 {{ currentIndex + 1 }} / {{ quizQuestions.length }} 題</span>
                         <div class="quiz-tools">
+                            <!-- Flag button to mark for later review -->
+                            <button 
+                                class="btn btn-icon" 
+                                :class="{ 'flagged': isFlagged(currentQuestion?.id) }"
+                                @click="toggleFlag(currentQuestion?.id)"
+                                :title="isFlagged(currentQuestion?.id) ? '取消標記' : '標記待複習'"
+                            >
+                                <i :class="isFlagged(currentQuestion?.id) ? 'bi bi-flag-fill' : 'bi bi-flag'"></i>
+                            </button>
                             <button v-if="showAnswer" class="btn btn-ghost"
                                 @click="openChat(composeQuestionPrompt(currentQuestion, currentOptions))">Ask
                                 AI</button>
@@ -325,8 +334,15 @@
 
         <!-- Floating Ask AI Button -->
         <button v-if="!isChatOpen" class="floating-ai-btn" @click="openChat()" aria-label="Ask AI">
-            <span class="floating-ai-icon">AI</span>
-
+            <svg class="floating-ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Magnifying glass -->
+                <circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="2"/>
+                <line x1="14.5" y1="14.5" x2="20" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <!-- Sparkles -->
+                <path d="M18 4L18.5 5.5L20 6L18.5 6.5L18 8L17.5 6.5L16 6L17.5 5.5L18 4Z" fill="currentColor"/>
+                <path d="M4 2L4.35 3L5 3.35L4.35 3.7L4 4.7L3.65 3.7L3 3.35L3.65 3L4 2Z" fill="currentColor"/>
+                <path d="M5 14L5.25 14.75L6 15L5.25 15.25L5 16L4.75 15.25L4 15L4.75 14.75L5 14Z" fill="currentColor"/>
+            </svg>
         </button>
 
         <!-- Mock Exam Dialog -->
@@ -522,6 +538,22 @@ const currentOptions = ref([])
 const selectedAnswer = ref(null)
 const showAnswer = ref(false)
 const isCorrect = ref(false)
+const flaggedQuestions = ref([]) // Client-side only: track flagged question IDs for "come back later"
+
+// Flag helper functions
+const isFlagged = (questionId) => {
+    return flaggedQuestions.value.includes(questionId)
+}
+
+const toggleFlag = (questionId) => {
+    if (!questionId) return
+    const idx = flaggedQuestions.value.indexOf(questionId)
+    if (idx === -1) {
+        flaggedQuestions.value.push(questionId)
+    } else {
+        flaggedQuestions.value.splice(idx, 1)
+    }
+}
 
 // Mock Exam state
 const showMockExamDialog = ref(false)
@@ -2010,11 +2042,11 @@ onUnmounted(() => {
     width: 56px;
     height: 56px;
     padding: 0;
-    background: linear-gradient(135deg, #4f7da8 0%, #2f5f90 100%);
+    background: linear-gradient(135deg, #4A90D9, #3B7FCC);
     color: #fff;
     border: none;
-    border-radius: 50%;
-    box-shadow: 0 6px 24px rgba(47, 95, 144, 0.35);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(74, 144, 217, 0.4);
     cursor: pointer;
 
 
@@ -2023,14 +2055,14 @@ onUnmounted(() => {
 }
 
 .floating-ai-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(47, 95, 144, 0.45);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 24px rgba(74, 144, 217, 0.5);
 }
 
 .floating-ai-icon {
-    font-size: 16px;
-    font-weight: 800;
-    letter-spacing: 0.02em;
+    width: 32px;
+    height: 32px;
+    color: #fff;
 }
 
 
@@ -3254,5 +3286,88 @@ onUnmounted(() => {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+}
+
+/* Flag button styles */
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+    background: var(--primary-soft);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-icon.flagged {
+    background: var(--warning-soft, #fef3c7);
+    color: var(--warning, #f59e0b);
+    border-color: var(--warning, #f59e0b);
+}
+
+.btn-icon.flagged:hover {
+    background: var(--warning, #f59e0b);
+    color: #fff;
+}
+
+.btn-icon i {
+    font-size: 16px;
+}
+
+/* Dark Mode Overrides */
+:global(.dark) .mode-card,
+:global(.dark) .subject-tab,
+:global(.dark) .filter-section,
+:global(.dark) .question-list-container,
+:global(.dark) .pagination-container {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .mode-card:hover {
+    background: var(--surface-muted) !important;
+}
+
+:global(.dark) .search-box,
+:global(.dark) .filter-select,
+:global(.dark) .filter-input {
+    background: var(--surface-muted) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .quiz-container,
+:global(.dark) .quiz-question-card,
+:global(.dark) .quiz-header {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .option-card {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+:global(.dark) .option-card:hover {
+    background: var(--surface-muted) !important;
+    border-color: var(--primary) !important;
+}
+
+:global(.dark) .mock-exam-dialog-overlay .mock-exam-dialog {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
 }
 </style>
