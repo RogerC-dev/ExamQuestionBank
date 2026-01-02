@@ -2408,3 +2408,194 @@ html.dark .card-header:hover {
   background: transparent !important;
   /* Disable hover bg change */
 }
+
+/* ===== ROUND 8 FIXES [2026-01-02 22:20] ===== */
+
+/* 1. Header Hover - COMPLETE DISABLE */
+html.dark .card-header:hover,
+html.dark .analytics-card .card-header:hover,
+html.dark .wrong-card .card-header:hover {
+  background: transparent !important;
+  cursor: default !important;
+  /* Remove pointer cursor if it implies clickability */
+}
+
+/* 2. Hot Tag - "No BG" Advice */
+/* User requested no bg or advice. Clean text look is best here to avoid "frames". */
+html.dark .hot-tag {
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  padding: 0 !important;
+  /* Remove padding to avoid "box" shape */
+  border: none !important;
+  font-weight: 500 !important;
+}
+
+/* 3. Hot Item Row Hover */
+/* Ensure the ROW hovers nicely, but not the TAG */
+html.dark .hot-item:hover {
+  background: var(--surface-muted) !important;
+}
+
+/* ===== ROUND 9 FIXES [2026-01-02 22:25] ===== */
+
+/* 1. Analytics & Wrong Card - REMOVE Item/Row Hover Backgrounds entirely */
+/* User dislikes the "flash weird" or blocky hover effects on these lists */
+html.dark .hot-item:hover,
+html.dark .wrong-card .hot-item:hover,
+html.dark .analytics-card .hot-item:hover,
+html.dark .results-table-row:hover {
+  background: transparent !important;
+  /* Optional: keep cursor pointer if clickable, but no bg change */
+}
+
+/* 2. Practice Page Exam List - Remove Hover Background */
+/* "exam-info same the hover inner div so long and flash it weird" */
+html.dark .exam-item:hover,
+html.dark .exam-info:hover {
+  background: transparent !important;
+}
+
+/* 3. General "No Hover Flash" for these lists */
+/* If there are any other specific hover states causing issues in these lists */
+html.dark .list-item:hover {
+  background: transparent !important;
+}
+
+/* ===== ROUND 10 FIXES [2026-01-02 22:30] ===== */
+
+/* 1. AGGRESSIVE Hover Removal */
+/* User says "are u dumb still have hover effect" */
+html.dark .hot-item:hover,
+html.dark .wrong-card .hot-item:hover,
+html.dark .analytics-card .hot-item:hover,
+html.dark .results-table-row:hover,
+html.dark .exam-item:hover,
+html.dark .question-item:hover,
+html.dark .hot-item:active,
+html.dark .hot-item:focus {
+  background: transparent !important;
+  background-color: transparent !important;
+  transform: none !important;
+  box-shadow: none !important;
+  border-color: var(--border) !important;
+}
+
+/* 2. Hot Tag "Long Ass" Frame Removal */
+/* User sees a background on the tag container itself. */
+html.dark .hot-tag,
+html.dark .hot-info,
+html.dark .hot-title {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  display: inline-flex !important;
+  /* Ensure it doesn't span full width if block */
+  width: auto !important;
+}
+
+/* 3. Exam Info "Inner Div" Hover */
+html.dark .exam-info,
+html.dark .exam-info:hover,
+html.dark .exam-item .exam-info {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* ===== ROUND 11 FIXES [2026-01-02 22:35] ===== */
+
+/* 1. NUCLEAR OPTION - Background Cleaning */
+/* Remove ANY background from inner divs of hot-item and exam-item */
+html.dark .hot-item *,
+html.dark .exam-item *,
+html.dark .hot-item>div,
+html.dark .exam-item>div,
+html.dark .hot-info,
+html.dark .hot-tag,
+html.dark .hot-title,
+html.dark .exam-info,
+html.dark .exam-name,
+html.dark .exam-meta {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* 2. Fix the "Strip" - Specific targeting */
+/* Use specificity to override any component styles */
+html.dark .hot-tag span,
+html.dark .hot-info span {
+  background: transparent !important;
+}
+
+/* 3. Re-affirm Hover Disable */
+html.dark .hot-item:hover,
+html.dark .exam-item:hover {
+  background: var(--surface) !important;
+  /* Keep it static surface color */
+  transform: none !important;
+  box-shadow: none !important;
+  border-color: var(--border) !important;
+}
+
+/* 4. Fix Practice Exam "Flash" */
+html.dark .exam-item {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* ===== ROUND 12 FIXES [2026-01-02 22:45] - HIGH SPECIFICITY ===== */
+
+/* 1. Analytics Hot List - Scorched Earth */
+html.dark .analytics-view .hot-list .hot-item,
+html.dark .analytics-view .hot-list .hot-item:hover,
+html.dark .hot-list .hot-item,
+html.dark .hot-list .hot-item:hover {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  transform: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+  /* Stop flashing */
+}
+
+/* 2. Hot Tag & Info - Force Transparency on Children */
+html.dark .analytics-view .hot-list .hot-item *,
+html.dark .hot-list .hot-item * {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 3. Hot Tag - Force Fit Content */
+html.dark .hot-list .hot-item .hot-info .hot-tag,
+html.dark .hot-tag {
+  background: transparent !important;
+  width: auto !important;
+  display: inline-flex !important;
+  border: none !important;
+}
+
+/* 4. Practice Exam List - Scorched Earth */
+html.dark .split-view-container .exam-list .exam-item,
+html.dark .split-view-container .exam-list .exam-item:hover,
+html.dark .exam-list .exam-item,
+html.dark .exam-list .exam-item:hover {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  transform: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+/* 5. Exam Info - Force Transparency on Children */
+html.dark .split-view-container .exam-list .exam-item *,
+html.dark .exam-list .exam-item * {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* 6. General Safety Net for Lists */
+html.dark .list-item:hover {
+  background: transparent !important;
+}
