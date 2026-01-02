@@ -222,9 +222,24 @@
     <!-- Mobile Overlay Background -->
     <div v-if="isChatOpen" class="mobile-overlay" @click="closeChat"></div>
 
-    <!-- Floating Ask AI Button -->
-    <button v-if="!isChatOpen" class="floating-ai-btn" @click="openAIChat" aria-label="Ask AI">
-      <span class="floating-ai-icon">AI</span>
+    <!-- Floating Ask AI Button (Draggable) -->
+    <button
+      v-if="!isChatOpen"
+      class="floating-ai-btn"
+      :style="floatingBtnStyle"
+      @mousedown="startFloatingDrag"
+      @touchstart="startFloatingDrag"
+      aria-label="Ask AI"
+    >
+      <svg class="floating-ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Magnifying glass -->
+        <circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="2"/>
+        <line x1="14.5" y1="14.5" x2="20" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <!-- Sparkles -->
+        <path d="M18 4L18.5 5.5L20 6L18.5 6.5L18 8L17.5 6.5L16 6L17.5 5.5L18 4Z" fill="currentColor"/>
+        <path d="M4 2L4.35 3L5 3.35L4.35 3.7L4 4.7L3.65 3.7L3 3.35L3.65 3L4 2Z" fill="currentColor"/>
+        <path d="M5 14L5.25 14.75L6 15L5.25 15.25L5 16L4.75 15.25L4 15L4.75 14.75L5 14Z" fill="currentColor"/>
+      </svg>
     </button>
   </div>
 </template>
@@ -470,6 +485,27 @@ const splitRatio = ref(0.6) // Main panel takes 60% by default
 const isDragging = ref(false)
 const minPanelWidth = 300 // Minimum width for each panel in pixels
 
+// Floating button draggable state
+const floatingBtnPos = ref({ x: null, y: null }) // null means use default position
+const isFloatingDragging = ref(false)
+const floatingDragStart = ref({ x: 0, y: 0 })
+const floatingBtnStartPos = ref({ x: 0, y: 0 })
+const hasDragged = ref(false)
+
+// Computed style for floating button
+const floatingBtnStyle = computed(() => {
+  if (floatingBtnPos.value.x === null || floatingBtnPos.value.y === null) {
+    return {} // Use default CSS position
+  }
+  return {
+    left: `${floatingBtnPos.value.x}px`,
+    top: `${floatingBtnPos.value.y}px`,
+    right: 'auto',
+    bottom: 'auto',
+    transition: floatingBtnPos.value.snapping ? 'left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.3s ease' : 'none'
+  }
+})
+
 // Computed styles for split view
 const mainPanelStyle = computed(() => {
   if (!isChatOpen.value) {
@@ -522,6 +558,96 @@ const stopDrag = () => {
   document.removeEventListener('mouseup', stopDrag)
   document.removeEventListener('touchmove', onDrag)
   document.removeEventListener('touchend', stopDrag)
+}
+
+// Floating AI button drag handlers
+const startFloatingDrag = (e) => {
+  e.preventDefault()
+  isFloatingDragging.value = true
+  hasDragged.value = false
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY
+
+  floatingDragStart.value = { x: clientX, y: clientY }
+
+  // Get current button position
+  const btn = e.currentTarget
+  const rect = btn.getBoundingClientRect()
+  floatingBtnStartPos.value = { x: rect.left, y: rect.top }
+
+  // If this is first drag and position is null, initialize from current position
+  if (floatingBtnPos.value.x === null) {
+    floatingBtnPos.value = { x: rect.left, y: rect.top, side: 'right', snapping: false }
+  }
+  floatingBtnPos.value.snapping = false
+
+  document.addEventListener('mousemove', onFloatingDrag)
+  document.addEventListener('mouseup', stopFloatingDrag)
+  document.addEventListener('touchmove', onFloatingDrag, { passive: false })
+  document.addEventListener('touchend', stopFloatingDrag)
+}
+
+const onFloatingDrag = (e) => {
+  if (!isFloatingDragging.value) return
+  e.preventDefault()
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY
+
+  const deltaX = clientX - floatingDragStart.value.x
+  const deltaY = clientY - floatingDragStart.value.y
+
+  // Check if user has moved enough to count as a drag
+  if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+    hasDragged.value = true
+  }
+
+  const btnSize = 56
+  const padding = 16
+
+  // Allow free movement during drag
+  let newX = floatingBtnStartPos.value.x + deltaX
+  let newY = floatingBtnStartPos.value.y + deltaY
+
+  // Constrain to viewport
+  newX = Math.max(padding, Math.min(window.innerWidth - btnSize - padding, newX))
+  newY = Math.max(padding, Math.min(window.innerHeight - btnSize - padding, newY))
+
+  floatingBtnPos.value = { ...floatingBtnPos.value, x: newX, y: newY, snapping: false }
+}
+
+const stopFloatingDrag = () => {
+  isFloatingDragging.value = false
+
+  document.removeEventListener('mousemove', onFloatingDrag)
+  document.removeEventListener('mouseup', stopFloatingDrag)
+  document.removeEventListener('touchmove', onFloatingDrag)
+  document.removeEventListener('touchend', stopFloatingDrag)
+
+  // If not dragged, treat as click
+  if (!hasDragged.value) {
+    openAIChat()
+    return
+  }
+
+  // Snap to nearest side with animation
+  const btnSize = 56
+  const padding = 16
+  const currentX = floatingBtnPos.value.x
+  const midPoint = window.innerWidth / 2
+
+  // Determine which side to snap to
+  const side = (currentX + btnSize / 2) < midPoint ? 'left' : 'right'
+  const targetX = side === 'left' ? padding : window.innerWidth - btnSize - padding
+
+  // Enable snapping animation and set target position
+  floatingBtnPos.value = {
+    ...floatingBtnPos.value,
+    x: targetX,
+    side,
+    snapping: true
+  }
 }
 
 const closeChat = () => {
@@ -717,26 +843,33 @@ onUnmounted(() => {
   right: 24px;
   width: 56px;
   height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary, #476996), #35527a);
-  box-shadow: 0 4px 16px rgba(71, 105, 150, 0.35);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #4A90D9, #3B7FCC);
+  box-shadow: 0 4px 16px rgba(74, 144, 217, 0.4);
   border: none;
-  cursor: pointer;
+  cursor: grab;
   display: grid;
   place-items: center;
-  transition: all 0.2s;
+  transition: box-shadow 0.2s, transform 0.2s;
   z-index: 100;
+  touch-action: none;
+  user-select: none;
+}
+
+.floating-ai-btn:active {
+  cursor: grabbing;
+  transform: scale(1.05);
 }
 
 .floating-ai-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 24px rgba(71, 105, 150, 0.45);
+  box-shadow: 0 6px 24px rgba(74, 144, 217, 0.5);
 }
 
 .floating-ai-icon {
-  font-weight: 800;
-  font-size: 18px;
+  width: 32px;
+  height: 32px;
   color: #fff;
+  pointer-events: none;
 }
 
 /* Mobile Styles */
