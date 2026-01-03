@@ -2599,3 +2599,114 @@ html.dark .exam-list .exam-item * {
 html.dark .list-item:hover {
   background: transparent !important;
 }
+
+/* ===== ROUND 13 FIXES [2026-01-03 15:35] ===== */
+
+/* 1. Analytics & Wrong Card - Specific Hover Disable */
+/* The user reported that .analytics-card.wrong-card still has a hover effect.
+   We need to target this specific combination to neutralize the .wrong-card:hover rule. */
+html.dark .analytics-card.wrong-card:hover,
+html.dark .analytics-card.wrong-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  transform: none !important;
+  box-shadow: none !important;
+  cursor: default !important;
+}
+
+/* ===== ROUND 14 FIXES [2026-01-03 15:40] - RESTORE LIST HOVER ===== */
+
+/* 1. Restore Hover for Practice Question List (Cohesive Style) */
+/* User wants the hover back, but "same color effect" like flashcards.
+   We override the previous transparency rules for this specific class. */
+html.dark .search-question-item {
+  transition: background-color 0.2s ease !important;
+}
+
+html.dark .search-question-item:hover {
+  background: var(--surface-muted) !important;
+  /* Smooth dark hover */
+  border-color: var(--border) !important;
+}
+
+/* 2. Force Inner Content Transparency */
+/* This is KEY: Ensure the inner div doesn't block the parent's hover color */
+html.dark .search-question-item .search-question-content,
+html.dark .search-question-item:hover .search-question-content,
+html.dark .search-question-item .search-question-info,
+html.dark .search-question-item:hover .search-question-info {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* 3. Selected State Consistency */
+html.dark .search-question-item.selected {
+  background: var(--primary-soft) !important;
+  border-color: var(--primary) !important;
+}
+
+html.dark .search-question-item.selected:hover {
+  background: var(--primary-soft) !important;
+  /* Keep selected color on hover */
+}
+
+/* ===== ROUND 15 FIXES [2026-01-03 15:45] - UNIFY ANALYTICS LIST HOVER ===== */
+
+/* 1. Restore & Unify Hover for Analytics Lists */
+/* User wants 'trend-item', 'results-table-row', and 'hot-item' to all share the same hover style.
+   We override the previous "scorched earth" no-hover rules for these specific classes. */
+html.dark .trend-item:hover,
+html.dark .results-table-row:hover,
+html.dark .hot-item:hover {
+  background: var(--surface-muted) !important;
+  border-color: var(--primary) !important;
+  transform: translateX(4px) !important;
+  /* Restore the subtle shift */
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+/* 2. Ensure Inner Content Transparency */
+/* This prevents "blocky" artifacts during hover. */
+html.dark .trend-item *,
+html.dark .trend-item:hover *,
+html.dark .results-table-row *,
+html.dark .results-table-row:hover *,
+html.dark .hot-item *,
+html.dark .hot-item:hover * {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+
+
+/* Re-apply badge backgrounds just to be safe they aren't wiped by the * rule above */
+html.dark .hot-count {
+  background: #fef2f2 !important;
+  /* Default red light */
+  color: #dc2626 !important;
+}
+
+html.dark .hot-rank {
+  background: var(--primary-soft) !important;
+}
+
+/* ===== ROUND 17 FIXES [2026-01-03 15:50] - SPECIFICITY FIX ===== */
+
+/* 1. Force Hot Item Hover (Override Scorched Earth) */
+/* Round 12 used very high specificity to kill the hover. We must match or beat it to restore it. 
+   Selector: html.dark .analytics-view .hot-list .hot-item:hover */
+html.dark .analytics-view .hot-list .hot-item:hover,
+html.dark .hot-list .hot-item:hover {
+  background: var(--surface-muted) !important;
+  border-color: var(--primary) !important;
+  transform: translateX(4px) !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+/* 2. Re-assert inner transparency for this specific chain */
+html.dark .analytics-view .hot-list .hot-item:hover *,
+html.dark .hot-list .hot-item:hover * {
+  background: transparent !important;
+}
