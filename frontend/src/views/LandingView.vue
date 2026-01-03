@@ -3,20 +3,21 @@
     <!-- Hero Section -->
     <section class="hero-section">
       <div class="hero-content">
-        <h1 class="hero-title">一站式法律學習平台</h1>
-        <p class="hero-subtitle">題庫練習 + 案例閱讀 + AI 助手</p>
+        <div class="hero-badge">
+          <i class="bi bi-stars"></i>
+          專為國家考試設計的智慧學習平台
+        </div>
+        <h1 class="hero-title">用更聰明的方式<br><span class="title-highlight">準備國家考試</span></h1>
         <p class="hero-description">
-          整合歷屆司法官／律師考題，提供智慧複習、學習追蹤與快閃卡管理
+          結合歷屆試題、AI 分析、間隔重複學習法，<br>讓你的備考效率提升 200%
         </p>
         <div class="hero-cta">
-          <button class="btn btn-primary" @click="handleStartFree">免費試用</button>
-          <a 
-            href="https://chrome.google.com/webstore" 
-            target="_blank" 
-            class="btn btn-secondary"
-          >
-            下載擴充功能
-          </a>
+          <button class="btn btn-primary btn-lg" @click="handleStartFree">
+            免費開始練習 <i class="bi bi-arrow-right"></i>
+          </button>
+          <button class="btn btn-outline btn-lg" @click="handleWatchVideo">
+            觀看介紹影片
+          </button>
         </div>
       </div>
     </section>
@@ -150,35 +151,57 @@
     </section>
 
     <!-- Pricing Preview -->
-    <section class="pricing-section">
+    <section class="pricing-section" id="pricing">
       <div class="container">
-        <h2 class="section-title">方案選擇</h2>
-        <div class="pricing-grid">
+        <h2 class="section-title">選擇適合你的方案</h2>
+        <p class="section-subtitle">無論你是剛開始準備還是衝刺階段，我們都有適合你的方案</p>
+        <div class="pricing-grid three-tier">
+          <!-- Free Tier -->
           <div class="pricing-card">
             <h3>免費版</h3>
-            <div class="price">NT$ 0</div>
+            <div class="price">NT$ 0 <span class="price-suffix">永久免費</span></div>
+            <p class="price-desc">適合剛開始準備考試的考生</p>
             <ul class="pricing-features">
-              <li>基礎題庫存取</li>
-              <li>AI 聊天（每日 10 次）</li>
-              <li>基礎快閃卡</li>
-              <li>擴充功能基礎功能</li>
+              <li><i class="bi bi-check2"></i> 每日 20 題練習額度</li>
+              <li><i class="bi bi-check2"></i> 基礎錯題記錄</li>
+              <li><i class="bi bi-check2"></i> 歷屆試題瀏覽</li>
+              <li><i class="bi bi-check2"></i> 基礎學習統計</li>
             </ul>
-            <i style="flex: 1"></i>
-            <button class="btn btn-outline" @click="handleStartFree">開始使用</button>
+            <button class="btn btn-outline btn-block" @click="handleStartFree">免費開始</button>
           </div>
+          
+          <!-- Pro Tier -->
           <div class="pricing-card featured">
-            <div class="badge">推薦</div>
-            <h3>進階版</h3>
-            <div class="price">NT$ 500<span>/月</span></div>
+            <div class="badge">✨ 最受歡迎</div>
+            <h3>專業版</h3>
+            <div class="price">NT$ 299 <span class="price-suffix">每月</span></div>
+            <p class="price-desc">適合認真準備考試的考生</p>
             <ul class="pricing-features">
-              <li>無限題庫存取</li>
-              <li>無限 AI 聊天</li>
-              <li>AI 申論批改</li>
-              <li>進階分析報表</li>
-              <li>優先客服支援</li>
-              <li>擴充功能進階功能</li>
+              <li><i class="bi bi-check2"></i> 無限題目練習</li>
+              <li><i class="bi bi-check2"></i> AI 智慧分析功能</li>
+              <li><i class="bi bi-check2"></i> 間隔重複閃卡系統</li>
+              <li><i class="bi bi-check2"></i> 模擬考試功能</li>
+              <li><i class="bi bi-check2"></i> 詳細學習報告</li>
+              <li><i class="bi bi-check2"></i> 申論題 AI 批改</li>
+              <li><i class="bi bi-check2"></i> 優先客服支援</li>
             </ul>
-            <button class="btn btn-primary" @click="handleSubscribe">立即升級</button>
+            <button class="btn btn-primary btn-block" @click="handleSubscribe">升級專業版</button>
+          </div>
+          
+          <!-- Team Tier -->
+          <div class="pricing-card">
+            <h3>團隊版</h3>
+            <div class="price">聯繫我們 <span class="price-suffix">客製方案</span></div>
+            <p class="price-desc">適合補習班或讀書會使用</p>
+            <ul class="pricing-features">
+              <li><i class="bi bi-check2"></i> 所有專業版功能</li>
+              <li><i class="bi bi-check2"></i> 多人協作題庫</li>
+              <li><i class="bi bi-check2"></i> 團隊學習分析</li>
+              <li><i class="bi bi-check2"></i> 自訂題目上傳</li>
+              <li><i class="bi bi-check2"></i> 專屬客服經理</li>
+              <li><i class="bi bi-check2"></i> API 整合支援</li>
+            </ul>
+            <button class="btn btn-outline btn-block" @click="handleContactSales">聯繫業務</button>
           </div>
         </div>
       </div>
@@ -215,7 +238,7 @@
           <!-- Brand Column -->
           <div class="footer-brand">
             <div class="footer-logo">
-              <span class="logo-icon">📚</span>
+              <span class="logo-icon"><i class="bi bi-journal-bookmark"></i></span>
               <span class="logo-text">ExamBank</span>
             </div>
             <p class="footer-description">
@@ -287,6 +310,16 @@ const handleStartFree = () => {
 const handleSubscribe = () => {
   router.push('/subscription')
 }
+
+const handleWatchVideo = () => {
+  // Open video modal or navigate to video page
+  window.open('https://www.youtube.com/@ExamBank', '_blank')
+}
+
+const handleContactSales = () => {
+  // Contact sales
+  window.location.href = 'mailto:sales@exambank.tw?subject=團隊版諮詢'
+}
 </script>
 
 <style scoped>
@@ -298,24 +331,45 @@ const handleSubscribe = () => {
 
 /* Hero Section */
 .hero-section {
-  background: var(--bg-page);
+  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
   color: var(--text-primary);
-  padding: 120px 24px 80px;
+  padding: 100px 24px 80px;
   text-align: center;
 }
 
 .hero-content {
-  max-width: 840px;
+  max-width: 700px;
   margin: 0 auto;
 }
 
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary);
+  padding: 8px 16px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+
+.hero-badge i {
+  font-size: 14px;
+}
+
 .hero-title {
-  font-size: 42px;
-  font-weight: 700;
-  margin-bottom: 16px;
+  font-size: 48px;
+  font-weight: 800;
+  margin-bottom: 20px;
   line-height: 1.2;
   letter-spacing: -0.02em;
   color: var(--text-primary);
+}
+
+.title-highlight {
+  color: var(--primary);
 }
 
 .hero-subtitle {
@@ -325,7 +379,7 @@ const handleSubscribe = () => {
 }
 
 .hero-description {
-  font-size: 17px;
+  font-size: 18px;
   margin-bottom: 36px;
   color: var(--text-secondary);
   line-height: 1.7;
@@ -333,9 +387,34 @@ const handleSubscribe = () => {
 
 .hero-cta {
   display: flex;
-  gap: 14px;
+  gap: 16px;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+.btn {
+  padding: 12px 26px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-lg {
+  padding: 14px 32px;
+  font-size: 16px;
+  border-radius: 14px;
+}
+
+.btn-block {
+  width: 100%;
+  justify-content: center;
 }
 
 .btn {
@@ -634,102 +713,116 @@ const handleSubscribe = () => {
 
 /* Pricing Section */
 .pricing-section {
-  padding: 70px 0;
-  background: var(--surface-muted);
+  padding: 80px 0;
+  background: #f8fafc;
+}
+
+.section-subtitle {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 16px;
+  margin-top: -20px;
+  margin-bottom: 40px;
 }
 
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  max-width: 820px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  max-width: 900px;
   margin: 0 auto;
+}
+
+.pricing-grid.three-tier {
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 1100px;
 }
 
 .pricing-card {
   display: flex;
   flex-direction: column;
-  background: var(--surface);
-  border-radius: var(--radius);
-  padding: 32px 26px;
-  text-align: center;
-  border: 1px solid var(--border);
-  transition: all 0.2s ease;
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 28px;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
   position: relative;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.pricing-card:hover {
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
 }
 
 .pricing-card.featured {
-  display: flex;
-  flex-direction: column;
   border-color: var(--primary);
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-4px);
+  box-shadow: 0 20px 50px rgba(59, 130, 246, 0.15);
+  transform: scale(1.02);
   background: #fff;
 }
 
 .badge {
   position: absolute;
-  top: -12px;
+  top: -14px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--primary);
-  color: #f7f9fc;
-  padding: 6px 14px;
-  border-radius: 16px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .pricing-card h3 {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 12px;
-  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
 }
 
 .price {
-  font-size: 40px;
+  font-size: 36px;
   font-weight: 800;
   color: var(--primary);
-  margin-bottom: 24px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
-.price span {
-  font-size: 16px;
+.price-suffix {
+  font-size: 14px;
+  font-weight: 400;
   color: var(--text-secondary);
+}
+
+.price-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
 }
 
 .pricing-features {
   list-style: none;
   padding: 0;
   margin: 0 0 24px;
-  text-align: left;
+  flex: 1;
 }
 
 .pricing-features li {
   padding: 10px 0;
-  font-size: 15px;
+  font-size: 14px;
   color: var(--text-primary);
-  border-bottom: 1px solid #f0f2f4;
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.pricing-features li::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--primary);
-  display: inline-block;
-  margin-right: 10px;
-  position: relative;
-  top: -1px;
-}
-
-.pricing-features li:last-child {
-  border-bottom: none;
+.pricing-features li i {
+  color: #10b981;
+  font-size: 16px;
 }
 
 /* Stats Section */
@@ -882,7 +975,15 @@ const handleSubscribe = () => {
 }
 
 .logo-icon {
-  font-size: 24px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
 }
 
 .logo-text {

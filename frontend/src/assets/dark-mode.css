@@ -2710,3 +2710,14 @@ html.dark .analytics-view .hot-list .hot-item:hover *,
 html.dark .hot-list .hot-item:hover * {
   background: transparent !important;
 }
+
+/* ===== ROUND 18 FIXES [2026-01-03 16:45] - LANDING PAGE HERO ===== */
+
+/* 1. Hero Section Dark Mode */
+html.dark .hero-section {
+  background: linear-gradient(180deg, var(--bg-page) 0%, var(--surface) 100%) !important;
+}
+
+html.dark .hero-badge {
+  background: rgba(59, 130, 246, 0.2) !important;
+}
