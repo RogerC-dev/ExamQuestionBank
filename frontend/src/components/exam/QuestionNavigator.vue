@@ -17,7 +17,8 @@
         class="question-button"
         :class="{
           'current': index === currentIndex,
-          'answered': answeredQuestions.has(index)
+          'answered': answeredQuestions.has(index),
+          'flagged': flaggedQuestions?.has(index)
         }"
         @click="$emit('navigate-to', index)"
         :aria-label="getButtonAriaLabel(index)"
@@ -31,6 +32,12 @@
     <p id="navigator-status" class="sr-only">
       {{ answeredQuestions.size }} of {{ questions.length }} questions answered
     </p>
+    <!-- Legend -->
+    <div class="navigator-legend">
+      <span class="legend-item"><span class="legend-dot answered"></span>已作答</span>
+      <span class="legend-item"><span class="legend-dot unanswered"></span>未作答</span>
+      <span class="legend-item"><span class="legend-dot flagged"></span>已標記</span>
+    </div>
   </nav>
 </template>
 
@@ -53,6 +60,10 @@ const props = defineProps({
   answeredQuestions: {
     type: Set,
     required: true
+  },
+  flaggedQuestions: {
+    type: Set,
+    default: () => new Set()
   }
 })
 
@@ -62,11 +73,13 @@ const getButtonAriaLabel = (index) => {
   const questionNum = index + 1
   const isCurrent = index === props.currentIndex
   const isAnswered = props.answeredQuestions.has(index)
+  const isFlagged = props.flaggedQuestions?.has(index)
   
   let label = `Question ${questionNum}`
   if (isCurrent) label += ', current question'
   if (isAnswered) label += ', answered'
   else label += ', not answered'
+  if (isFlagged) label += ', flagged for review'
   
   return label
 }
@@ -128,6 +141,53 @@ const getButtonAriaLabel = (index) => {
   background: #059669;
   border-color: #059669;
   color: white;
+}
+
+.question-button.flagged {
+  box-shadow: inset 0 0 0 3px #f97316;
+}
+
+.question-button.flagged.current {
+  box-shadow: inset 0 0 0 3px #f97316;
+}
+
+/* Navigator Legend */
+.navigator-legend {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.legend-dot.answered {
+  background: #d1fae5;
+  border: 2px solid #10b981;
+}
+
+.legend-dot.unanswered {
+  background: white;
+  border: 2px solid #e5e7eb;
+}
+
+.legend-dot.flagged {
+  background: white;
+  border: 2px solid #e5e7eb;
+  box-shadow: inset 0 0 0 2px #f97316;
 }
 
 /* Screen reader only class */

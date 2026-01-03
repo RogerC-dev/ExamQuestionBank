@@ -15,28 +15,40 @@
             <div class="overview-icon blue"><i class="bi bi-clipboard-check"></i></div>
             <div class="overview-content">
               <span class="overview-value">{{ stats.total_answered || 0 }}</span>
-              <span class="overview-label">已作答題數</span>
+              <span class="overview-label">總練習題數</span>
+              <span class="overview-change positive" v-if="weeklyStats.questionsChange">
+                +{{ weeklyStats.questionsChange }} 本週
+              </span>
             </div>
           </div>
           <div class="overview-card card-hover">
             <div class="overview-icon green"><i class="bi bi-bullseye"></i></div>
             <div class="overview-content">
               <span class="overview-value">{{ stats.accuracy || 0 }}%</span>
-              <span class="overview-label">整體正確率</span>
+              <span class="overview-label">平均正確率</span>
+              <span class="overview-change" :class="weeklyStats.accuracyChange >= 0 ? 'positive' : 'negative'" v-if="weeklyStats.accuracyChange !== null">
+                {{ weeklyStats.accuracyChange >= 0 ? '+' : '' }}{{ weeklyStats.accuracyChange }}% vs 上週
+              </span>
             </div>
           </div>
           <div class="overview-card card-hover">
-            <div class="overview-icon purple"><i class="bi bi-journal-text"></i></div>
+            <div class="overview-icon purple"><i class="bi bi-fire"></i></div>
             <div class="overview-content">
-              <span class="overview-value">{{ stats.exam_count || 0 }}</span>
-              <span class="overview-label">測驗次數</span>
+              <span class="overview-value">{{ weeklyStats.streakDays || 0 }}</span>
+              <span class="overview-label">連續學習天數</span>
+              <span class="overview-change neutral" v-if="weeklyStats.streakRecord">
+                最高紀錄: {{ weeklyStats.streakRecord }}天
+              </span>
             </div>
           </div>
           <div class="overview-card card-hover">
-            <div class="overview-icon amber"><i class="bi bi-x-circle"></i></div>
+            <div class="overview-icon amber"><i class="bi bi-graph-up-arrow"></i></div>
             <div class="overview-content">
-              <span class="overview-value">{{ stats.wrong_count || 0 }}</span>
-              <span class="overview-label">錯題數量</span>
+              <span class="overview-value">+{{ weeklyStats.weeklyImprovement || 0 }}</span>
+              <span class="overview-label">本週進步</span>
+              <span class="overview-change positive" v-if="weeklyStats.improvementPercent">
+                較上週增加 {{ weeklyStats.improvementPercent }}%
+              </span>
             </div>
           </div>
         </div>
@@ -360,6 +372,72 @@ const chartData = computed(() => {
     .sort((a, b) => a.date.localeCompare(b.date))
 })
 
+// Weekly stats with comparison metrics
+const weeklyStats = computed(() => {
+  const now = new Date()
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+  
+  // Filter results by time period
+  const thisWeekResults = recentResults.value.filter(r => {
+    const date = new Date(r.completed_at)
+    return date >= oneWeekAgo
+  })
+  
+  const lastWeekResults = recentResults.value.filter(r => {
+    const date = new Date(r.completed_at)
+    return date >= twoWeeksAgo && date < oneWeekAgo
+  })
+  
+  // Calculate this week's questions answered
+  const thisWeekQuestions = thisWeekResults.reduce((sum, r) => sum + (r.total_count || 0), 0)
+  const lastWeekQuestions = lastWeekResults.reduce((sum, r) => sum + (r.total_count || 0), 0)
+  
+  // Calculate accuracy comparison
+  const thisWeekCorrect = thisWeekResults.reduce((sum, r) => sum + (r.correct_count || 0), 0)
+  const thisWeekTotal = thisWeekResults.reduce((sum, r) => sum + (r.total_count || 0), 0)
+  const lastWeekCorrect = lastWeekResults.reduce((sum, r) => sum + (r.correct_count || 0), 0)
+  const lastWeekTotal = lastWeekResults.reduce((sum, r) => sum + (r.total_count || 0), 0)
+  
+  const thisWeekAccuracy = thisWeekTotal > 0 ? (thisWeekCorrect / thisWeekTotal * 100) : 0
+  const lastWeekAccuracy = lastWeekTotal > 0 ? (lastWeekCorrect / lastWeekTotal * 100) : 0
+  const accuracyChange = lastWeekTotal > 0 ? Math.round((thisWeekAccuracy - lastWeekAccuracy) * 10) / 10 : null
+  
+  // Calculate streak days (consecutive days with activity)
+  const dates = chartData.value.map(d => d.date).sort().reverse()
+  let streakDays = 0
+  let checkDate = new Date()
+  checkDate.setHours(0, 0, 0, 0)
+  
+  for (const dateStr of dates) {
+    const date = new Date(dateStr)
+    date.setHours(0, 0, 0, 0)
+    const diffDays = Math.round((checkDate - date) / (24 * 60 * 60 * 1000))
+    
+    if (diffDays <= 1) {
+      streakDays++
+      checkDate = date
+    } else {
+      break
+    }
+  }
+  
+  // Weekly improvement (extra questions vs last week)
+  const weeklyImprovement = thisWeekQuestions - (lastWeekQuestions > 0 ? lastWeekQuestions : 0)
+  const improvementPercent = lastWeekQuestions > 0 
+    ? Math.round((weeklyImprovement / lastWeekQuestions) * 100) 
+    : null
+  
+  return {
+    questionsChange: thisWeekQuestions > 0 ? thisWeekQuestions : null,
+    accuracyChange,
+    streakDays,
+    streakRecord: Math.max(streakDays, dates.length > 0 ? dates.length : 0),
+    weeklyImprovement: Math.max(0, weeklyImprovement),
+    improvementPercent: improvementPercent > 0 ? improvementPercent : null
+  }
+})
+
 
 // Process trend data
 const processedTrend = computed(() => {
@@ -662,6 +740,23 @@ onMounted(loadData)
 
 .overview-label {
   font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.overview-change {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.overview-change.positive {
+  color: #059669;
+}
+
+.overview-change.negative {
+  color: #dc2626;
+}
+
+.overview-change.neutral {
   color: var(--text-secondary);
 }
 

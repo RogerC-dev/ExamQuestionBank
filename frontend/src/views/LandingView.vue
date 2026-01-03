@@ -27,24 +27,60 @@
         <h2 class="section-title">核心功能</h2>
         <div class="features-grid">
           <div class="feature-card">
-            <div class="feature-icon">題</div>
-            <h3>歷屆考題題庫</h3>
-            <p>整合完整歷屆司法官、律師考試題目，提供多種練習模式與詳細解析</p>
+            <div class="feature-icon blue">
+              <i class="bi bi-journal-bookmark"></i>
+            </div>
+            <h3>歷屆試題庫</h3>
+            <p>完整收錄各類國家考試歷屆試題，支援多種練習模式</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">案</div>
-            <h3>智能案例閱讀</h3>
-            <p>Chrome 擴充功能自動識別網頁中的法條與判決，提供即時法律資訊</p>
+            <div class="feature-icon purple">
+              <i class="bi bi-cpu"></i>
+            </div>
+            <h3>AI 智慧分析</h3>
+            <p>運用 AI 分析作答錯誤，提供個人化學習建議</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">AI</div>
-            <h3>AI 法律助手</h3>
-            <p>AI 問答系統協助解答法律問題，分析案例並推薦相關練習題目</p>
+            <div class="feature-icon green">
+              <i class="bi bi-layers"></i>
+            </div>
+            <h3>智慧閃卡</h3>
+            <p>結合間隔重複演算法，有效提升長期記憶效果</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">追</div>
-            <h3>學習追蹤分析</h3>
-            <p>完整的學習統計與進度追蹤，幫助您掌握學習狀況</p>
+            <div class="feature-icon orange">
+              <i class="bi bi-bar-chart-line"></i>
+            </div>
+            <h3>學習分析</h3>
+            <p>詳細的學習數據與進度追蹤，量化你的進步</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon red">
+              <i class="bi bi-bullseye"></i>
+            </div>
+            <h3>模擬考試</h3>
+            <p>仿真考試環境，計時測驗讓你提前適應實戰</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon cyan">
+              <i class="bi bi-clock-history"></i>
+            </div>
+            <h3>錯題複習</h3>
+            <p>自動收集錯題，針對弱點進行強化訓練</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon pink">
+              <i class="bi bi-stars"></i>
+            </div>
+            <h3>申論題分析</h3>
+            <p>AI 批改申論題，提供評分與改進建議</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon yellow">
+              <i class="bi bi-lightning-charge"></i>
+            </div>
+            <h3>Chrome 擴充</h3>
+            <p>一鍵收集網路上的題目，自動建立個人題庫</p>
           </div>
         </div>
       </div>
@@ -171,6 +207,66 @@
         </div>
       </div>
     </section>
+
+    <!-- Footer Section -->
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <!-- Brand Column -->
+          <div class="footer-brand">
+            <div class="footer-logo">
+              <span class="logo-icon">📚</span>
+              <span class="logo-text">ExamBank</span>
+            </div>
+            <p class="footer-description">
+              專為台灣國家考試設計的智慧學習平台，幫助考生更有效率地準備考試。
+            </p>
+          </div>
+
+          <!-- Product Links -->
+          <div class="footer-column">
+            <h4 class="footer-heading">產品</h4>
+            <ul class="footer-links">
+              <li><a href="#features">功能介紹</a></li>
+              <li><a href="#pricing">方案價格</a></li>
+              <li><a href="https://chrome.google.com/webstore" target="_blank">Chrome 擴充</a></li>
+              <li><a href="#">更新日誌</a></li>
+            </ul>
+          </div>
+
+          <!-- Support Links -->
+          <div class="footer-column">
+            <h4 class="footer-heading">支援</h4>
+            <ul class="footer-links">
+              <li><a href="#">使用教學</a></li>
+              <li><a href="#">常見問題</a></li>
+              <li><a href="#">聯繫我們</a></li>
+              <li><a href="#">意見回饋</a></li>
+            </ul>
+          </div>
+
+          <!-- Legal Links -->
+          <div class="footer-column">
+            <h4 class="footer-heading">法律</h4>
+            <ul class="footer-links">
+              <li><a href="#">服務條款</a></li>
+              <li><a href="#">隱私政策</a></li>
+              <li><a href="#">Cookie 政策</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+          <p class="copyright">© 2024 ExamBank. All rights reserved.</p>
+          <div class="social-links">
+            <a href="#" class="social-link" aria-label="Facebook">Facebook</a>
+            <a href="#" class="social-link" aria-label="Instagram">Instagram</a>
+            <a href="#" class="social-link" aria-label="Discord">Discord</a>
+          </div>
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -321,50 +417,93 @@ const handleSubscribe = () => {
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
 }
 
 .feature-card {
   text-align: left;
-  padding: 32px 24px;
+  padding: 28px 22px;
   border-radius: var(--radius);
   background: var(--surface);
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   transition: all 0.3s ease;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
 }
 
 .feature-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
-  background: #fff;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  border-color: rgba(71, 105, 150, 0.2);
+}
+
+.feature-card:hover .feature-icon {
+  transform: scale(1.1);
 }
 
 .feature-icon {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
-  background: var(--primary-soft);
-  color: var(--primary);
-  font-weight: 800;
   display: grid;
   place-items: center;
-  margin-bottom: 12px;
-  font-size: 15px;
-  letter-spacing: 0.05em;
+  margin-bottom: 14px;
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+/* Colored icon backgrounds */
+.feature-icon.blue {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.feature-icon.purple {
+  background: #f5f3ff;
+  color: #8b5cf6;
+}
+
+.feature-icon.green {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.feature-icon.orange {
+  background: #fff7ed;
+  color: #f97316;
+}
+
+.feature-icon.red {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.feature-icon.cyan {
+  background: #ecfeff;
+  color: #06b6d4;
+}
+
+.feature-icon.pink {
+  background: #fdf2f8;
+  color: #ec4899;
+}
+
+.feature-icon.yellow {
+  background: #fefce8;
+  color: #eab308;
 }
 
 .feature-card h3 {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   color: var(--text-primary);
 }
 
 .feature-card p {
   color: var(--text-secondary);
   line-height: 1.6;
+  font-size: 14px;
 }
 
 /* Extension Section */
@@ -643,6 +782,10 @@ const handleSubscribe = () => {
   .pricing-card.featured {
     transform: translateY(0);
   }
+
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 640px) {
@@ -710,6 +853,146 @@ const handleSubscribe = () => {
 
 :global(.dark) .stats-section {
     background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+/* Footer Section */
+.site-footer {
+  padding: 60px 0 0;
+  background: var(--bg-page);
+  border-top: 1px solid var(--border);
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+.footer-brand {
+  max-width: 280px;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.logo-icon {
+  font-size: 24px;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.footer-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.footer-column {
+  min-width: 120px;
+}
+
+.footer-heading {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-links li {
+  margin-bottom: 10px;
+}
+
+.footer-links a {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: var(--primary);
+}
+
+.footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 0;
+  border-top: 1px solid var(--border);
+}
+
+.copyright {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.social-links {
+  display: flex;
+  gap: 24px;
+}
+
+.social-link {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.social-link:hover {
+  color: var(--primary);
+}
+
+/* Footer responsive */
+@media (max-width: 900px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+
+  .footer-brand {
+    max-width: 100%;
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+}
+
+/* Dark mode footer */
+:global(.dark) .site-footer {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .footer-bottom {
     border-color: var(--border) !important;
 }
 </style>

@@ -74,6 +74,7 @@
                 :questions="normalizedQuestions"
                 :current-index="currentQuestionIndex"
                 :answered-questions="answeredQuestionsSet"
+                :flagged-questions="flaggedQuestions"
                 @navigate-to="navigateToQuestion"
               />
               <ProgressTracker
@@ -99,6 +100,15 @@
                   aria-label="Previous question"
                 >
                   上一題
+                </button>
+                <button
+                  class="btn"
+                  :class="{ 'btn-flagged': isCurrentQuestionFlagged }"
+                  @click="toggleFlag"
+                  aria-label="Flag question for review"
+                >
+                  <i class="bi" :class="isCurrentQuestionFlagged ? 'bi-flag-fill' : 'bi-flag'"></i>
+                  {{ isCurrentQuestionFlagged ? '取消標記' : '標記' }}
                 </button>
                 <button
                   class="btn"
@@ -266,6 +276,7 @@ const timerRef = ref(null)
 const errorBoundaryRef = ref(null)
 const showSubmissionError = ref(false)
 const submissionErrorMessage = ref('')
+const flaggedQuestions = ref(new Set())
 
 // Computed properties
 const totalQuestions = computed(() => exam.value?.exam_questions?.length || 0)
@@ -288,6 +299,10 @@ const currentQuestionOptions = computed(() => {
 
 const answeredQuestionsSet = computed(() => {
   return new Set(Object.keys(userAnswers.value).map(Number))
+})
+
+const isCurrentQuestionFlagged = computed(() => {
+  return flaggedQuestions.value.has(currentQuestionIndex.value)
 })
 
 // Normalize exam data for ExamHeader component
@@ -446,6 +461,18 @@ const nextQuestion = () => {
 
 const prevQuestion = () => {
   currentQuestionIndex.value = Math.max(currentQuestionIndex.value - 1, 0)
+  persistExamState()
+}
+
+const toggleFlag = () => {
+  const index = currentQuestionIndex.value
+  const newFlagged = new Set(flaggedQuestions.value)
+  if (newFlagged.has(index)) {
+    newFlagged.delete(index)
+  } else {
+    newFlagged.add(index)
+  }
+  flaggedQuestions.value = newFlagged
   persistExamState()
 }
 
@@ -666,6 +693,7 @@ const persistExamState = () => {
       currentQuestionIndex: currentQuestionIndex.value,
       isQuizActive: isQuizActive.value,
       startTime: startTime.value,
+      flaggedQuestions: Array.from(flaggedQuestions.value),
       timestamp: new Date().toISOString()
     }
     localStorage.setItem('exam-preview-state', JSON.stringify(state))
@@ -700,6 +728,7 @@ const restoreExamState = () => {
     currentQuestionIndex.value = state.currentQuestionIndex || 0
     isQuizActive.value = state.isQuizActive || false
     startTime.value = state.startTime || null
+    flaggedQuestions.value = new Set(state.flaggedQuestions || [])
     
     if (isQuizActive.value) {
       quizMessage.value = '已恢復上次的作答進度'
@@ -1005,6 +1034,20 @@ defineExpose({
 
 .btn-secondary:hover:not(:disabled) {
   background: #4b5563;
+}
+
+.btn-flagged {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #f97316;
+}
+
+.btn-flagged:hover:not(:disabled) {
+  background: #ffedd5;
+}
+
+.btn i {
+  margin-right: 4px;
 }
 
 /* Empty State */
