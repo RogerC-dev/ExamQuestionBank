@@ -1,7 +1,24 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { Tooltip } from 'bootstrap'
 
 const theme = ref('light')
+
+const tooltipRef = ref(null)
+let tooltipInstance = null
+
+const initTooltip = () => {
+  if (!tooltipRef.value) return
+  if (tooltipInstance) {
+    tooltipInstance.dispose()
+  }
+  tooltipInstance = new Tooltip(tooltipRef.value)
+}
+
+const applyTheme = (value) => {
+  document.documentElement.classList.toggle('dark', value === 'dark')
+  document.documentElement.setAttribute('data-bs-theme', value)
+}
 
 onMounted(() => {
   // Check localStorage first, then system preference
@@ -10,20 +27,36 @@ onMounted(() => {
   const initial = stored || (prefersDark ? 'dark' : 'light')
   
   theme.value = initial
-  document.documentElement.classList.toggle('dark', initial === 'dark')
+  applyTheme(initial)
+  nextTick(initTooltip)
+})
+
+watch(theme, async () => {
+  await nextTick()
+  initTooltip()
+})
+
+onBeforeUnmount(() => {
+  if (tooltipInstance) {
+    tooltipInstance.dispose()
+    tooltipInstance = null
+  }
 })
 
 const toggleTheme = () => {
   const next = theme.value === 'light' ? 'dark' : 'light'
   theme.value = next
   localStorage.setItem('theme', next)
-  document.documentElement.classList.toggle('dark', next === 'dark')
+  applyTheme(next)
 }
 </script>
 
 <template>
   <button
     class="theme-toggle"
+    ref="tooltipRef"
+    data-bs-toggle="tooltip"
+    data-bs-placement="bottom"
     @click="toggleTheme"
     :aria-label="theme === 'light' ? '切換深色模式' : '切換淺色模式'"
     :title="theme === 'light' ? '切換深色模式' : '切換淺色模式'"
@@ -65,3 +98,4 @@ const toggleTheme = () => {
   transform: rotate(15deg);
 }
 </style>
+
