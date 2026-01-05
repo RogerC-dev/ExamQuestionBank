@@ -688,14 +688,26 @@ onMounted(loadData)
 }
 
 .overview-card {
-  background: #fff;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 14px;
   padding: 20px;
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-elegant);
+  border: 1px solid var(--glass-border);
+  transition: all 0.3s ease;
+}
+
+.overview-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+
+.overview-card:hover .overview-icon {
+  transform: scale(1.1);
 }
 
 .overview-icon {
@@ -705,26 +717,27 @@ onMounted(loadData)
   display: grid;
   place-items: center;
   font-size: 20px;
+  transition: transform 0.3s ease;
 }
 
 .overview-icon.blue {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--icon-blue-bg);
+  color: var(--icon-blue-fg);
 }
 
 .overview-icon.green {
-  background: #ecfdf5;
-  color: #059669;
+  background: var(--icon-green-bg);
+  color: var(--icon-green-fg);
 }
 
 .overview-icon.purple {
-  background: #f5f3ff;
-  color: #7c3aed;
+  background: var(--icon-purple-bg);
+  color: var(--icon-purple-fg);
 }
 
 .overview-icon.amber {
-  background: #fffbeb;
-  color: #d97706;
+  background: var(--icon-amber-bg);
+  color: var(--icon-amber-fg);
 }
 
 .overview-content {
@@ -761,11 +774,13 @@ onMounted(loadData)
 }
 
 .analytics-card {
-  background: #fff;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 24px;
   border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-elegant);
+  border: 1px solid var(--glass-border);
   margin-bottom: 20px;
 }
 

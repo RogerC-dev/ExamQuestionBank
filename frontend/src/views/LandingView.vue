@@ -2,6 +2,10 @@
   <div class="landing-view">
     <!-- Hero Section -->
     <section class="hero-section">
+      <!-- Blur circles for visual effect -->
+      <div class="hero-blur-circle hero-blur-1"></div>
+      <div class="hero-blur-circle hero-blur-2"></div>
+      
       <div class="hero-content">
         <div class="hero-badge">
           <i class="bi bi-stars"></i>
@@ -18,6 +22,22 @@
           <button class="btn btn-outline btn-lg" @click="handleWatchVideo">
             觀看介紹影片
           </button>
+        </div>
+        
+        <!-- Trust indicators -->
+        <div class="trust-indicators">
+          <div class="trust-item">
+            <i class="bi bi-shield-check"></i>
+            <span>安全可靠</span>
+          </div>
+          <div class="trust-item">
+            <i class="bi bi-people"></i>
+            <span>10,000+ 使用者</span>
+          </div>
+          <div class="trust-item">
+            <i class="bi bi-star-fill"></i>
+            <span>4.9 評價</span>
+          </div>
         </div>
       </div>
     </section>
@@ -112,6 +132,17 @@
             </a>
           </div>
           <div class="extension-demo">
+            <!-- Floating notification card -->
+            <div class="floating-notification animate-float">
+              <div class="notification-icon">
+                <i class="bi bi-bell-fill"></i>
+              </div>
+              <div class="notification-content">
+                <span class="notification-title">法條已識別</span>
+                <span class="notification-desc">民法第 184 條</span>
+              </div>
+            </div>
+            
             <div class="demo-placeholder">
               <p>擴充功能示範</p>
               <p class="demo-note"><img src="../assets/demo.png" alt="ext-demo" width="600px"></p>
@@ -162,28 +193,28 @@
             <div class="price">NT$ 0 <span class="price-suffix">永久免費</span></div>
             <p class="price-desc">適合剛開始準備考試的考生</p>
             <ul class="pricing-features">
-              <li><i class="bi bi-check2"></i> 每日 20 題練習額度</li>
-              <li><i class="bi bi-check2"></i> 基礎錯題記錄</li>
-              <li><i class="bi bi-check2"></i> 歷屆試題瀏覽</li>
-              <li><i class="bi bi-check2"></i> 基礎學習統計</li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>每日 20 題練習額度</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>基礎錯題記錄</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>歷屆試題瀏覽</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>基礎學習統計</span></li>
             </ul>
             <button class="btn btn-outline btn-block" @click="handleStartFree">免費開始</button>
           </div>
           
           <!-- Pro Tier -->
           <div class="pricing-card featured">
-            <div class="badge">✨ 最受歡迎</div>
+            <div class="badge badge-popular">✨ 最受歡迎</div>
             <h3>專業版</h3>
             <div class="price">NT$ 299 <span class="price-suffix">每月</span></div>
             <p class="price-desc">適合認真準備考試的考生</p>
             <ul class="pricing-features">
-              <li><i class="bi bi-check2"></i> 無限題目練習</li>
-              <li><i class="bi bi-check2"></i> AI 智慧分析功能</li>
-              <li><i class="bi bi-check2"></i> 間隔重複閃卡系統</li>
-              <li><i class="bi bi-check2"></i> 模擬考試功能</li>
-              <li><i class="bi bi-check2"></i> 詳細學習報告</li>
-              <li><i class="bi bi-check2"></i> 申論題 AI 批改</li>
-              <li><i class="bi bi-check2"></i> 優先客服支援</li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>無限題目練習</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>AI 智慧分析功能</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>間隔重複閃卡系統</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>模擬考試功能</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>詳細學習報告</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>申論題 AI 批改</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>優先客服支援</span></li>
             </ul>
             <button class="btn btn-primary btn-block" @click="handleSubscribe">升級專業版</button>
           </div>
@@ -194,12 +225,12 @@
             <div class="price">聯繫我們 <span class="price-suffix">客製方案</span></div>
             <p class="price-desc">適合補習班或讀書會使用</p>
             <ul class="pricing-features">
-              <li><i class="bi bi-check2"></i> 所有專業版功能</li>
-              <li><i class="bi bi-check2"></i> 多人協作題庫</li>
-              <li><i class="bi bi-check2"></i> 團隊學習分析</li>
-              <li><i class="bi bi-check2"></i> 自訂題目上傳</li>
-              <li><i class="bi bi-check2"></i> 專屬客服經理</li>
-              <li><i class="bi bi-check2"></i> API 整合支援</li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>所有專業版功能</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>多人協作題庫</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>團隊學習分析</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>自訂題目上傳</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>專屬客服經理</span></li>
+              <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>API 整合支援</span></li>
             </ul>
             <button class="btn btn-outline btn-block" @click="handleContactSales">聯繫業務</button>
           </div>
@@ -211,21 +242,33 @@
     <section class="stats-section">
       <div class="container">
         <div class="stats-grid">
-          <div class="stat-item">
-            <div class="stat-number">3,000+</div>
-            <div class="stat-label">歷屆考題</div>
+          <div class="stat-card card-interactive">
+            <div class="icon-box blue"><i class="bi bi-journal-bookmark"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">3,000+</div>
+              <div class="stat-label">歷屆考題</div>
+            </div>
           </div>
-          <div class="stat-item">
-            <div class="stat-number">10,000+</div>
-            <div class="stat-label">活躍使用者</div>
+          <div class="stat-card card-interactive">
+            <div class="icon-box green"><i class="bi bi-people"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">10,000+</div>
+              <div class="stat-label">活躍使用者</div>
+            </div>
           </div>
-          <div class="stat-item">
-            <div class="stat-number">95%</div>
-            <div class="stat-label">使用者滿意度</div>
+          <div class="stat-card card-interactive">
+            <div class="icon-box purple"><i class="bi bi-star-fill"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">95%</div>
+              <div class="stat-label">使用者滿意度</div>
+            </div>
           </div>
-          <div class="stat-item">
-            <div class="stat-number">24/7</div>
-            <div class="stat-label">AI 助手服務</div>
+          <div class="stat-card card-interactive">
+            <div class="icon-box amber"><i class="bi bi-cpu"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">24/7</div>
+              <div class="stat-label">AI 助手服務</div>
+            </div>
           </div>
         </div>
       </div>
@@ -331,15 +374,46 @@ const handleContactSales = () => {
 
 /* Hero Section */
 .hero-section {
-  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+  background: var(--gradient-hero);
   color: var(--text-primary);
   padding: 100px 24px 80px;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hero blur circles */
+.hero-blur-circle {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.hero-blur-1 {
+  width: 400px;
+  height: 400px;
+  background: var(--primary);
+  top: -100px;
+  left: -100px;
+  opacity: 0.15;
+}
+
+.hero-blur-2 {
+  width: 300px;
+  height: 300px;
+  background: var(--success);
+  bottom: -50px;
+  right: -50px;
+  opacity: 0.1;
 }
 
 .hero-content {
   max-width: 700px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 .hero-badge {
@@ -390,6 +464,28 @@ const handleContactSales = () => {
   gap: 16px;
   justify-content: center;
   flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+
+/* Trust Indicators */
+.trust-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.trust-item i {
+  color: var(--primary);
+  font-size: 16px;
 }
 
 .btn {
@@ -644,6 +740,52 @@ const handleContactSales = () => {
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border);
+  position: relative;
+}
+
+/* Floating notification card */
+.floating-notification {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-elegant);
+  z-index: 10;
+}
+
+.notification-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.notification-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notification-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.notification-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
 }
 
 .demo-placeholder {
@@ -827,7 +969,7 @@ const handleContactSales = () => {
 
 /* Stats Section */
 .stats-section {
-  padding: 54px 0;
+  padding: 60px 0;
   background: var(--bg-page);
   color: var(--text-primary);
   border-top: 1px solid var(--border);
@@ -835,27 +977,32 @@ const handleContactSales = () => {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 20px;
-  text-align: center;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
 }
 
-.stat-item {
-  padding: 20px;
-  background: transparent;
-  border: none;
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+}
+
+.stat-content {
+  text-align: left;
 }
 
 .stat-number {
-  font-size: 34px;
+  font-size: 28px;
   font-weight: 800;
-  margin-bottom: 6px;
   color: var(--primary);
+  line-height: 1.2;
 }
 
 .stat-label {
   font-size: 14px;
   color: var(--text-secondary);
+  margin-top: 4px;
 }
 
 /* Responsive */
@@ -879,6 +1026,10 @@ const handleContactSales = () => {
   .features-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 640px) {
@@ -897,6 +1048,24 @@ const handleContactSales = () => {
   .features-grid,
   .benefits-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  
+  .stat-card {
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  .stat-number {
+    font-size: 24px;
+  }
+  
+  .trust-indicators {
+    gap: 16px;
   }
 }
 

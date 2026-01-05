@@ -14,10 +14,10 @@
             </div>
           </div>
           <ul class="features-list">
-            <li>✅ 基礎題庫存取</li>
-            <li>✅ AI 聊天（每日 10 次）</li>
-            <li>✅ 基礎快閃卡</li>
-            <li>✅ 擴充功能基礎功能</li>
+            <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>基礎題庫存取</span></li>
+            <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>AI 聊天（每日 10 次）</span></li>
+            <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>基礎快閃卡</span></li>
+            <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>擴充功能基礎功能</span></li>
           </ul>
           <button 
             class="btn btn-outline" 
@@ -30,7 +30,7 @@
 
         <!-- Premium Tier -->
         <div class="pricing-card featured">
-          <div class="badge">推薦</div>
+          <div class="badge badge-popular">推薦</div>
           <div class="card-header">
             <h3>進階版</h3>
             <div class="price">
@@ -39,12 +39,12 @@
             </div>
           </div>
           <ul class="features-list">
-            <li>✅ 無限題庫存取</li>
-            <li>✅ 無限 AI 聊天</li>
-            <li>✅ AI 申論批改</li>
-            <li>✅ 進階分析報表</li>
-            <li>✅ 優先客服支援</li>
-            <li>✅ 擴充功能進階功能</li>
+            <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>無限題庫存取</span></li>
+            <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>無限 AI 聊天</span></li>
+            <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>AI 申論批改</span></li>
+            <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>進階分析報表</span></li>
+            <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>優先客服支援</span></li>
+            <li><div class="check-circle"><i class="bi bi-check2"></i></div><span>擴充功能進階功能</span></li>
           </ul>
           <button 
             class="btn btn-primary" 
@@ -187,7 +187,7 @@ const formatDate = (dateString) => {
 .subscription-view {
   min-height: calc(100vh - 200px);
   padding: 40px 0;
-  background: #f8f9fa;
+  background: var(--bg-page);
 }
 
 .container {
@@ -201,12 +201,12 @@ const formatDate = (dateString) => {
   font-weight: bold;
   text-align: center;
   margin-bottom: 12px;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .page-subtitle {
   text-align: center;
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 48px;
   font-size: 18px;
 }
@@ -219,23 +219,23 @@ const formatDate = (dateString) => {
 }
 
 .pricing-card {
-  background: white;
+  background: var(--surface);
   border-radius: 12px;
   padding: 40px 32px;
   text-align: center;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--border);
   transition: all 0.3s;
   position: relative;
 }
 
 .pricing-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-hover);
 }
 
 .pricing-card.featured {
-  border-color: #667eea;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+  border-color: var(--primary);
+  box-shadow: 0 8px 24px rgba(71, 105, 150, 0.2);
   transform: scale(1.05);
 }
 
@@ -244,7 +244,7 @@ const formatDate = (dateString) => {
   top: -12px;
   left: 50%;
   transform: translateX(-50%);
-  background: #667eea;
+  background: var(--primary);
   color: white;
   padding: 6px 16px;
   border-radius: 20px;
@@ -260,7 +260,7 @@ const formatDate = (dateString) => {
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .price {
@@ -273,12 +273,12 @@ const formatDate = (dateString) => {
 .amount {
   font-size: 48px;
   font-weight: bold;
-  color: #667eea;
+  color: var(--primary);
 }
 
 .period {
   font-size: 20px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .features-list {
@@ -291,8 +291,11 @@ const formatDate = (dateString) => {
 .features-list li {
   padding: 12px 0;
   font-size: 16px;
-  color: #333;
-  border-bottom: 1px solid #f0f0f0;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .features-list li:last-child {
@@ -311,62 +314,62 @@ const formatDate = (dateString) => {
 }
 
 .btn-primary {
-  background: #667eea;
+  background: var(--primary);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #5568d3;
+  background: var(--primary-hover);
   transform: translateY(-2px);
 }
 
 .btn-outline {
   background: transparent;
-  color: #667eea;
-  border: 2px solid #667eea;
+  color: var(--primary);
+  border: 2px solid var(--primary);
 }
 
 .btn-outline:hover:not(:disabled) {
-  background: #667eea;
+  background: var(--primary);
   color: white;
 }
 
 .btn:disabled {
-  background: #f5f5f5;
-  color: #999;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
   cursor: not-allowed;
-  border-color: #e0e0e0;
+  border-color: var(--border);
 }
 
 .subscription-info {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--border);
 }
 
 .subscription-info p {
   margin: 8px 0;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .btn-cancel {
   margin-top: 8px;
   padding: 8px 16px;
   background: transparent;
-  color: #f44336;
-  border: 1px solid #f44336;
+  color: var(--destructive);
+  border: 1px solid var(--destructive);
   border-radius: 4px;
   font-size: 14px;
   cursor: pointer;
 }
 
 .btn-cancel:hover {
-  background: #fee;
+  background: var(--destructive-soft);
 }
 
 .current-subscription {
-  background: white;
+  background: var(--surface);
   border-radius: 12px;
   padding: 24px;
   margin-top: 32px;
@@ -374,12 +377,12 @@ const formatDate = (dateString) => {
 
 .current-subscription h3 {
   margin-bottom: 16px;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .subscription-details p {
   margin: 8px 0;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 /* Modal */
@@ -397,7 +400,7 @@ const formatDate = (dateString) => {
 }
 
 .modal-content {
-  background: white;
+  background: var(--surface);
   border-radius: 12px;
   padding: 32px;
   max-width: 500px;
@@ -406,7 +409,7 @@ const formatDate = (dateString) => {
 
 .modal-content h3 {
   margin-bottom: 16px;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .payment-form {
@@ -419,7 +422,7 @@ const formatDate = (dateString) => {
 
 #stripe-card-element {
   padding: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
   border-radius: 8px;
   margin-bottom: 16px;
 }

@@ -176,6 +176,26 @@ onMounted(() => {
   /* Gradient tokens */
   --gradient-hero: linear-gradient(135deg, rgba(71, 105, 150, 0.08) 0%, #EEF2FF 50%, #E2E8F0 100%);
   --gradient-card: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  
+  /* Enhanced Shadows */
+  --shadow-elegant: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 2px 8px -2px rgba(15, 23, 42, 0.04);
+  --shadow-glow: 0 0 20px rgba(71, 105, 150, 0.15);
+  
+  /* Glass Effect */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  
+  /* Icon Color Palettes */
+  --icon-blue-bg: #eff6ff;
+  --icon-blue-fg: #3b82f6;
+  --icon-green-bg: #ecfdf5;
+  --icon-green-fg: #10b981;
+  --icon-purple-bg: #f5f3ff;
+  --icon-purple-fg: #8b5cf6;
+  --icon-orange-bg: #fff7ed;
+  --icon-orange-fg: #f97316;
+  --icon-amber-bg: #fffbeb;
+  --icon-amber-fg: #f59e0b;
 }
 
 /* Dark Mode */
@@ -205,6 +225,26 @@ onMounted(() => {
   
   --gradient-hero: linear-gradient(135deg, rgba(96, 165, 250, 0.1) 0%, #1e293b 50%, #0f172a 100%);
   --gradient-card: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  
+  /* Enhanced Shadows (Dark) */
+  --shadow-elegant: 0 4px 20px -2px rgba(0, 0, 0, 0.3), 0 2px 8px -2px rgba(0, 0, 0, 0.2);
+  --shadow-glow: 0 0 20px rgba(96, 165, 250, 0.2);
+  
+  /* Glass Effect (Dark) */
+  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  
+  /* Icon Color Palettes (Dark) */
+  --icon-blue-bg: rgba(59, 130, 246, 0.15);
+  --icon-blue-fg: #60a5fa;
+  --icon-green-bg: rgba(16, 185, 129, 0.15);
+  --icon-green-fg: #34d399;
+  --icon-purple-bg: rgba(139, 92, 246, 0.15);
+  --icon-purple-fg: #a78bfa;
+  --icon-orange-bg: rgba(249, 115, 22, 0.15);
+  --icon-orange-fg: #fb923c;
+  --icon-amber-bg: rgba(245, 158, 11, 0.15);
+  --icon-amber-fg: #fbbf24;
 }
 
 .app-container {
@@ -525,6 +565,130 @@ main {
 :global(.bg-success-soft) { background: var(--success-soft); }
 :global(.bg-warning-soft) { background: var(--warning-soft); }
 :global(.bg-destructive-soft) { background: var(--destructive-soft); }
+
+/* ============================================
+   CHECK-CIRCLE PATTERN
+   ============================================ */
+:global(.check-circle) {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--success-soft);
+  color: var(--success);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+:global(.dark .check-circle) {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+/* ============================================
+   ICON-BOX COMPONENT
+   ============================================ */
+:global(.icon-box) {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+:global(.icon-box.blue) {
+  background: var(--icon-blue-bg);
+  color: var(--icon-blue-fg);
+}
+
+:global(.icon-box.green) {
+  background: var(--icon-green-bg);
+  color: var(--icon-green-fg);
+}
+
+:global(.icon-box.purple) {
+  background: var(--icon-purple-bg);
+  color: var(--icon-purple-fg);
+}
+
+:global(.icon-box.orange) {
+  background: var(--icon-orange-bg);
+  color: var(--icon-orange-fg);
+}
+
+:global(.icon-box.amber) {
+  background: var(--icon-amber-bg);
+  color: var(--icon-amber-fg);
+}
+
+/* ============================================
+   GLASS-CARD COMPONENT
+   ============================================ */
+:global(.glass-card) {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-elegant);
+}
+
+/* ============================================
+   CARD-INTERACTIVE COMPONENT
+   ============================================ */
+:global(.card-interactive) {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-elegant);
+  transition: all 0.3s ease;
+}
+
+:global(.card-interactive:hover) {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--primary);
+}
+
+:global(.card-interactive:hover .icon-box) {
+  transform: scale(1.1);
+}
+
+/* ============================================
+   BADGE-POPULAR COMPONENT
+   ============================================ */
+:global(.badge-popular) {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.25);
+}
+
+/* ============================================
+   FLOATING ANIMATION
+   ============================================ */
+@keyframes floatBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+:global(.animate-float) {
+  animation: floatBounce 3s ease-in-out infinite;
+}
 
 /* ============================================
    GLOBAL DARK MODE OVERRIDES
