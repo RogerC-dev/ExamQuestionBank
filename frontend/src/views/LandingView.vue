@@ -112,22 +112,27 @@
       <div class="container">
         <div class="extension-content">
           <div class="extension-text">
-            <h2 class="section-title">Precedent 擴充功能</h2>
+            <div class="extension-badge">
+              <i class="bi bi-google"></i>
+              Chrome 擴充功能
+            </div>
+            <h2 class="section-title text-left">隨時隨地查閱法律資料</h2>
             <p class="section-description">
               在瀏覽網頁時自動識別法律條文、釋字、判決書等法源資料，
               提供即時法律資訊查詢，讓閱讀案例新聞更輕鬆
             </p>
             <ul class="extension-features">
-              <li>自動識別網頁中的法條引用</li>
-              <li>即時彈窗預覽法律資訊</li>
-              <li>書籤管理與同步</li>
-              <li>與題庫平台無縫整合</li>
+              <li><i class="bi bi-check2"></i> 自動識別網頁中的法條引用</li>
+              <li><i class="bi bi-check2"></i> 即時彈窗預覽法律資訊</li>
+              <li><i class="bi bi-check2"></i> 書籤管理與同步</li>
+              <li><i class="bi bi-check2"></i> 與題庫平台無縫整合</li>
             </ul>
             <a 
               href="https://chrome.google.com/webstore" 
               target="_blank" 
-              class="btn btn-primary btn-large"
+              class="btn btn-primary btn-lg"
             >
+              <i class="bi bi-google"></i>
               立即下載擴充功能
             </a>
           </div>
@@ -705,6 +710,23 @@ const handleContactSales = () => {
   margin-bottom: 20px;
 }
 
+.extension-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #eff6ff; /* equivalent to blue-50 */
+  color: var(--primary);
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+.text-left {
+  text-align: left;
+}
+
 .extension-features {
   list-style: none;
   padding: 0;
@@ -712,22 +734,25 @@ const handleContactSales = () => {
 }
 
 .extension-features li {
-  padding: 8px 0 8px 0;
+  padding: 8px 0;
   font-size: 15px;
   color: var(--text-primary);
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.extension-features li::before {
-  content: '';
-  width: 8px;
-  height: 8px;
+.extension-features li i {
+  color: #10b981; /* emerald-500/success color */
+  font-size: 16px;
+  background: #ecfdf5; /* emerald-50 */
+  width: 20px; /* circle container */
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
-  background: var(--primary);
-  display: inline-block;
-  margin-right: 10px;
-  position: relative;
-  top: -1px;
+  padding: 2px;
 }
 
 .extension-demo {
