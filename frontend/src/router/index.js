@@ -118,17 +118,45 @@ const router = createRouter({
       name: 'QuestionPractice',
       component: () => import('@/views/QuestionPracticeView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/auth/callback',
+      name: 'AuthCallback',
+      component: () => import('@/views/AuthCallbackView.vue')
     }
   ]
 })
 
-// Navigation guard
-router.beforeEach((to, from, next) => {
+// Import Supabase for session checking
+import { supabase } from '@/lib/supabase'
+
+// Helper to check if user is authenticated (supports both Supabase and legacy)
+const checkAuth = async () => {
+  // Try Supabase session first
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      return { isAuth: true, isAdmin: session.user.user_metadata?.is_admin || false }
+    }
+  } catch (e) {
+    // Supabase not available, try legacy
+  }
+
+  // Fallback to localStorage (legacy Django auth)
   const token = localStorage.getItem('access_token')
   const userRole = localStorage.getItem('user_role')
+  return {
+    isAuth: !!token,
+    isAdmin: userRole === 'admin'
+  }
+}
+
+// Navigation guard
+router.beforeEach(async (to, from, next) => {
+  const { isAuth, isAdmin } = await checkAuth()
 
   // 需要認證但未登入
-  if (to.meta.requiresAuth && !token) {
+  if (to.meta.requiresAuth && !isAuth) {
     // 儲存原本要前往的路徑
     sessionStorage.setItem('intended_path', to.fullPath)
     // 觸發登入彈窗
@@ -138,12 +166,12 @@ router.beforeEach((to, from, next) => {
   }
   // 需要管理員權限
   else if (to.meta.requiresAdmin) {
-    if (!token) {
+    if (!isAuth) {
       // 未登入，觸發登入彈窗
       sessionStorage.setItem('intended_path', to.fullPath)
       window.dispatchEvent(new Event('show-login'))
       next('/')
-    } else if (userRole === 'admin') {
+    } else if (isAdmin) {
       // 已登入且是管理員
       next()
     } else {
