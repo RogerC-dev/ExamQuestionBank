@@ -798,6 +798,76 @@ defineExpose({ selectedIds, clearSelection })
 }
 
 /* Wrong count badge - use :deep() for slot content */
+
+/* ========== RESPONSIVE DESIGN ========== */
+@media (max-width: 768px) {
+  .list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .header-actions {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px; /* Space for scrollbar if needed */
+  }
+
+  .action-btn {
+    flex-shrink: 0;
+    padding: 10px 14px; /* Ensure touch target */
+  }
+
+  .view-mode-section, 
+  .filter-panel-container {
+    padding: 12px 16px;
+  }
+  
+  .list-title {
+      font-size: 17px;
+  }
+
+  .search-question-item {
+    flex-direction: column; /* Stack checkbox and content/actions */
+    align-items: stretch; /* Full width */
+    padding: 12px 14px;
+    gap: 10px;
+    position: relative;
+  }
+
+  /* Checkbox positioning for stacked layout */
+  .search-question-checkbox {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .search-question-info {
+    padding-left: 32px; /* Indent content for checkbox */
+    width: 100%;
+  }
+
+  .search-question-actions {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+    gap: 8px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+
+  .search-question-actions button {
+     flex: 1; /* evenly distribute buttons */
+     justify-content: center;
+  }
+
+  .search-badge {
+    margin-bottom: 4px;
+  }
+}
 :deep(.search-badge-wrong) {
   display: inline-flex;
   align-items: center;

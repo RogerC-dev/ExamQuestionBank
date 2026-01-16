@@ -2098,4 +2098,84 @@ defineExpose({
     padding: 32px 16px;
   }
 }
+
+/* Dark Mode Styles for Import Modal */
+:root[data-theme="dark"] .import-option,
+.dark .import-option {
+  background: var(--bg-secondary, #1e293b);
+  border-color: var(--border-dark, #334155);
+}
+
+:root[data-theme="dark"] .import-option:hover,
+.dark .import-option:hover {
+  background: var(--bg-tertiary, #2d3a4f);
+  border-color: var(--primary, #6b8fc7);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme="dark"] .option-title,
+.dark .option-title {
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .option-description,
+.dark .option-description {
+  color: var(--text-secondary-dark, #94a3b8);
+}
+
+:root[data-theme="dark"] .option-hint,
+.dark .option-hint {
+  background: var(--bg-tertiary, #334155);
+  color: var(--text-secondary-dark, #94a3b8);
+}
+
+:root[data-theme="dark"] .option-arrow,
+.dark .option-arrow {
+  color: var(--text-secondary-dark, #94a3b8);
+}
+
+:root[data-theme="dark"] .upload-zone,
+.dark .upload-zone {
+  background: var(--bg-secondary, #1e293b);
+  border-color: var(--border-dark, #334155);
+}
+
+:root[data-theme="dark"] .upload-text,
+.dark .upload-text {
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .upload-hint,
+.dark .upload-hint {
+  color: var(--text-secondary-dark, #94a3b8);
+}
+
+:root[data-theme="dark"] .selected-file,
+.dark .selected-file {
+  background: var(--bg-tertiary, #334155);
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .btn-clear-file:hover,
+.dark .btn-clear-file:hover {
+  background: rgba(220, 38, 38, 0.2);
+  color: #f87171;
+}
+
+:root[data-theme="dark"] .modern-modal,
+.dark .modern-modal {
+  background: var(--bg-primary, #0f172a);
+  border: 1px solid var(--border-dark, #334155);
+}
+
+:root[data-theme="dark"] .modern-modal-body,
+.dark .modern-modal-body {
+  background: var(--bg-primary, #0f172a);
+}
+
+:root[data-theme="dark"] .modern-modal-footer,
+.dark .modern-modal-footer {
+  background: var(--bg-secondary, #1e293b);
+  border-color: var(--border-dark, #334155);
+}
 </style>

@@ -789,14 +789,27 @@ onMounted(() => {
   }
 
   .review-header {
-    flex-wrap: wrap;
-    padding: 16px;
+    flex-direction: column; /* Stack exit button and progress */
+    padding: 12px;
     gap: 12px;
+    align-items: stretch; /* Full width */
   }
 
   .progress-info {
     width: 100%;
-    order: 2;
+    order: 2; /* Progress below on mobile */
+  }
+
+  .btn-exit {
+    order: 1; /* Exit button on top */
+    align-self: flex-end; /* Align right */
+    width: auto;
+    padding: 8px 16px;
+  }
+
+  .flashcard-swiper {
+    height: 500px; /* Reduced height for mobile */
+    padding: 20px 10px; /* Reduced padding */
   }
 
   .btn-exit {

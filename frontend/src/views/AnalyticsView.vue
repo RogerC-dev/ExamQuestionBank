@@ -1608,32 +1608,18 @@ onMounted(loadData)
   }
 }
 
-/* Responsive */
+/* ========== RESPONSIVE DESIGN ========== */
+
+/* Tablet & Mobile */
 @media (max-width: 1024px) {
   .overview-cards {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .analytics-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .trend-list-header,
-  .trend-item {
-    grid-template-columns: 2fr 1fr 1fr;
-  }
-
-  .trend-list-header .col-date,
-  .trend-list-header .col-action,
-  .trend-item .col-date,
-  .trend-item .col-action {
-    display: none;
   }
 }
 
 @media (max-width: 640px) {
   .overview-cards {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr; /* Single column for mobile to prevent squishing */
     gap: 12px;
   }
 

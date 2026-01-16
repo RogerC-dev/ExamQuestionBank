@@ -2380,19 +2380,35 @@ onUnmounted(() => {
 .tabs {
     display: flex;
     gap: 8px;
-    margin-bottom: 18px;
-    flex-wrap: wrap;
+    margin-bottom: 24px;
+    background: var(--surface);
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow-x: auto; /* Allow scrolling on very small screens */
+    scrollbar-width: none; /* Hide scrollbar for Firefox */
+}
+
+.tabs::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome/Safari */
 }
 
 .tabs button {
-    padding: 10px 18px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    border-radius: 10px;
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 15px;
+    font-weight: 500;
     cursor: pointer;
-    font-weight: 600;
-    color: var(--text-primary);
+    border-radius: 8px;
     transition: all 0.2s;
+    white-space: nowrap;
+    min-height: 44px; /* Touch target */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .tabs button.active {
@@ -2646,14 +2662,16 @@ onUnmounted(() => {
 
 .option-item {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 14px 14px;
+    gap: 12px;
+    padding: 16px; /* Larger tap area */
     border: 1.5px solid var(--border);
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s;
-    background: #fbfcfd;
+    transition: all 0.2s ease;
+    background: var(--surface);
+    font-size: 16px;
+    line-height: 1.5;
+    min-height: 52px; /* Ensure sufficient height */
 }
 
 .option-item:hover {
@@ -2772,15 +2790,17 @@ onUnmounted(() => {
 /* Mobile 手機 */
 @media (max-width: 768px) {
     .split-view-container {
-        flex-direction: row;
-        height: 100%;
+        flex-direction: column; /* Stack vertically on mobile */
+        height: auto;
         min-height: calc(100vh - 140px);
         position: relative;
+        overflow-y: auto; /* Allow scrolling */
     }
 
     .main-panel {
         width: 100% !important;
-        height: 100%;
+        height: auto;
+        overflow: visible; /* Let content determine height */
     }
 
     .split-divider {
@@ -3021,16 +3041,18 @@ onUnmounted(() => {
     }
 
     .quiz-options {
-        gap: 8px;
+        gap: 12px;
     }
 
     .option-item {
-        padding: 12px;
-        font-size: 14px;
+        padding: 16px;
+        font-size: 15px;
+        min-height: 52px;
     }
 
     .option-label {
-        min-width: 20px;
+        min-width: 24px;
+        font-weight: 600;
     }
 
     .answer-feedback {
@@ -3069,8 +3091,10 @@ onUnmounted(() => {
     }
 
     .tabs button {
-        padding: 7px 10px;
-        font-size: 12px;
+        padding: 8px 12px;
+        font-size: 13px;
+        flex: 0 0 auto; /* Allow shrinking/growing but respect content */
+        min-width: 80px; /* Minimum width for tap */
     }
 
     .content-section {

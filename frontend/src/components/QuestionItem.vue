@@ -233,4 +233,27 @@ defineEmits(['select', 'remove', 'toggle-check'])
   background: #a83226;
   transform: scale(1.05);
 }
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .question-item {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .question-number {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  /* Always show delete button on mobile (no hover) */
+  .btn-delete {
+    opacity: 1;
+    width: 28px;
+    height: 28px;
+    background: #ffe5e5; /* Softer background for always-visible */
+    color: #c0392b;
+  }
+}
 </style>

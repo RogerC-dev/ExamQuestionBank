@@ -496,4 +496,91 @@ const clearResult = () => {
   border-radius: 6px; color: #991b1b;
 }
 .error-toast button { border: none; background: none; cursor: pointer; font-size: 1.25rem; }
+
+/* Dark Mode Styles */
+:root[data-theme="dark"] .pdf-upload-container,
+.dark .pdf-upload-container {
+  background: var(--bg-secondary, #1e293b);
+  border-color: var(--border-dark, #334155);
+}
+
+:root[data-theme="dark"] .upload-header,
+.dark .upload-header {
+  background: linear-gradient(135deg, #1e3a5f, #0f172a);
+}
+
+:root[data-theme="dark"] .upload-card,
+.dark .upload-card {
+  background: var(--bg-tertiary, #1e293b);
+  border-color: var(--border-dark, #334155);
+}
+
+:root[data-theme="dark"] .card-header-custom h6,
+.dark .card-header-custom h6 {
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .dropzone,
+.dark .dropzone {
+  background: var(--bg-primary, #0f172a);
+  border-color: var(--border-dark, #475569);
+}
+
+:root[data-theme="dark"] .dropzone:hover,
+.dark .dropzone:hover {
+  background: var(--bg-tertiary, #1e293b);
+  border-color: var(--primary, #6b8fc7);
+}
+
+:root[data-theme="dark"] .state-text,
+.dark .state-text {
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .state-subtext,
+.dark .state-subtext {
+  color: var(--text-secondary-dark, #94a3b8);
+}
+
+:root[data-theme="dark"] .info-item,
+.dark .info-item {
+  background: var(--bg-tertiary, #334155);
+}
+
+:root[data-theme="dark"] .info-label,
+.dark .info-label {
+  color: var(--text-secondary-dark, #94a3b8);
+}
+
+:root[data-theme="dark"] .info-value,
+.dark .info-value {
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .preview-header,
+.dark .preview-header {
+  background: var(--bg-tertiary, #334155);
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .preview-item,
+.dark .preview-item {
+  border-color: var(--border-dark, #475569);
+}
+
+:root[data-theme="dark"] .q-text,
+.dark .q-text {
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .btn-cancel,
+.dark .btn-cancel {
+  background: var(--bg-tertiary, #334155);
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .result-header,
+.dark .result-header {
+  background: linear-gradient(135deg, #065f46, #064e3b);
+}
 </style>

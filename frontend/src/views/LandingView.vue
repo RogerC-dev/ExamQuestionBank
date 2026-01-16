@@ -1057,6 +1057,82 @@ const handleContactSales = () => {
   }
 }
 
+@media (max-width: 1024px) {
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .extension-content {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .extension-text {
+    margin: 0 auto;
+    text-align: center; /* Center text on tablet/mobile */
+  }
+
+  .text-left {
+    text-align: center; /* Override text-left utility */
+  }
+
+  .extension-features {
+    display: inline-block;
+    text-align: left;
+  }
+
+  .extension-demo {
+    order: -1; /* Demo on top */
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 36px;
+  }
+
+  .hero-subtitle {
+    font-size: 18px;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pricing-grid.three-tier {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  
+  .pricing-card.featured {
+     transform: scale(1);
+     border-width: 2px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr; /* Stack stats */
+    gap: 16px;
+  }
+  
+  .stat-card {
+    flex-direction: row; /* Stack Icon + Text horizontally in card */
+    padding: 16px;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    text-align: center;
+  }
+
+  .benefits-grid {
+     grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
   .hero-section {
     padding: 80px 16px 70px;

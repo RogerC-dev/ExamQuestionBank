@@ -248,4 +248,42 @@ defineEmits(['clear'])
     opacity: 0;
     transform: translateX(-50%) translateY(20px);
 }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .selection-toolbar-wrapper {
+        bottom: 80px; /* Above mobile bottom nav */
+        width: calc(100% - 24px); /* Wider on mobile */
+    }
+
+    .toolbar-content {
+        padding: 12px 16px;
+        flex-direction: column; /* Stack info and actions */
+        gap: 12px;
+        align-items: stretch;
+    }
+
+    .toolbar-info {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .toolbar-divider {
+        display: none;
+    }
+
+    .toolbar-actions {
+        width: 100%;
+        justify-content: space-between; /* Spread buttons */
+    }
+    
+    :deep(.toolbar-btn) {
+        flex: 1; /* Equal width buttons */
+        justify-content: center;
+        padding: 8px 12px;
+    }
+    
+    /* Hide specific text labels if buttons get too crowded? 
+       For now, equal width is good. */
+}
 </style>

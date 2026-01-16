@@ -13,13 +13,13 @@ const route = useRoute()
 const USE_SUPABASE = import.meta.env.VITE_USE_SUPABASE === 'true'
 
 const tabs = [
-  { name: '首頁', path: '/', key: 'landing' },
-  { name: '練習模式', path: '/practice', key: 'practice' },
-  { name: '我的考卷', path: '/user-exam', key: 'user-exam' },
-  { name: '快閃卡', path: '/flashcard', key: 'flashcard' },
-  { name: 'AI 申論解析', path: '/essay-analysis', key: 'essay-analysis' },
-  { name: '學習追蹤', path: '/analytics', key: 'analytics' },
-  { name: '題庫管理', path: '/admin', key: 'admin', adminOnly: true }
+  { name: '首頁', path: '/', key: 'landing', icon: 'bi-house-door' },
+  { name: '練習模式', path: '/practice', key: 'practice', icon: 'bi-pencil-square' },
+  { name: '我的考卷', path: '/user-exam', key: 'user-exam', icon: 'bi-journal-text' },
+  { name: '快閃卡', path: '/flashcard', key: 'flashcard', icon: 'bi-card-text' },
+  { name: 'AI 申論解析', path: '/essay-analysis', key: 'essay-analysis', icon: 'bi-robot' },
+  { name: '學習追蹤', path: '/analytics', key: 'analytics', icon: 'bi-graph-up' },
+  { name: '題庫管理', path: '/admin', key: 'admin', adminOnly: true, icon: 'bi-gear' }
 ]
 
 // We don't need an `activeTab` ref – router-link provides active-class handling
@@ -180,29 +180,42 @@ onUnmounted(() => {
         <div class="user-section">
           <ThemeToggle />
           <div v-if="isAuthenticated" class="user-info">
-            <span class="username">{{ currentUser?.username }}</span>
-            <span v-if="currentUser?.isAdmin" class="admin-badge">管理員</span>
-            <button class="btn btn-logout" @click="handleLogout">登出</button>
+            <span class="username hidden-mobile">{{ currentUser?.username }}</span>
+            <span v-if="currentUser?.isAdmin" class="admin-badge hidden-mobile">管理員</span>
+            <button class="btn btn-logout icon-only-mobile" @click="handleLogout">
+              <span class="hidden-mobile">登出</span>
+              <i class="bi bi-box-arrow-right hidden-desktop"></i>
+            </button>
           </div>
           <button v-else class="btn btn-login" @click="handleLogin">登入</button>
         </div>
       </div>
     </header>
 
-    <!-- Navigation -->
-    <nav>
+    <!-- Desktop Navigation -->
+    <nav class="desktop-nav hidden-mobile">
       <div class="nav-container">
         <router-link v-for="tab in visibleTabs" :key="tab.key" :to="tab.path" active-class="active"
           exact-active-class="active">
+          <i :class="['bi', tab.icon, 'me-1']"></i>
           {{ tab.name }}
         </router-link>
       </div>
     </nav>
 
     <!-- Main Content -->
-    <main>
+    <main class="main-content">
       <router-view />
     </main>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-nav hidden-desktop">
+      <router-link v-for="tab in visibleTabs" :key="tab.key" :to="tab.path" active-class="active"
+        exact-active-class="active" class="mobile-nav-item">
+        <i :class="['bi', tab.icon]"></i>
+        <span class="nav-label">{{ tab.name }}</span>
+      </router-link>
+    </nav>
 
     <!-- Login Modal -->
     <LoginModal :visible="showLoginModal" @close="handleModalClose" @success="handleLoginSuccess" />
@@ -263,6 +276,13 @@ onUnmounted(() => {
   --icon-orange-fg: #f97316;
   --icon-amber-bg: #fffbeb;
   --icon-amber-fg: #f59e0b;
+
+  /* Mobile-First Breakpoints */
+  --bp-phone-plus: 480px;
+  --bp-tablet-sm: 640px;
+  --bp-tablet: 768px;
+  --bp-tablet-lg: 1024px;
+  --bp-desktop: 1200px;
 }
 
 /* Dark Mode */
@@ -467,35 +487,101 @@ nav a.active {
 }
 
 /* Main */
-main {
+main.main-content {
   min-height: calc(100vh - 140px);
   background: var(--bg-page);
+  padding-bottom: 80px; /* Space for mobile nav */
 }
 
-/* Responsive */
+@media (min-width: 768px) {
+  main.main-content {
+    padding-bottom: 0;
+  }
+}
+
+/* Mobile Navigation (Bottom) */
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 4px 20px 4px; /* Extra padding for iOS home bar */
+  z-index: 100;
+  box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  min-width: 60px;
+}
+
+.mobile-nav-item i {
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+
+.mobile-nav-item.active {
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.mobile-nav-item:active {
+  transform: scale(0.95);
+}
+
+/* Responsive Overrides */
 @media (max-width: 768px) {
   .header-content {
-    grid-template-columns: 1fr;
-    gap: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+    padding: 12px 16px;
+  }
+  
+  .header-text {
     text-align: center;
   }
 
   header h1 {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   header p {
-    font-size: 13px;
+    display: none; /* Hide subtitle on mobile */
   }
-
-  .nav-container {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  
+  .user-section {
+    justify-content: space-between;
+    width: 100%;
   }
-
-  nav a {
-    padding: 12px 14px;
-    font-size: 14px;
+  
+  .user-info {
+    flex: 1;
+    justify-content: flex-end;
+  }
+  
+  .btn-logout.icon-only-mobile {
+    padding: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
   }
 }
 
@@ -632,6 +718,82 @@ main {
 :global(.bg-success-soft) { background: var(--success-soft); }
 :global(.bg-warning-soft) { background: var(--warning-soft); }
 :global(.bg-destructive-soft) { background: var(--destructive-soft); }
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   ============================================ */
+
+/* Container System */
+:global(.container) {
+  width: 100%;
+  padding-left: 16px;
+  padding-right: 16px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 640px) {
+  :global(.container) {
+    padding-left: 24px;
+    padding-right: 24px;
+    max-width: 640px;
+  }
+}
+
+@media (min-width: 768px) {
+  :global(.container) {
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :global(.container) {
+    max-width: 1024px;
+  }
+}
+
+@media (min-width: 1280px) {
+  :global(.container) {
+    max-width: 1280px;
+  }
+}
+
+/* Touch Targets */
+:global(.touch-target) {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Visibility Utilities */
+:global(.hidden-mobile) {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  :global(.hidden-mobile) {
+    display: initial !important; /* Reset to default */
+  }
+  :global(.hidden-desktop) {
+    display: none !important;
+  }
+}
+
+/* Layout Utilities */
+:global(.mobile-stack) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  :global(.mobile-stack) {
+    flex-direction: row;
+    align-items: center;
+  }
+}
 
 /* ============================================
    CHECK-CIRCLE PATTERN
