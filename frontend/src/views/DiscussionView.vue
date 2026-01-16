@@ -1,6 +1,7 @@
 <template>
   <div class="discussion-view">
     <h1>討論區</h1>
+    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
     <section class="new-thread">
       <input v-model="form.title" placeholder="主題" />
       <textarea v-model="form.content" placeholder="分享你的想法..." />
@@ -32,12 +33,18 @@ const discussions = ref([])
 const loading = ref(false)
 const form = ref({ title: '', content: '' })
 const replyContent = ref({})
+const errorMessage = ref('')
 
 const loadDiscussions = async () => {
   loading.value = true
   try {
     const { data } = await api.get('/discussions/')
     discussions.value = data
+    errorMessage.value = ''
+  } catch (error) {
+    console.error('Failed to load discussions:', error)
+    discussions.value = []
+    errorMessage.value = error.message || 'Failed to load discussions'
   } finally {
     loading.value = false
   }
@@ -45,22 +52,40 @@ const loadDiscussions = async () => {
 
 const createDiscussion = async () => {
   if (!form.value.title || !form.value.content) return
-  await api.post('/discussions/', form.value)
-  form.value = { title: '', content: '' }
-  loadDiscussions()
+  try {
+    await api.post('/discussions/', form.value)
+    form.value = { title: '', content: '' }
+    loadDiscussions()
+    errorMessage.value = ''
+  } catch (error) {
+    console.error('Failed to create discussion:', error)
+    errorMessage.value = error.message || 'Failed to create discussion'
+  }
 }
 
 const vote = async (id, vote_type) => {
-  await api.post(`/discussions/${id}/vote/`, { vote_type })
-  loadDiscussions()
+  try {
+    await api.post(`/discussions/${id}/vote/`, { vote_type })
+    loadDiscussions()
+    errorMessage.value = ''
+  } catch (error) {
+    console.error('Failed to vote:', error)
+    errorMessage.value = error.message || 'Failed to vote'
+  }
 }
 
 const reply = async (id) => {
   const content = replyContent.value[id]
   if (!content) return
-  await api.post(`/discussions/${id}/reply/`, { title: `Re:${id}`, content })
-  replyContent.value[id] = ''
-  loadDiscussions()
+  try {
+    await api.post(`/discussions/${id}/reply/`, { title: `Re:${id}`, content })
+    replyContent.value[id] = ''
+    loadDiscussions()
+    errorMessage.value = ''
+  } catch (error) {
+    console.error('Failed to reply:', error)
+    errorMessage.value = error.message || 'Failed to reply'
+  }
 }
 
 onMounted(loadDiscussions)
