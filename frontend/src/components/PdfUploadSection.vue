@@ -40,7 +40,7 @@
         >
           <input
             type="file"
-            accept=".pdf"
+            accept=".pdf,application/pdf"
             @change="handleQuestionPdfUpload"
             ref="questionFileInputEl"
             style="display: none"
@@ -83,7 +83,7 @@
         >
           <input
             type="file"
-            accept=".pdf"
+            accept=".pdf,application/pdf"
             @change="handleAnswerPdfUpload"
             ref="answerFileInputEl"
             style="display: none"
