@@ -2,7 +2,7 @@
  * extract-pdf Edge Function
  * 
  * Parses Taiwanese Bar Exam PDF files and extracts structured questions.
- * Uses pdf-parse for text extraction and regex for question parsing.
+ * Uses pdfjs-dist (Mozilla's PDF.js) for text extraction - Deno compatible.
  * 
  * Memory only: PDF is processed in memory and discarded after response.
  * Questions are returned for individual database storage.
@@ -11,8 +11,34 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// Import pdf-parse from esm.sh
-import pdfParse from 'https://esm.sh/pdf-parse@1.1.1'
+// Import PDF.js for Deno
+import * as pdfjsLib from 'https://cdn.skypack.dev/pdfjs-dist@3.11.174/legacy/build/pdf.mjs'
+
+/**
+ * Extract text from PDF using PDF.js
+ */
+async function extractTextFromPdf(uint8Array: Uint8Array): Promise<string> {
+    // Load the PDF document
+    const loadingTask = pdfjsLib.getDocument({ data: uint8Array })
+    const pdf = await loadingTask.promise
+
+    let fullText = ''
+
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum)
+        const textContent = await page.getTextContent()
+
+        // Concatenate text items
+        const pageText = textContent.items
+            .map((item: { str: string }) => item.str)
+            .join(' ')
+
+        fullText += pageText + '\n'
+    }
+
+    return fullText
+}
 
 /**
  * Parse exam questions from extracted PDF text
@@ -29,118 +55,113 @@ function parseQuestions(text: string): Array<{
         options: { label: string; content: string }[]
     }> = []
 
-    // Clean up text: normalize whitespace and line breaks
+    // Clean up text: normalize whitespace
     const cleanText = text
         .replace(/\r\n/g, '\n')
         .replace(/\r/g, '\n')
-        .replace(/\s+/g, ' ')
         .trim()
 
-    // Pattern to match question numbers (1, 2, 3... at start of question)
-    // Taiwanese exam format: number followed by question text
-    // Example: "1 憲法本文及增修條文之下列何種規定..."
-    const questionPattern = /(?:^|\s)(\d{1,3})\s+([^(（]+?)(?=\s*[(\（][A-DＡ-Ｄ][\)）])/g
+    // Split into lines and process
+    const lines = cleanText.split('\n')
 
-    // Alternative pattern for full question blocks
-    // Captures question number and everything until next question or end
-    const fullQuestionPattern = /(?:^|\n)\s*(\d{1,3})\s+([\s\S]*?)(?=\n\s*\d{1,3}\s+[^\d]|$)/g
+    let currentQuestion: { number: number; text: string } | null = null
 
-    // Pattern for options (A), (B), (C), (D) - supports both half-width and full-width
-    const optionPattern = /[(\（]([A-DＡ-Ｄ])[\)）]\s*([^(\（]+?)(?=[(\（][A-DＡ-Ｄ][\)）]|$)/g
+    for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed) continue
 
-    // Try to extract questions using the full pattern
+        // Check if line starts with a question number (1-3 digits at start)
+        const questionStartMatch = trimmed.match(/^(\d{1,3})\s+(.+)/)
+
+        if (questionStartMatch) {
+            // Save previous question if exists
+            if (currentQuestion) {
+                const parsed = parseQuestionBlock(currentQuestion.number, currentQuestion.text)
+                if (parsed) questions.push(parsed)
+            }
+
+            // Start new question
+            currentQuestion = {
+                number: parseInt(questionStartMatch[1], 10),
+                text: questionStartMatch[2]
+            }
+        } else if (currentQuestion) {
+            // Append to current question
+            currentQuestion.text += ' ' + trimmed
+        }
+    }
+
+    // Don't forget the last question
+    if (currentQuestion) {
+        const parsed = parseQuestionBlock(currentQuestion.number, currentQuestion.text)
+        if (parsed) questions.push(parsed)
+    }
+
+    return questions.sort((a, b) => a.number - b.number)
+}
+
+/**
+ * Parse a single question block to extract content and options
+ */
+function parseQuestionBlock(number: number, text: string): {
+    number: number
+    content: string
+    options: { label: string; content: string }[]
+} | null {
+    const options: { label: string; content: string }[] = []
+
+    // Pattern for options: (A), (B), (C), (D) - supports both half-width and full-width
+    const optionPattern = /[(\（]([A-DＡ-Ｄ])[\)）]\s*/g
+
+    // Find all option positions
+    const optionPositions: { index: number; label: string }[] = []
     let match: RegExpExecArray | null
-    const questionBlocks: { number: number; rawText: string }[] = []
 
-    // Reset regex
-    fullQuestionPattern.lastIndex = 0
-
-    while ((match = fullQuestionPattern.exec(cleanText)) !== null) {
-        const qNumber = parseInt(match[1], 10)
-        const rawText = match[2].trim()
-
-        // Skip if this looks like page numbers or other artifacts
-        if (rawText.length < 10) continue
-
-        questionBlocks.push({ number: qNumber, rawText })
+    while ((match = optionPattern.exec(text)) !== null) {
+        const label = match[1]
+            .replace('Ａ', 'A')
+            .replace('Ｂ', 'B')
+            .replace('Ｃ', 'C')
+            .replace('Ｄ', 'D')
+        optionPositions.push({ index: match.index, label })
     }
 
-    // If no questions found with full pattern, try simpler approach
-    if (questionBlocks.length === 0) {
-        // Split by question number pattern and process
-        const parts = cleanText.split(/(?=\s\d{1,3}\s+)/)
-
-        for (const part of parts) {
-            const numMatch = part.match(/^\s*(\d{1,3})\s+(.+)/)
-            if (numMatch) {
-                const qNumber = parseInt(numMatch[1], 10)
-                const rawText = numMatch[2].trim()
-                if (rawText.length >= 10) {
-                    questionBlocks.push({ number: qNumber, rawText })
-                }
-            }
-        }
+    // Extract question content (before first option)
+    let questionContent = text
+    if (optionPositions.length > 0) {
+        questionContent = text.substring(0, optionPositions[0].index).trim()
     }
 
-    // Now parse each question block to extract content and options
-    for (const block of questionBlocks) {
-        const options: { label: string; content: string }[] = []
-        let questionContent = block.rawText
+    // Extract each option's content
+    for (let i = 0; i < optionPositions.length; i++) {
+        const startPos = optionPositions[i].index
+        const endPos = i + 1 < optionPositions.length
+            ? optionPositions[i + 1].index
+            : text.length
 
-        // Extract options
-        optionPattern.lastIndex = 0
-        let optionMatch: RegExpExecArray | null
-        let firstOptionIndex = -1
+        // Get content after the (X) marker
+        const optionText = text.substring(startPos, endPos)
+        const contentMatch = optionText.match(/[(\（][A-DＡ-Ｄ][\)）]\s*(.+)/)
 
-        while ((optionMatch = optionPattern.exec(block.rawText)) !== null) {
-            if (firstOptionIndex === -1) {
-                firstOptionIndex = optionMatch.index
-            }
-
-            // Normalize option label (full-width to half-width)
-            const label = optionMatch[1]
-                .replace('Ａ', 'A')
-                .replace('Ｂ', 'B')
-                .replace('Ｃ', 'C')
-                .replace('Ｄ', 'D')
-
-            const content = optionMatch[2].trim()
-
-            if (content.length > 0) {
-                options.push({ label, content })
-            }
-        }
-
-        // Extract question content (text before first option)
-        if (firstOptionIndex > 0) {
-            questionContent = block.rawText.substring(0, firstOptionIndex).trim()
-        }
-
-        // Only add if we have valid content
-        if (questionContent.length > 5 || options.length > 0) {
-            questions.push({
-                number: block.number,
-                content: questionContent,
-                options: options
+        if (contentMatch) {
+            options.push({
+                label: optionPositions[i].label,
+                content: contentMatch[1].trim()
             })
         }
     }
 
-    // Sort by question number and ensure no duplicates
-    questions.sort((a, b) => a.number - b.number)
+    // Only return if we have valid content
+    if (questionContent.length < 5 && options.length === 0) {
+        return null
+    }
 
-    // Remove duplicates based on question number
-    const seen = new Set<number>()
-    return questions.filter(q => {
-        if (seen.has(q.number)) return false
-        seen.add(q.number)
-        return true
-    })
+    return { number, content: questionContent, options }
 }
 
 /**
  * Parse answer key from PDF text
- * Format: 第1題-A, 第2題-D... or table format with 題號/答案 rows
+ * Format: 第1題-A, 第2題-D... or table with 題號/答案
  */
 function parseAnswers(text: string): { number: number; answer: string }[] {
     const answers: { number: number; answer: string }[] = []
@@ -153,46 +174,48 @@ function parseAnswers(text: string): { number: number; answer: string }[] {
         .trim()
 
     // Pattern 1: 第N題 followed by answer
-    // Example: "第1題 A" or "第1題：A" or "第1題-A"
     const pattern1 = /第\s*(\d{1,3})\s*題\s*[：:\-\s]*([A-DＡ-Ｄ])/g
 
-    // Pattern 2: Simple table format - number followed by answer
-    // Matches consecutive number-letter pairs
-    const pattern2 = /(?:^|\s)(\d{1,3})\s+([A-DＡ-Ｄ])(?=\s|$)/g
-
-    // Try pattern 1 first
     let match: RegExpExecArray | null
-    pattern1.lastIndex = 0
-
     while ((match = pattern1.exec(cleanText)) !== null) {
         const number = parseInt(match[1], 10)
-        const answer = match[2]
-            .replace('Ａ', 'A')
-            .replace('Ｂ', 'B')
-            .replace('Ｃ', 'C')
-            .replace('Ｄ', 'D')
-
+        const answer = normalizeAnswer(match[2])
         answers.push({ number, answer })
     }
 
-    // If pattern 1 found nothing, try pattern 2
-    if (answers.length === 0) {
-        pattern2.lastIndex = 0
-        while ((match = pattern2.exec(cleanText)) !== null) {
-            const number = parseInt(match[1], 10)
-            const answer = match[2]
-                .replace('Ａ', 'A')
-                .replace('Ｂ', 'B')
-                .replace('Ｃ', 'C')
-                .replace('Ｄ', 'D')
+    // If pattern 1 found answers, return them
+    if (answers.length > 0) {
+        return dedupeAnswers(answers)
+    }
 
-            answers.push({ number, answer })
+    // Pattern 2: Look for "答案" rows in tables
+    // Matches patterns like: "答案 A D B D A D A D A B"
+    const answerRowMatch = cleanText.match(/答案\s+([A-DＡ-Ｄ\s]+)/g)
+    if (answerRowMatch) {
+        let questionNum = 1
+        for (const row of answerRowMatch) {
+            const answersInRow = row.replace(/答案\s*/, '').trim().split(/\s+/)
+            for (const ans of answersInRow) {
+                if (/^[A-DＡ-Ｄ]$/.test(ans)) {
+                    answers.push({ number: questionNum++, answer: normalizeAnswer(ans) })
+                }
+            }
         }
     }
 
-    // Sort and deduplicate
-    answers.sort((a, b) => a.number - b.number)
+    return dedupeAnswers(answers)
+}
 
+function normalizeAnswer(ans: string): string {
+    return ans
+        .replace('Ａ', 'A')
+        .replace('Ｂ', 'B')
+        .replace('Ｃ', 'C')
+        .replace('Ｄ', 'D')
+}
+
+function dedupeAnswers(answers: { number: number; answer: string }[]) {
+    answers.sort((a, b) => a.number - b.number)
     const seen = new Set<number>()
     return answers.filter(a => {
         if (seen.has(a.number)) return false
@@ -203,69 +226,26 @@ function parseAnswers(text: string): { number: number; answer: string }[] {
 
 /**
  * Extract exam metadata from PDF text
- * Example: 114年公務人員特種考試司法官考試, 代號：2301
  */
 function parseExamMetadata(text: string): {
     year?: string
     examType?: string
     subject?: string
     code?: string
-    duration?: string
-    totalQuestions?: number
-    pointsPerQuestion?: number
 } {
-    const metadata: {
-        year?: string
-        examType?: string
-        subject?: string
-        code?: string
-        duration?: string
-        totalQuestions?: number
-        pointsPerQuestion?: number
-    } = {}
+    const metadata: { year?: string; examType?: string; subject?: string; code?: string } = {}
 
-    // Extract year (e.g., "114年")
     const yearMatch = text.match(/(\d{2,4})年/)
-    if (yearMatch) {
-        metadata.year = yearMatch[1]
-    }
+    if (yearMatch) metadata.year = yearMatch[1]
 
-    // Extract exam code (e.g., "代號：2301")
     const codeMatch = text.match(/代號[：:]\s*(\d+)/)
-    if (codeMatch) {
-        metadata.code = codeMatch[1]
-    }
+    if (codeMatch) metadata.code = codeMatch[1]
 
-    // Extract duration (e.g., "1小時30分")
-    const durationMatch = text.match(/(\d+小時\d*分?)/)
-    if (durationMatch) {
-        metadata.duration = durationMatch[1]
-    }
+    if (text.includes('司法官')) metadata.examType = '司法官考試'
+    else if (text.includes('律師')) metadata.examType = '律師考試'
 
-    // Extract question count (e.g., "單選題數：75題")
-    const countMatch = text.match(/(?:單選題數|共)\s*[：:]*\s*(\d+)\s*題/)
-    if (countMatch) {
-        metadata.totalQuestions = parseInt(countMatch[1], 10)
-    }
-
-    // Extract points per question (e.g., "每題配分：2.00分")
-    const pointsMatch = text.match(/每題配分[：:]\s*([\d.]+)\s*分/)
-    if (pointsMatch) {
-        metadata.pointsPerQuestion = parseFloat(pointsMatch[1])
-    }
-
-    // Extract exam type
-    if (text.includes('司法官考試')) {
-        metadata.examType = '司法官考試'
-    } else if (text.includes('律師考試')) {
-        metadata.examType = '律師考試'
-    }
-
-    // Extract subject
-    const subjectMatch = text.match(/科目[：:]\s*([^考\n]+)/)
-    if (subjectMatch) {
-        metadata.subject = subjectMatch[1].trim()
-    }
+    const subjectMatch = text.match(/科目[：:]\s*([^\n]+)/)
+    if (subjectMatch) metadata.subject = subjectMatch[1].trim()
 
     return metadata
 }
@@ -277,10 +257,9 @@ serve(async (req) => {
     }
 
     try {
-        // Parse FormData from request
         const formData = await req.formData()
         const file = formData.get('file') as File | null
-        const type = formData.get('type') as string | null // 'questions' or 'answers'
+        const type = formData.get('type') as string | null
 
         if (!file) {
             return new Response(
@@ -289,78 +268,61 @@ serve(async (req) => {
             )
         }
 
-        // Read file into memory as ArrayBuffer
         const arrayBuffer = await file.arrayBuffer()
         const uint8Array = new Uint8Array(arrayBuffer)
-        const buffer = uint8Array.buffer
 
         console.log(`Processing PDF: ${file.name}, size: ${uint8Array.length} bytes, type: ${type}`)
 
-        // Parse PDF to extract text
-        let pdfData
+        // Extract text from PDF
+        let extractedText: string
         try {
-            pdfData = await pdfParse(Buffer.from(buffer))
+            extractedText = await extractTextFromPdf(uint8Array)
         } catch (pdfError) {
-            console.error('PDF parsing error:', pdfError)
+            console.error('PDF text extraction error:', pdfError)
             return new Response(
-                JSON.stringify({ error: 'PDF 格式無法解析，請確認檔案完整性' }),
+                JSON.stringify({ error: 'PDF 無法解析，請確認檔案格式正確' }),
                 { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
 
-        const extractedText = pdfData.text
-        console.log(`Extracted text length: ${extractedText.length} characters`)
+        console.log(`Extracted ${extractedText.length} characters`)
 
         if (type === 'questions') {
-            // Parse exam questions from PDF
             const questions = parseQuestions(extractedText)
             const metadata = parseExamMetadata(extractedText)
 
-            const result = {
-                success: true,
-                metadata,
-                count: questions.length,
-                questions: questions.map(q => ({
-                    number: q.number,
-                    content: q.content,
-                    options: q.options.map(opt => ({
-                        label: opt.label,
-                        content: opt.content,
-                        is_correct: false // Will be set when merging with answer key
-                    })),
-                    question_type: q.options.length > 0 ? '選擇題' : '申論題',
-                    difficulty: 'medium'
-                })),
-                raw_text: extractedText.substring(0, 1000) + '...' // First 1000 chars for debugging
-            }
-
-            console.log(`Parsed ${questions.length} questions`)
-
             return new Response(
-                JSON.stringify(result),
+                JSON.stringify({
+                    success: true,
+                    metadata,
+                    count: questions.length,
+                    questions: questions.map(q => ({
+                        number: q.number,
+                        content: q.content,
+                        options: q.options.map(opt => ({
+                            label: opt.label,
+                            content: opt.content,
+                            is_correct: false
+                        })),
+                        question_type: q.options.length > 0 ? '選擇題' : '申論題',
+                        difficulty: 'medium'
+                    })),
+                    raw_text_preview: extractedText.substring(0, 500)
+                }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
 
         } else if (type === 'answers') {
-            // Parse answer key from PDF
             const answers = parseAnswers(extractedText)
             const metadata = parseExamMetadata(extractedText)
 
-            const result = {
-                success: true,
-                metadata,
-                count: answers.length,
-                answers: answers.map(a => ({
-                    number: a.number,
-                    answer: a.answer
-                })),
-                raw_text: extractedText.substring(0, 500) // First 500 chars for debugging
-            }
-
-            console.log(`Parsed ${answers.length} answers`)
-
             return new Response(
-                JSON.stringify(result),
+                JSON.stringify({
+                    success: true,
+                    metadata,
+                    count: answers.length,
+                    answers
+                }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
 
@@ -372,9 +334,9 @@ serve(async (req) => {
         }
 
     } catch (error) {
-        console.error('PDF 解析錯誤:', error)
+        console.error('PDF processing error:', error)
         return new Response(
-            JSON.stringify({ error: error.message || 'PDF 解析失敗' }),
+            JSON.stringify({ error: error.message || 'PDF 處理失敗' }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
     }

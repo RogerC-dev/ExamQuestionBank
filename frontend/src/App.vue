@@ -254,7 +254,7 @@ onUnmounted(() => {
   --radius: 12px;
   
   /* Gradient tokens */
-  --gradient-hero: linear-gradient(135deg, rgba(71, 105, 150, 0.08) 0%, #EEF2FF 50%, #E2E8F0 100%);
+  --gradient-hero: linear-gradient(135deg, var(--surface) 0%, rgba(71, 105, 150, 0.08) 10%, #EEF2FF 50%, #E2E8F0 100%);
   --gradient-card: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
   
   /* Enhanced Shadows */
@@ -310,16 +310,16 @@ onUnmounted(() => {
   --shadow-hover: 0 20px 40px -10px rgba(96, 165, 250, 0.15), 0 8px 16px -4px rgba(0, 0, 0, 0.3);
   --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
   
-  --gradient-hero: linear-gradient(135deg, rgba(96, 165, 250, 0.1) 0%, #1e293b 50%, #0f172a 100%);
+  --gradient-hero: linear-gradient(135deg, var(--surface) 0%, rgba(96, 165, 250, 0.1) 10%, #1e293b 50%, #0f172a 100%);
   --gradient-card: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   
   /* Enhanced Shadows (Dark) */
   --shadow-elegant: 0 4px 20px -2px rgba(0, 0, 0, 0.3), 0 2px 8px -2px rgba(0, 0, 0, 0.2);
   --shadow-glow: 0 0 20px rgba(96, 165, 250, 0.2);
   
-  /* Glass Effect (Dark) */
-  --glass-bg: rgba(30, 41, 59, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  /* Glass Effect (Dark) - More transparent for blending */
+  --glass-bg: rgba(30, 41, 59, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.08);
   
   /* Icon Color Palettes (Dark) */
   --icon-blue-bg: rgba(59, 130, 246, 0.15);
@@ -344,10 +344,16 @@ onUnmounted(() => {
 
 /* Header */
 header {
+  background-color: var(--surface); /* Explicit background-color */
   background: var(--surface);
   padding: 18px 0;
   border-bottom: 1px solid var(--border);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03); /* Subtle shadow */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  opacity: 1; /* Explicit opacity */
+  position: relative;
+  z-index: 50;
 }
 
 .header-content {
@@ -446,22 +452,35 @@ header p {
 
 /* Navigation */
 nav {
-  background: var(--surface);
+  display: block; /* Ensure block-level for background */
+  width: 100%;
+  background-color: var(--surface); /* Explicit background-color */
+  background: var(--surface); /* Fallback */
   border-bottom: 1px solid var(--border);
   padding: 0;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 1000; /* High z-index to stay on top */
+  opacity: 1; /* Explicit opacity */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); /* Stronger shadow for stacking context */
 }
 
 .nav-container {
   max-width: 1200px;
   margin: 0 auto;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
   gap: 4px;
   padding: 0 16px;
+  overflow-x: auto; /* Allow horizontal scroll if needed */
+  scrollbar-width: none; /* Hide scrollbar for Firefox */
+}
+
+.nav-container::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome/Safari */
 }
 
 nav a {
@@ -473,6 +492,8 @@ nav a {
   border-bottom: 2px solid transparent;
   transition: all 0.2s ease;
   cursor: pointer;
+  white-space: nowrap; /* Prevent text wrapping */
+  flex-shrink: 0; /* Prevent items from shrinking */
 }
 
 nav a:hover {
@@ -502,15 +523,17 @@ main.main-content {
 /* Mobile Navigation (Bottom) */
 .mobile-nav {
   position: fixed;
+  top: auto; /* Prevent full screen overlay */
   bottom: 0;
   left: 0;
   right: 0;
+  height: auto;
   background: var(--surface);
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: space-around;
   padding: 8px 4px 20px 4px; /* Extra padding for iOS home bar */
-  z-index: 100;
+  z-index: 1000;
   box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
 }
 
@@ -772,7 +795,7 @@ main.main-content {
   display: none !important;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1280px) {
   :global(.hidden-mobile) {
     display: initial !important; /* Reset to default */
   }
