@@ -1,77 +1,82 @@
-import api from './api'
+/**
+ * AI Service - Supabase Edge Function
+ * Uses Edge Function for AI chat (requires external API calls)
+ */
+import { supabase } from '@/lib/supabase'
 
 const aiService = {
   /**
-   * 發送訊息給 AI
-   * @param {string} message - 使用者訊息
-   * @param {string} contextType - 上下文類型（如：'question', 'case'）
-   * @param {number} contextId - 上下文ID（如題目ID）
-   * @returns {Promise} AI 回應
+   * Send message to AI
+   * @param {string} message - User message
+   * @param {string} contextType - Context type (e.g., 'question', 'case')
+   * @param {number} contextId - Context ID (e.g., question ID)
+   * @returns {Promise} AI response
    */
   async sendMessage(message, contextType = null, contextId = null) {
-    try {
-      const response = await api.post('/ai/chat/', {
+    const { data, error } = await supabase.functions.invoke('ai-chat', {
+      body: {
         message,
         context_type: contextType,
         context_id: contextId
-      })
-      return response.data
-    } catch (error) {
-      if (error.response?.status === 401) {
+      }
+    })
+
+    if (error) {
+      if (error.message?.includes('401')) {
         window.dispatchEvent(new Event('show-login'))
         throw new Error('請先登入以使用 AI 功能')
       }
-      if (error.response?.status === 429) {
-        throw new Error(error.response.data.error || '已達到每日使用限制')
-      }
-      throw error
+      throw new Error(error.message)
     }
+
+    return data
   },
 
   /**
-   * 取得聊天記錄
-   * @param {number} limit - 返回記錄數量
-   * @param {number} offset - 偏移量
-   * @returns {Promise} 聊天記錄列表
+   * Get chat history from conversation table
+   * @param {number} limit - Number of records to return
+   * @param {number} offset - Offset for pagination
+   * @returns {Promise} Chat history list
    */
   async getHistory(limit = 20, offset = 0) {
-    try {
-      const response = await api.get('/ai/history/', {
-        params: { limit, offset }
-      })
-      return response.data
-    } catch (error) {
-      if (error.response?.status === 401) {
-        window.dispatchEvent(new Event('show-login'))
-        throw new Error('請先登入以查看歷史記錄')
-      }
-      throw error
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      window.dispatchEvent(new Event('show-login'))
+      throw new Error('請先登入以查看歷史記錄')
     }
+
+    const { data, error } = await supabase.from('conversation')
+      .select('*, conversation_message(*)')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (error) throw new Error(error.message)
+    return data || []
   },
 
   /**
-   * 分析案例
-   * @param {string} caseText - 案例文字
-   * @returns {Promise} 分析結果
+   * Analyze case text
+   * @param {string} caseText - Case text to analyze
+   * @returns {Promise} Analysis result
    */
   async analyzeCase(caseText) {
-    try {
-      const response = await api.post('/ai/analyze-case/', {
+    const { data, error } = await supabase.functions.invoke('ai-analyze', {
+      body: {
         case_text: caseText
-      })
-      return response.data
-    } catch (error) {
-      if (error.response?.status === 401) {
+      }
+    })
+
+    if (error) {
+      if (error.message?.includes('401')) {
         window.dispatchEvent(new Event('show-login'))
         throw new Error('請先登入以使用案例分析功能')
       }
-      if (error.response?.status === 429) {
-        throw new Error(error.response.data.error || '已達到每日使用限制')
-      }
-      throw error
+      throw new Error(error.message)
     }
+
+    return data
   }
 }
 
 export default aiService
-

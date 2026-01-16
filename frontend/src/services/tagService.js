@@ -1,37 +1,46 @@
-import api from './api'
+/**
+ * Tag Service - Supabase Direct Client
+ * No Django fallback - uses direct Supabase client
+ */
+import { supabase } from '@/lib/supabase'
 
-const BASE_PREFIX = '/question_bank/tags'
-
-export default {
-  /**
-   * Get all tags
-   */
-  getTags(params = {}) {
-    return api.get(`${BASE_PREFIX}/`, { params })
+const tagService = {
+  // Get all tags
+  async getTags() {
+    const { data, error } = await supabase.from('tag')
+      .select('*')
+      .order('name')
+    if (error) throw new Error(error.message)
+    return { data: data || [] }
   },
 
-  /**
-   * Create a tag with given name
-   * @param {Object} data - { name: string }
-   */
-  createTag(data) {
-    return api.post(`${BASE_PREFIX}/`, data)
+  // Create tag (admin only)
+  async createTag(tagData) {
+    const { data, error } = await supabase.from('tag')
+      .insert(tagData)
+      .select()
+      .single()
+    if (error) throw new Error(error.message)
+    return { data }
   },
 
-  /**
-   * Update a tag
-   * @param {number} id - Tag ID
-   * @param {Object} data - { name: string }
-   */
-  updateTag(id, data) {
-    return api.patch(`${BASE_PREFIX}/${id}/`, data)
+  // Update tag (admin only)
+  async updateTag(id, tagData) {
+    const { data, error } = await supabase.from('tag')
+      .update(tagData)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw new Error(error.message)
+    return { data }
   },
 
-  /**
-   * Delete a tag
-   * @param {number} id - Tag ID
-   */
-  deleteTag(id) {
-    return api.delete(`${BASE_PREFIX}/${id}/`)
+  // Delete tag (admin only)
+  async deleteTag(id) {
+    const { error } = await supabase.from('tag').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+    return { success: true }
   }
 }
+
+export default tagService

@@ -145,10 +145,6 @@
 <script setup>
 import { ref, watch } from 'vue'
 import authService from '../services/authService'
-import authServiceSupabase from '../services/authServiceSupabase'
-
-// Check if using Supabase
-const USE_SUPABASE = import.meta.env.VITE_USE_SUPABASE === 'true'
 
 const props = defineProps({
   visible: {
@@ -294,7 +290,7 @@ const handleGoogleLogin = async () => {
   errorMessage.value = ''
   
   try {
-    await authServiceSupabase.loginWithGoogle()
+    await authService.loginWithGoogle()
     // Redirect happens automatically, no need to close
   } catch (error) {
     console.error('Google login error:', error)
