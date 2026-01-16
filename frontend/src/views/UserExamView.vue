@@ -277,9 +277,9 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import api, { fetchSubjects } from '@/services/api'
 import examService from '@/services/examService'
 import questionService from '@/services/questionService'
+import tagService from '@/services/tagService'
 import QuestionList from '@/components/QuestionList.vue'
 
 const router = useRouter()
@@ -380,7 +380,7 @@ const formatDate = (dateString) => {
 const loadUserExams = async () => {
     loadingExams.value = true
     try {
-        const { data } = await api.get('/exams/')
+        const { data } = await examService.getExams()
         // 處理分頁回應 (data.results) 或直接陣列回應
         const exams = Array.isArray(data) ? data : (data?.results || [])
         // 過濾掉 null 或 undefined 的項目
@@ -420,15 +420,11 @@ const deleteExam = async (examId) => {
 
     deletingExamId.value = examId
     try {
-        await api.delete(`/exams/${examId}/`)
+        await examService.deleteExam(examId)
         await loadUserExams()
     } catch (error) {
         console.error('刪除考卷失敗:', error)
-        if (error.response?.status === 403) {
-            alert('您沒有權限刪除此考卷')
-        } else {
-            alert('刪除考卷失敗，請稍後再試')
-        }
+        alert('刪除考卷失敗，請稍後再試')
     } finally {
         deletingExamId.value = null
     }
@@ -454,10 +450,11 @@ const handleSearchQuestions = async (filters, page = 1, pageSize = 20) => {
             params.source = filters.source
         }
 
-        const { data } = await api.get('/question_bank/questions/', { params })
+        const { data } = await questionService.getQuestions(params)
 
         // Transform search results to match format
-        searchQuestions.value = (data.results || []).map(q => ({
+        const results = data?.results || data || []
+        searchQuestions.value = results.map(q => ({
             id: `search-${q.id}`,
             question: q.id,
             question_content: q.content || q.question_content,
@@ -470,7 +467,7 @@ const handleSearchQuestions = async (filters, page = 1, pageSize = 20) => {
             isSearchResult: true,
             originalQuestion: q
         }))
-        totalCount.value = data.count || 0
+        totalCount.value = data?.count || results.length
     } catch (error) {
         console.error('搜尋題目失敗:', error)
         searchQuestions.value = []
@@ -485,22 +482,18 @@ const handleSelectedIdsChange = (ids) => {
 }
 
 const loadSubjects = async () => {
-    try {
-        const { data } = await fetchSubjects()
-        subjects.value = data
-    } catch (error) {
-        console.error('載入科目失敗:', error)
-    }
+    // Subjects are now handled via question filters
+    // Placeholder - can be populated from question data if needed
+    subjects.value = []
 }
 
 const loadTags = async () => {
     try {
-        const { data } = await api.get('/question_bank/tags/')
-        // Handle both array response and paginated response
-        tags.value = Array.isArray(data) ? data : (data.results || [])
+        const { data } = await tagService.getTags()
+        tags.value = Array.isArray(data) ? data : (data?.results || [])
     } catch (error) {
         console.error('載入標籤失敗:', error)
-        tags.value = [] // Ensure tags is always an array
+        tags.value = []
     }
 }
 
@@ -528,10 +521,11 @@ const loadQuestions = async () => {
             params.tag_mode = filters.value.tag_mode
         }
 
-        const { data } = await api.get('/question_bank/questions/', { params })
+        const { data } = await questionService.getQuestions(params)
 
-        questions.value = data.results || []
-        totalCount.value = data.count || 0
+        const results = data?.results || data || []
+        questions.value = results
+        totalCount.value = data?.count || results.length
     } catch (error) {
         console.error('載入題目失敗:', error)
         errorMessage.value = '載入題目失敗，請稍後再試'
