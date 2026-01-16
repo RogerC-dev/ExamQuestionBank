@@ -1,76 +1,73 @@
-import api from './api'
+/**
+ * Auth Service - Supabase Only
+ * Uses Supabase Authentication exclusively (Google OAuth + Email/Password)
+ */
+import { supabase } from '@/lib/supabase'
 
 const authService = {
   /**
-   * 使用者註冊
-   * @param {Object} userData - {username, email, password, password_confirm}
-   * @returns {Promise} 註冊結果，包含 user 資訊和 tokens
+   * Login with Google OAuth
    */
-  async register(userData) {
-    const response = await api.post('/auth/register/', userData)
-    const { access, refresh, user } = response.data
-
-    // 儲存 tokens
-    localStorage.setItem('access_token', access)
-    localStorage.setItem('refresh_token', refresh)
-
-    // 儲存使用者資訊
-    localStorage.setItem('user_id', user.id)
-    localStorage.setItem('username', user.username)
-    localStorage.setItem('user_role', user.is_staff || user.is_admin ? 'admin' : 'user')
-
-    return response
+  async loginWithGoogle() {
+    const redirectTo = `${window.location.origin}/auth/callback`
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo
+      }
+    })
+    if (error) throw new Error(error.message)
+    return data
   },
 
   /**
-   * 登入
-   * @param {Object} credentials - {username, password}
-   * @returns {Promise} 登入結果，包含 access 和 refresh token
+   * Login with email and password
+   * @param {Object} credentials - {email, password}
    */
   async login(credentials) {
-    const response = await api.post('/auth/login/', credentials)
-    const { access, refresh } = response.data
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: credentials.email || credentials.username,
+      password: credentials.password
+    })
+    if (error) throw new Error(error.message)
 
-    // 儲存 tokens
-    localStorage.setItem('access_token', access)
-    localStorage.setItem('refresh_token', refresh)
-
-    // 解析 JWT token 取得使用者資訊
-    const userInfo = this.parseJWT(access)
-    console.log('JWT Token 內容:', userInfo) // 調試用
-
-    if (userInfo) {
-      // 嘗試不同的欄位名稱
-      const userId = userInfo.user_id || userInfo.id || userInfo.sub
-      const username = userInfo.username || userInfo.name || userInfo.email || credentials.username
-
-      localStorage.setItem('user_id', userId || '')
-      localStorage.setItem('username', username || '')
-
-      // 檢查是否為管理員（檢查多種可能的欄位）
-      const isAdmin = userInfo.is_staff ||
-                     userInfo.is_superuser ||
-                     userInfo.isStaff ||
-                     userInfo.isSuperuser ||
-                     userInfo.role === 'admin' ||
-                     userInfo.role === 'staff'
-
-      if (isAdmin) {
-        localStorage.setItem('user_role', 'admin')
-      } else {
-        localStorage.setItem('user_role', 'user')
-      }
-
-      console.log('已設定使用者角色:', localStorage.getItem('user_role'))
+    // Store user info in localStorage for compatibility
+    if (data.user) {
+      this.storeUserInfo(data.user)
     }
 
-    return response
+    return { data }
   },
 
   /**
-   * 登出
+   * Register with email and password
+   * @param {Object} userData - {email, password, username}
    */
-  logout() {
+  async register(userData) {
+    const { data, error } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          full_name: userData.username,
+          username: userData.username
+        }
+      }
+    })
+    if (error) throw new Error(error.message)
+
+    if (data.user) {
+      this.storeUserInfo(data.user)
+    }
+
+    return { data }
+  },
+
+  /**
+   * Logout
+   */
+  async logout() {
+    await supabase.auth.signOut()
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('user_id')
@@ -79,23 +76,24 @@ const authService = {
   },
 
   /**
-   * 檢查是否已登入
+   * Check if user is authenticated
    * @returns {boolean}
    */
   isAuthenticated() {
-    return !!localStorage.getItem('access_token')
+    const userId = localStorage.getItem('user_id')
+    return !!userId
   },
 
   /**
-   * 取得當前使用者資訊
+   * Get current user info
    * @returns {Object|null}
    */
   getCurrentUser() {
-    const token = localStorage.getItem('access_token')
-    if (!token) return null
+    const userId = localStorage.getItem('user_id')
+    if (!userId) return null
 
     return {
-      id: localStorage.getItem('user_id'),
+      id: userId,
       username: localStorage.getItem('username'),
       role: localStorage.getItem('user_role'),
       isAdmin: localStorage.getItem('user_role') === 'admin'
@@ -103,45 +101,31 @@ const authService = {
   },
 
   /**
-   * 解析 JWT token
-   * @param {string} token
-   * @returns {Object|null}
+   * Get current session
+   * @returns {Promise<Object|null>}
    */
-  parseJWT(token) {
-    try {
-      const base64Url = token.split('.')[1]
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      )
-      return JSON.parse(jsonPayload)
-    } catch (error) {
-      console.error('JWT 解析失敗:', error)
-      return null
-    }
+  async getSession() {
+    const { data: { session } } = await supabase.auth.getSession()
+    return session
   },
 
   /**
-   * 刷新 token
-   * @returns {Promise}
+   * Store user info in localStorage
+   * @param {Object} user - Supabase user object
    */
-  async refreshToken() {
-    const refreshToken = localStorage.getItem('refresh_token')
-    if (!refreshToken) {
-      throw new Error('No refresh token available')
-    }
+  storeUserInfo(user) {
+    localStorage.setItem('user_id', user.id)
+    localStorage.setItem('username', user.user_metadata?.full_name || user.email?.split('@')[0] || 'User')
+    localStorage.setItem('user_role', user.user_metadata?.is_admin ? 'admin' : 'user')
+  },
 
-    const response = await api.post('/auth/refresh/', {
-      refresh: refreshToken
-    })
-
-    const { access } = response.data
-    localStorage.setItem('access_token', access)
-
-    return response
+  /**
+   * Subscribe to auth state changes
+   * @param {Function} callback - Called with (event, session)
+   * @returns {Object} - Subscription object with unsubscribe method
+   */
+  onAuthStateChange(callback) {
+    return supabase.auth.onAuthStateChange(callback)
   }
 }
 

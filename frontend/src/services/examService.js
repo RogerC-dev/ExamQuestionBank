@@ -1,90 +1,232 @@
-import api from './api'
-
-const handle401 = (error) => {
-  if (error.response?.status === 401) {
-    window.dispatchEvent(new Event('show-login'))
-  }
-  throw error
-}
+/**
+ * Exam Service - Supabase RPC Only
+ * No Django fallback - uses RPC functions exclusively
+ */
+import { supabase } from '@/lib/supabase'
 
 const examService = {
-  getExams(params = {}) {
-    return api.get('/exams/', { params }).catch(handle401)
+  // Get all available exams (published + user's own)
+  async getExams() {
+    const { data, error } = await supabase.rpc('get_practice_exams')
+    if (error) throw new Error(error.message)
+    return { data: data || [] }
   },
-  getExam(examId) {
-    return api.get(`/exams/${examId}/`).catch(handle401)
+
+  // Get user's own exams only
+  async getUserExams() {
+    const { data, error } = await supabase.rpc('get_user_exams')
+    if (error) throw new Error(error.message)
+    return { data: data || [] }
   },
-  createExam(examData) {
-    return api.post('/exams/', examData).catch(handle401)
+
+  // Get exam detail with questions
+  async getExam(examId) {
+    const { data, error } = await supabase.rpc('get_exam_detail', {
+      p_id: parseInt(examId)
+    })
+    if (error) throw new Error(error.message)
+    return { data }
   },
-  updateExam(examId, examData) {
-    return api.patch(`/exams/${examId}/`, examData).catch(handle401)
+
+  // Create new exam
+  async createExam(examData) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('請先登入')
+
+    const { data, error } = await supabase.from('exam').insert({
+      name: examData.name,
+      description: examData.description || '',
+      time_limit: examData.time_limit || null,
+      publish: examData.publish || false,
+      creator: user.id
+    }).select().single()
+
+    if (error) throw new Error(error.message)
+    return { data }
   },
-  deleteExam(examId) {
-    return api.delete(`/exams/${examId}/`).catch(handle401)
+
+  // Update exam
+  async updateExam(examId, examData) {
+    const { data, error } = await supabase.from('exam')
+      .update(examData)
+      .eq('id', examId)
+      .select()
+      .single()
+    if (error) throw new Error(error.message)
+    return { data }
   },
-  addQuestionToExam(examId, data) {
-    return api.post(`/exams/${examId}/add_question/`, data).catch(handle401)
+
+  // Delete exam
+  async deleteExam(examId) {
+    const { error } = await supabase.from('exam').delete().eq('id', examId)
+    if (error) throw new Error(error.message)
+    return { success: true }
   },
-  removeQuestionFromExam(examId, examQuestionId) {
-    return api.delete(`/exams/${examId}/remove_question/?exam_question_id=${examQuestionId}`).catch(handle401)
+
+  // Add question to exam
+  async addQuestionToExam(examId, data) {
+    const { error } = await supabase.from('exam_question').insert({
+      exam_id: examId,
+      question_id: data.question_id,
+      order: data.order || 1,
+      points: data.points || 1
+    })
+    if (error) throw new Error(error.message)
+    return { success: true }
   },
-  updateExamQuestion(examId, data) {
-    return api.patch(`/exams/${examId}/update_question/`, data).catch(handle401)
+
+  // Remove question from exam
+  async removeQuestionFromExam(examId, examQuestionId) {
+    const { error } = await supabase.from('exam_question')
+      .delete()
+      .eq('id', examQuestionId)
+    if (error) throw new Error(error.message)
+    return { success: true }
   },
-  getHistoricalExams(params = {}) {
-    return api.get('/exams/historical/', { params }).catch(handle401)
+
+  // Get practice exams (same as getExams)
+  async getPracticeExams() {
+    return this.getExams()
   },
-  getPracticeExams(params = {}) {
-    return api.get('/exams/practice-list/', { params }).catch(handle401)
+
+  // Get historical exams (published exams by year)
+  async getHistoricalExams(params = {}) {
+    let query = supabase.from('exam')
+      .select('*, exam_question(count)')
+      .eq('publish', true)
+      .order('created_at', { ascending: false })
+
+    if (params.year) {
+      query = query.eq('year', params.year)
+    }
+
+    const { data, error } = await query
+    if (error) throw new Error(error.message)
+    return { data: data || [] }
   },
-  startExam(examId) {
-    return api.post(`/exams/${examId}/start/`).catch(handle401)
+
+  // Start exam (returns exam detail)
+  async startExam(examId) {
+    return this.getExam(examId)
   },
-  getExamsByQuestion(questionId) {
-    return api.get('/exams/by_question/', { params: { question_id: questionId } }).catch(handle401)
+
+  // Save exam result
+  async saveExamResult(resultData) {
+    const { data, error } = await supabase.rpc('save_exam_result', {
+      p_exam_id: resultData.exam_id || null,
+      p_exam_name: resultData.exam_name || '',
+      p_score: resultData.score || 0,
+      p_correct_count: resultData.correct_count || 0,
+      p_total_count: resultData.total_count || 0,
+      p_duration_seconds: resultData.duration_seconds || null,
+      p_answers_json: resultData.answers || null,
+      p_wrong_question_ids: resultData.wrong_question_ids || null
+    })
+    if (error) throw new Error(error.message)
+    return { data }
   },
-  getExamsByQuestions(questionIds) {
-    const questionIdsStr = Array.isArray(questionIds) ? questionIds.join(',') : questionIds
-    return api.get('/exams/by_questions/', { params: { question_ids: questionIdsStr } }).catch(handle401)
+
+  // Get exam results
+  async getExamResults() {
+    const { data, error } = await supabase.rpc('get_exam_results')
+    if (error) throw new Error(error.message)
+    return { data: data || [] }
   },
-  saveExamResult(resultData) {
-    return api.post('/exam-results/', resultData).catch(handle401)
+
+  // Get exam stats (aggregated from results)
+  async getExamStats() {
+    const { data, error } = await supabase.rpc('get_user_analytics')
+    if (error) throw new Error(error.message)
+    return { data }
   },
-  getExamResults() {
-    return api.get('/exam-results/').catch(handle401)
+
+  // Get wrong questions
+  async getWrongQuestions() {
+    const { data, error } = await supabase.rpc('get_wrong_questions')
+    if (error) throw new Error(error.message)
+    return { data: data || [] }
   },
-  getExamStats() {
-    return api.get('/exam-stats/').catch(handle401)
+
+  // Mark wrong question as reviewed
+  async markWrongQuestionReviewed(id, reviewed = true) {
+    const { error } = await supabase.from('wrong_question')
+      .update({ reviewed })
+      .eq('id', id)
+    if (error) throw new Error(error.message)
+    return { success: true }
   },
-  getTrends(params = {}) {
-    return api.get('/analytics/trends/', { params }).catch(handle401)
+
+  // Delete wrong question record
+  async deleteWrongQuestion(id) {
+    const { error } = await supabase.from('wrong_question').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+    return { success: true }
   },
-  getWrongQuestions() {
-    return api.get('/wrong-questions/').catch(handle401)
+
+  // Get bookmarks
+  async getBookmarks() {
+    const { data, error } = await supabase.rpc('get_bookmarks')
+    if (error) throw new Error(error.message)
+    return { data: data || [] }
   },
-  markWrongQuestionReviewed(id, reviewed = true) {
-    return api.patch(`/wrong-questions/${id}/`, { reviewed }).catch(handle401)
+
+  // Add bookmark
+  async addBookmark(questionIds) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('請先登入')
+
+    const ids = Array.isArray(questionIds) ? questionIds : [questionIds]
+    const inserts = ids.map(qId => ({ user_id: user.id, question_id: qId }))
+
+    const { error } = await supabase.from('bookmark').insert(inserts)
+    if (error) throw new Error(error.message)
+    return { success: true }
   },
-  deleteWrongQuestion(id) {
-    return api.delete(`/wrong-questions/${id}/`).catch(handle401)
+
+  // Remove bookmark
+  async removeBookmark(questionId) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('請先登入')
+
+    const { error } = await supabase.from('bookmark')
+      .delete()
+      .match({ user_id: user.id, question_id: questionId })
+    if (error) throw new Error(error.message)
+    return { success: true }
   },
-  getBookmarks() {
-    return api.get('/bookmarks/').catch(handle401)
-  },
-  addBookmark(questionIds) {
-    return api.post('/bookmarks/', { question_ids: questionIds }).catch(handle401)
-  },
-  removeBookmark(questionId) {
-    return api.delete(`/bookmarks/${questionId}/`).catch(handle401)
-  },
-  // 從任意題目 ID 列表生成考卷
-  createCustomExam({ name, questionIds, timeLimit } = {}) {
-    return api.post('/exams/custom/', {
+
+  // Create custom exam from question list
+  async createCustomExam({ name, questionIds, timeLimit } = {}) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('請先登入')
+
+    // Create exam
+    const { data: exam, error: examError } = await supabase.from('exam').insert({
       name,
-      question_ids: questionIds,
-      time_limit: timeLimit
-    }).catch(handle401)
+      time_limit: timeLimit,
+      creator: user.id,
+      publish: false
+    }).select().single()
+    if (examError) throw new Error(examError.message)
+
+    // Add questions
+    const inserts = questionIds.map((qId, idx) => ({
+      exam_id: exam.id,
+      question_id: qId,
+      order: idx + 1,
+      points: 1
+    }))
+    const { error: qError } = await supabase.from('exam_question').insert(inserts)
+    if (qError) throw new Error(qError.message)
+
+    return { data: exam }
+  },
+
+  // Get trends (from exam results)
+  async getTrends() {
+    const { data, error } = await supabase.rpc('get_exam_results')
+    if (error) throw new Error(error.message)
+    return { data: data || [] }
   }
 }
 

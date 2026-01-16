@@ -1,37 +1,53 @@
-import api from './api'
+/**
+ * Essay Analysis Service - Supabase Edge Function
+ * Uses Edge Function for essay/case analysis (requires external AI API)
+ */
+import { supabase } from '@/lib/supabase'
 
 const essayAnalysisService = {
-  async analyze(questionText) {
-    try {
-      const response = await api.post('/essay-analysis/analyze/', {
-        question_text: questionText
-      })
-      return response.data
-    } catch (error) {
-      if (error.response?.status === 401) {
+  /**
+   * Analyze essay text
+   * @param {string} essayText - Essay text to analyze
+   * @returns {Promise} Analysis result
+   */
+  async analyzeEssay(essayText) {
+    const { data, error } = await supabase.functions.invoke('ai-analyze', {
+      body: {
+        case_text: essayText,
+        analysis_type: 'essay'
+      }
+    })
+
+    if (error) {
+      if (error.message?.includes('401')) {
         window.dispatchEvent(new Event('show-login'))
-        throw new Error('請先登入以使用申論解析功能')
+        throw new Error('請先登入以使用分析功能')
       }
-      if (error.response?.status === 429) {
-        throw new Error(error.response.data.error || '已達到每日使用限制')
-      }
-      throw error
+      throw new Error(error.message)
     }
+
+    return data
   },
 
-  async getHistory(limit = 20, offset = 0) {
-    try {
-      const response = await api.get('/essay-analysis/history/', {
-        params: { limit, offset }
-      })
-      return response.data
-    } catch (error) {
-      if (error.response?.status === 401) {
-        window.dispatchEvent(new Event('show-login'))
-        throw new Error('請先登入以查看歷史記錄')
-      }
-      throw error
+  /**
+   * Get analysis history
+   * @returns {Promise} Analysis history
+   */
+  async getHistory() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      window.dispatchEvent(new Event('show-login'))
+      throw new Error('請先登入以查看歷史記錄')
     }
+
+    const { data, error } = await supabase.from('conversation')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('context_type', 'essay')
+      .order('updated_at', { ascending: false })
+
+    if (error) throw new Error(error.message)
+    return data || []
   }
 }
 

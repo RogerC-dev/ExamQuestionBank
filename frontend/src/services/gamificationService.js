@@ -1,15 +1,24 @@
-import api from './api'
+/**
+ * Gamification Service - Placeholder for Supabase
+ * Gamification features not yet implemented in Supabase
+ */
+import { supabase } from '@/lib/supabase'
 
-export const fetchBadges = () => api.get('/gamification/badges/')
-export const fetchUserBadges = () => api.get('/gamification/user-badges/')
-export const fetchUserXP = () => api.get('/gamification/user-xp/')
-export const fetchUserTotalXP = () => api.get('/gamification/user-xp/total/')
+const gamificationService = {
+    // Get user points (placeholder)
+    async getPoints() {
+        return { data: { points: 0, level: 1 } }
+    },
 
-export const createStudyGroup = (payload) => api.post('/study-groups/', payload)
-export const fetchStudyGroups = (params = {}) => api.get('/study-groups/', { params })
-export const joinStudyGroup = (groupId) => api.post(`/study-groups/${groupId}/join/`)
-export const leaveStudyGroup = (groupId) => api.post(`/study-groups/${groupId}/leave/`)
+    // Get achievements (placeholder)
+    async getAchievements() {
+        return { data: [] }
+    },
 
-export const fetchNotifications = () => api.get('/notifications/')
-export const scheduleNotification = (payload) => api.post('/notifications/', payload)
+    // Get leaderboard (placeholder)
+    async getLeaderboard() {
+        return { data: [] }
+    }
+}
 
+export default gamificationService
