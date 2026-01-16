@@ -5,29 +5,25 @@
   <meta charset="utf-8">
   <title>Redirecting...</title>
   <script>
-    // GitHub Pages SPA redirect - works for both root and subdirectory deploys
-    // Detects base path automatically from the current location
+    // GitHub Pages SPA redirect for /ExamQuestionBank/ subdirectory
+    // When a 404 occurs, redirect to index.html with the path encoded
     (function () {
       var l = window.location;
+      var pathname = l.pathname;
 
-      // For project pages (e.g., /repo-name/), keep the base path
-      // For user pages (username.github.io), no base path
-      var segments = l.pathname.split('/').filter(Boolean);
-      var basePath = '';
-      var pathToEncode = l.pathname;
+      // The base path for this GitHub Pages site
+      var basePath = '/ExamQuestionBank/';
 
-      // Check if first segment could be a repo name (for project pages)
-      // This assumes index.html exists at the base
-      if (segments.length > 0) {
-        // Try to detect base path by checking if we're in a subdirectory
-        var possibleBase = '/' + segments[0] + '/';
-        // For now, encode the full path
-        pathToEncode = l.pathname;
+      // Extract the route after the base path
+      var route = pathname;
+      if (pathname.startsWith(basePath)) {
+        route = pathname.substring(basePath.length - 1); // Keep leading /
       }
 
+      // Redirect to the base path with the route as a query param
       l.replace(
         l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-        '/?p=' + encodeURIComponent(l.pathname) +
+        basePath + '?p=' + encodeURIComponent(route) +
         (l.search ? '&q=' + encodeURIComponent(l.search) : '') +
         l.hash
       );
