@@ -36,13 +36,13 @@
           @drop.prevent="handleQuestionDrop"
           @dragover.prevent="isDraggingQuestion = true"
           @dragleave.prevent="isDraggingQuestion = false"
-          @click="!uploadingQuestions && $refs.questionFileInput.click()"
+          @click="openQuestionPicker"
         >
           <input
             type="file"
             accept=".pdf"
             @change="handleQuestionPdfUpload"
-            ref="questionFileInput"
+            ref="questionFileInputEl"
             style="display: none"
           />
 
@@ -79,13 +79,13 @@
           @drop.prevent="handleAnswerDrop"
           @dragover.prevent="isDraggingAnswer = true"
           @dragleave.prevent="isDraggingAnswer = false"
-          @click="!uploadingAnswers && $refs.answerFileInput.click()"
+          @click="openAnswerPicker"
         >
           <input
             type="file"
             accept=".pdf"
             @change="handleAnswerPdfUpload"
-            ref="answerFileInput"
+            ref="answerFileInputEl"
             style="display: none"
           />
 
@@ -170,8 +170,21 @@ import { supabase } from '@/lib/supabase'
 
 const emit = defineEmits(['import-success'])
 
-const questionFileInput = ref(null)
-const answerFileInput = ref(null)
+const questionFileInputEl = ref(null)
+const answerFileInputEl = ref(null)
+
+// Open file pickers
+const openQuestionPicker = () => {
+  if (!uploadingQuestions.value && questionFileInputEl.value) {
+    questionFileInputEl.value.click()
+  }
+}
+
+const openAnswerPicker = () => {
+  if (!uploadingAnswers.value && answerFileInputEl.value) {
+    answerFileInputEl.value.click()
+  }
+}
 const questionFileName = ref('')
 const answerFileName = ref('')
 
@@ -251,7 +264,6 @@ const uploadQuestionFile = async (file) => {
 }
 
 // Expose for programmatic access
-const openQuestionPicker = () => questionFileInput.value?.click()
 defineExpose({ openQuestionPicker })
 
 // 處理答案 PDF 上傳

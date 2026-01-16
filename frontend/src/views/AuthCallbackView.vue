@@ -18,8 +18,17 @@ const router = useRouter()
 
 onMounted(async () => {
   try {
-    // Supabase will automatically handle the OAuth callback
-    // and set the session from the URL hash/query params
+    // Check if there's a hash with access_token (OAuth implicit flow)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1))
+    const accessToken = hashParams.get('access_token')
+    
+    if (accessToken) {
+      // Supabase should auto-detect and set session from URL hash
+      // Wait a moment for Supabase to process the hash
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    
+    // Get the session (Supabase will have parsed the hash by now)
     const { data, error } = await supabase.auth.getSession()
     
     if (error) {
@@ -41,10 +50,16 @@ onMounted(async () => {
       const intendedPath = sessionStorage.getItem('intended_path')
       sessionStorage.removeItem('intended_path')
       
+      // Clear the hash from URL
+      if (window.location.hash) {
+        window.history.replaceState(null, '', window.location.pathname)
+      }
+      
       // Redirect to intended path or practice page
       router.push(intendedPath || '/practice')
     } else {
       // No session, redirect to home
+      console.log('No session found after OAuth callback')
       router.push('/')
     }
   } catch (err) {
