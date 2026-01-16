@@ -190,7 +190,7 @@ import QuestionList from '../components/QuestionList.vue'
 import AddQuestionModal from '../components/AddQuestionModal.vue'
 import examService from '../services/examService'
 import questionService from '../services/questionService'
-import api from '../services/api'
+import tagService from '../services/tagService'
 import { usePdfImportStore } from '../stores/pdfImport'
 
 const currentUser = inject('currentUser', null)
