@@ -228,6 +228,9 @@ onUnmounted(() => {
   --bg-page: #F8FAFC;
   --surface: #FFFFFF;
   --surface-muted: #E2E8F0;
+  --nav-surface: #FFFFFF;
+  --nav-border: rgba(15, 23, 42, 0.08);
+  --nav-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
   
   /* Primary: Professional Slate Blue */
   --primary: #476996;
@@ -254,16 +257,16 @@ onUnmounted(() => {
   --radius: 12px;
   
   /* Gradient tokens */
-  --gradient-hero: linear-gradient(135deg, var(--surface) 0%, rgba(71, 105, 150, 0.08) 10%, #EEF2FF 50%, #E2E8F0 100%);
+  --gradient-hero: linear-gradient(135deg, var(--nav-surface) 0%, rgba(71, 105, 150, 0.05) 18%, #EEF2FF 55%, #E2E8F0 100%);
   --gradient-card: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
   
   /* Enhanced Shadows */
   --shadow-elegant: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 2px 8px -2px rgba(15, 23, 42, 0.04);
   --shadow-glow: 0 0 20px rgba(71, 105, 150, 0.15);
   
-  /* Glass Effect */
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.3);
+  /* Glass Effect (disabled: use solid surfaces) */
+  --glass-bg: var(--surface);
+  --glass-border: var(--border);
   
   /* Icon Color Palettes */
   --icon-blue-bg: #eff6ff;
@@ -290,6 +293,9 @@ onUnmounted(() => {
   --bg-page: #0f172a;
   --surface: #1e293b;
   --surface-muted: #334155;
+  --nav-surface: #1e293b;
+  --nav-border: rgba(255, 255, 255, 0.1);
+  --nav-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   
   --primary: #60a5fa;
   --primary-hover: #3b82f6;
@@ -310,16 +316,16 @@ onUnmounted(() => {
   --shadow-hover: 0 20px 40px -10px rgba(96, 165, 250, 0.15), 0 8px 16px -4px rgba(0, 0, 0, 0.3);
   --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
   
-  --gradient-hero: linear-gradient(135deg, var(--surface) 0%, rgba(96, 165, 250, 0.1) 10%, #1e293b 50%, #0f172a 100%);
+  --gradient-hero: linear-gradient(135deg, var(--nav-surface) 0%, rgba(96, 165, 250, 0.08) 18%, #1e293b 55%, #0f172a 100%);
   --gradient-card: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   
   /* Enhanced Shadows (Dark) */
   --shadow-elegant: 0 4px 20px -2px rgba(0, 0, 0, 0.3), 0 2px 8px -2px rgba(0, 0, 0, 0.2);
   --shadow-glow: 0 0 20px rgba(96, 165, 250, 0.2);
   
-  /* Glass Effect (Dark) - More transparent for blending */
-  --glass-bg: rgba(30, 41, 59, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  /* Glass Effect (Dark) - Disabled for solid surfaces */
+  --glass-bg: var(--surface);
+  --glass-border: var(--border);
   
   /* Icon Color Palettes (Dark) */
   --icon-blue-bg: rgba(59, 130, 246, 0.15);
@@ -344,11 +350,11 @@ onUnmounted(() => {
 
 /* Header */
 header {
-  background-color: var(--surface); /* Explicit background-color */
-  background: var(--surface);
+  background-color: var(--nav-surface); /* Explicit background-color */
+  background: var(--nav-surface);
   padding: 18px 0;
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03); /* Subtle shadow */
+  border-bottom: 1px solid var(--nav-border);
+  box-shadow: var(--nav-shadow);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   opacity: 1; /* Explicit opacity */
@@ -454,17 +460,26 @@ header p {
 nav {
   display: block; /* Ensure block-level for background */
   width: 100%;
-  background-color: var(--surface); /* Explicit background-color */
-  background: var(--surface); /* Fallback */
-  border-bottom: 1px solid var(--border);
+  background-color: var(--nav-surface) !important; /* Force solid background */
+  background: var(--nav-surface) !important; /* Fallback */
+  border-bottom: 1px solid var(--nav-border);
   padding: 0;
   position: sticky;
   top: 0;
-  z-index: 1000; /* High z-index to stay on top */
-  opacity: 1; /* Explicit opacity */
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); /* Stronger shadow for stacking context */
+  z-index: 2000; /* Stay above all content */
+  opacity: 1 !important; /* Explicit opacity */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: var(--nav-shadow); /* Visible bottom frame */
+  background-clip: padding-box;
+}
+
+/* Extra specificity for desktop nav to prevent accidental overrides */
+.desktop-nav {
+  background-color: var(--nav-surface) !important;
+  background: var(--nav-surface) !important;
+  border-bottom: 1px solid var(--nav-border) !important;
+  box-shadow: var(--nav-shadow);
 }
 
 .nav-container {
@@ -614,15 +629,13 @@ main.main-content {
 
 /* Glass Effect */
 :global(.glass) {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 :global(.dark .glass) {
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 /* Card Hover Effect */
@@ -884,8 +897,6 @@ main.main-content {
    ============================================ */
 :global(.glass-card) {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-elegant);

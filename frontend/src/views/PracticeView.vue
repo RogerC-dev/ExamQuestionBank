@@ -3517,4 +3517,111 @@ onUnmounted(() => {
     background: var(--surface) !important;
     border-color: var(--border) !important;
 }
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+/* Tablet/Medium screens (768px and below) */
+@media (max-width: 768px) {
+    /* Switch mode cards to 2-column layout */
+    .practice-modes {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    
+    /* Reduce mode card padding */
+    .mode-card {
+        padding: 18px 14px;
+    }
+    
+    .mode-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+    }
+    
+    .mode-title {
+        font-size: 14px;
+    }
+    
+    .mode-desc {
+        font-size: 12px;
+    }
+    
+    /* Make tabs wrap properly */
+    .tabs {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    
+    .tabs button {
+        flex: 0 1 auto;
+        padding: 8px 12px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+    
+    /* Adjust container padding and OVERRIDE global max-width constraint */
+    .container {
+        padding: 16px;
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+    
+    /* Add bottom padding for mobile nav bar */
+    .main-panel {
+        padding-bottom: 80px;
+        width: 100% !important; /* Override split-view inline styles */
+    }
+    
+    /* Hide split divider on tablet/mobile */
+    .split-divider {
+        display: none !important;
+    }
+    
+    /* Force chat panel to be full-width overlay on tablet */
+    .chat-panel-split {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100% !important;
+        z-index: 1000;
+    }
+    
+    /* Adjust filter section for smaller screens */
+    .filter-row {
+        flex-direction: column;
+    }
+    
+    .search-input,
+    .tag-filter {
+        width: 100%;
+        min-width: unset;
+    }
+}
+
+/* Small screens (480px and below) */
+@media (max-width: 480px) {
+    /* Stack mode cards to single column on very small screens */
+    .practice-modes {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Make tabs scrollable horizontally */
+    .tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+    
+    .tabs button {
+        flex-shrink: 0;
+    }
+    
+    .section-title {
+        font-size: 16px;
+    }
+}
 </style>

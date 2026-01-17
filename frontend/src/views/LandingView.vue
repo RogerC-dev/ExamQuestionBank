@@ -689,7 +689,7 @@ const handleContactSales = () => {
 /* Extension Section */
 .extension-section {
   padding: 70px 0;
-  background: #f8fafc;
+  background: var(--bg-page);
 }
 
 .extension-content {
@@ -881,7 +881,7 @@ const handleContactSales = () => {
 /* Pricing Section */
 .pricing-section {
   padding: 80px 0;
-  background: #f8fafc;
+  background: var(--bg-page);
 }
 
 .section-subtitle {
