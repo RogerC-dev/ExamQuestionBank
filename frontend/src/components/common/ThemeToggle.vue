@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { Tooltip } from 'bootstrap'
 
 const theme = ref('light')
@@ -7,12 +7,28 @@ const theme = ref('light')
 const tooltipRef = ref(null)
 let tooltipInstance = null
 
+// Computed tooltip text that changes based on current theme
+const tooltipText = computed(() => {
+  return theme.value === 'light' ? '切換深色模式' : '切換淺色模式'
+})
+
 const initTooltip = () => {
   if (!tooltipRef.value) return
   if (tooltipInstance) {
     tooltipInstance.dispose()
   }
-  tooltipInstance = new Tooltip(tooltipRef.value)
+  tooltipInstance = new Tooltip(tooltipRef.value, {
+    title: tooltipText.value
+  })
+}
+
+const updateTooltipContent = () => {
+  if (tooltipInstance) {
+    // Hide the tooltip first if it's showing
+    tooltipInstance.hide()
+    // Update the tooltip content using Bootstrap's API
+    tooltipInstance.setContent({ '.tooltip-inner': tooltipText.value })
+  }
 }
 
 const applyTheme = (value) => {
@@ -33,7 +49,7 @@ onMounted(() => {
 
 watch(theme, async () => {
   await nextTick()
-  initTooltip()
+  updateTooltipContent()
 })
 
 onBeforeUnmount(() => {
@@ -96,6 +112,13 @@ const toggleTheme = () => {
 
 .theme-toggle:hover i {
   transform: rotate(15deg);
+}
+</style>
+
+<style>
+/* Global tooltip z-index override to appear above nav bar */
+.tooltip {
+  z-index: 2100 !important;
 }
 </style>
 
