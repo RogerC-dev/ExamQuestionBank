@@ -2872,3 +2872,43 @@ html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .btn-primary {
 html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .btn-primary:hover:not(:disabled) {
   box-shadow: 0 6px 16px rgba(var(--bs-primary-rgb), 0.4) !important;
 }
+/* ==================================================
+   NAVIGATION BAR OVERRIDES
+   Ensures solid, opaque navbar in all modes
+   ================================================== */
+
+/* Light Mode Navigation Override (override Bootstrap) */
+nav,
+.desktop-nav {
+  background: var(--nav-surface) !important;
+  background-color: var(--nav-surface) !important;
+  border-top: 1px solid var(--nav-border) !important;
+  border-bottom: 1px solid var(--nav-border) !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+.nav-container {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Dark Mode Navigation Override (highest specificity) */
+html:is(.dark, [data-bs-theme="dark"]) nav,
+html:is(.dark, [data-bs-theme="dark"]) .desktop-nav {
+  background: var(--nav-surface) !important;
+  background-color: var(--nav-surface) !important;
+  border-top: 1px solid var(--nav-border) !important;
+  border-bottom: 1px solid var(--nav-border) !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+html:is(.dark, [data-bs-theme="dark"]) .nav-container {
+  background: transparent !important;
+  background-color: transparent !important;
+}

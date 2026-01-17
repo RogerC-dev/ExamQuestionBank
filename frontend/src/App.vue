@@ -462,7 +462,8 @@ nav {
   width: 100%;
   background-color: var(--nav-surface) !important; /* Force solid background */
   background: var(--nav-surface) !important; /* Fallback */
-  border-bottom: 1px solid var(--nav-border);
+  border-top: 1px solid var(--nav-border) !important; /* Top frame line */
+  border-bottom: 1px solid var(--nav-border) !important; /* Bottom frame line */
   padding: 0;
   position: sticky;
   top: 0;
@@ -470,7 +471,7 @@ nav {
   opacity: 1 !important; /* Explicit opacity */
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  box-shadow: var(--nav-shadow); /* Visible bottom frame */
+  box-shadow: none !important; /* Prevent shadows from hiding borders */
   background-clip: padding-box;
 }
 
@@ -478,11 +479,15 @@ nav {
 .desktop-nav {
   background-color: var(--nav-surface) !important;
   background: var(--nav-surface) !important;
+  border-top: 1px solid var(--nav-border) !important;
   border-bottom: 1px solid var(--nav-border) !important;
-  box-shadow: var(--nav-shadow);
+  box-shadow: none !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-.nav-container {
+:global(.nav-container) {
   max-width: 1200px;
   margin: 0 auto;
   display: flex;
@@ -492,6 +497,8 @@ nav {
   padding: 0 16px;
   overflow-x: auto; /* Allow horizontal scroll if needed */
   scrollbar-width: none; /* Hide scrollbar for Firefox */
+  background: transparent !important; /* Prevent beige color from Bootstrap */
+  background-color: transparent !important;
 }
 
 .nav-container::-webkit-scrollbar {
@@ -808,12 +815,23 @@ main.main-content {
   display: none !important;
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 768px) {
   :global(.hidden-mobile) {
-    display: initial !important; /* Reset to default */
+    display: block !important; /* Use block for nav elements */
   }
   :global(.hidden-desktop) {
     display: none !important;
+  }
+}
+
+/* For inline elements that use hidden-mobile, allow revert */
+:global(span.hidden-mobile) {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  :global(span.hidden-mobile) {
+    display: inline !important;
   }
 }
 
