@@ -1,4 +1,4 @@
-import * as pdfjsLib from "https://cdn.skypack.dev/pdfjs-dist@3.11.174/legacy/build/pdf.mjs";
+import * as pdfjsLib from "npm:pdfjs-dist@4.10.38/legacy/build/pdf.mjs";
 
 export const Flag = Object.freeze({
   BEGIN: -2,

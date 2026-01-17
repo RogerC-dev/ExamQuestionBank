@@ -230,30 +230,18 @@ const uploadQuestionFile = async (file) => {
     formData.append('file', file)
     formData.append('type', 'questions')
 
-    // 取得 session token
-    const { data: { session } } = await supabase.auth.getSession()
-    
-    // 直接呼叫 Edge Function
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-pdf`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token || ''}`
-        },
-        body: formData  // FormData - 不是 JSON!
-      }
-    )
+    const { data: functionData, error } = await supabase.functions.invoke('extract-pdf', {
+      method: 'POST',
+      body: formData  // FormData - 不是 JSON!
+    })
 
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || '解析失敗')
+    if (error) {
+      throw new Error(error.message || '解析失敗')
     }
 
-    const data = await response.json()
-    importResult.value = data
+    importResult.value = functionData
     showPreview.value = true
-    console.log('考卷 PDF 解析成功:', data)
+    console.log('考卷 PDF 解析成功:', functionData)
   } catch (error) {
     console.error('考卷 PDF 上傳失敗:', error)
     errorMessage.value = error.message || '考卷 PDF 上傳失敗'
@@ -294,25 +282,16 @@ const uploadAnswerFile = async (file) => {
     formData.append('file', file)
     formData.append('type', 'answers')
 
-    const { data: { session } } = await supabase.auth.getSession()
-    
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-pdf`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token || ''}`
-        },
-        body: formData
-      }
-    )
+    const { data: functionData, error } = await supabase.functions.invoke('extract-pdf', {
+      method: 'POST',
+      body: formData
+    })
 
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || '解析失敗')
+    if (error) {
+      throw new Error(error.message || '解析失敗')
     }
 
-    answersData.value = await response.json()
+    answersData.value = functionData
     
     // 合併答案到題目
     if (importResult.value?.questions && answersData.value?.answers) {
