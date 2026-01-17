@@ -1,11 +1,8 @@
 /**
- * Question Service
- * Automatically switches between Supabase RPC and Django API
+ * Question Service - Django API only
  */
 import api from './api'
-import { supabase } from '@/lib/supabase'
 
-const USE_SUPABASE = import.meta.env.VITE_USE_SUPABASE === 'true'
 const BASE_PREFIX = '/question_bank/questions'
 
 export default {
@@ -14,19 +11,6 @@ export default {
    * @param {Object} params - Filter parameters (examSeries, year, subject, difficulty, keyword)
    */
   async getQuestions(params = {}) {
-    if (USE_SUPABASE) {
-      const { data, error } = await supabase.rpc('get_questions', {
-        p_subject: params.subject || null,
-        p_difficulty: params.difficulty || null,
-        p_type: params.type || null,
-        p_year: params.year ? parseInt(params.year) : null,
-        p_keyword: params.keyword || null,
-        p_page: params.page || 1,
-        p_page_size: params.page_size || 20
-      })
-      if (error) throw new Error(error.message)
-      return { data }
-    }
     return api.get(`${BASE_PREFIX}/`, { params })
   },
 
@@ -35,13 +19,6 @@ export default {
    * @param {number} id - Question ID
    */
   async getQuestion(id) {
-    if (USE_SUPABASE) {
-      const { data, error } = await supabase.rpc('get_question_detail', {
-        p_id: parseInt(id)
-      })
-      if (error) throw new Error(error.message)
-      return { data }
-    }
     return api.get(`${BASE_PREFIX}/${id}/`)
   },
 
@@ -59,26 +36,6 @@ export default {
    * @param {number} questionId - Question ID
    */
   async bookmarkQuestion(questionId) {
-    if (USE_SUPABASE) {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Authentication required')
-
-      // Check if already bookmarked
-      const { data: existing } = await supabase.from('bookmark')
-        .select('id')
-        .match({ user_id: user.id, question_id: questionId })
-        .single()
-
-      if (existing) {
-        // Remove bookmark
-        await supabase.from('bookmark').delete().eq('id', existing.id)
-        return { data: { bookmarked: false } }
-      } else {
-        // Add bookmark
-        await supabase.from('bookmark').insert({ user_id: user.id, question_id: questionId })
-        return { data: { bookmarked: true } }
-      }
-    }
     return api.post(`${BASE_PREFIX}/${questionId}/bookmark/`)
   },
 
@@ -94,11 +51,6 @@ export default {
    * Get user's bookmarked questions
    */
   async getBookmarkedQuestions() {
-    if (USE_SUPABASE) {
-      const { data, error } = await supabase.rpc('get_bookmarks')
-      if (error) throw new Error(error.message)
-      return { data }
-    }
     return api.get(`${BASE_PREFIX}/bookmarks/`)
   },
 
@@ -116,15 +68,6 @@ export default {
    * @param {Object} data - Question data
    */
   async updateQuestion(questionId, data) {
-    if (USE_SUPABASE) {
-      const { data: result, error } = await supabase.from('question')
-        .update(data)
-        .eq('id', questionId)
-        .select()
-        .single()
-      if (error) throw new Error(error.message)
-      return { data: result }
-    }
     return api.patch(`${BASE_PREFIX}/${questionId}/`, data)
   },
 
@@ -133,14 +76,6 @@ export default {
    * @param {Object} data - Question data
    */
   async createQuestion(data) {
-    if (USE_SUPABASE) {
-      const { data: result, error } = await supabase.from('question')
-        .insert(data)
-        .select()
-        .single()
-      if (error) throw new Error(error.message)
-      return { data: result }
-    }
     return api.post(`${BASE_PREFIX}/`, data)
   },
 
@@ -176,11 +111,6 @@ export default {
    * @param {number} questionId - Question ID
    */
   async deleteQuestion(questionId) {
-    if (USE_SUPABASE) {
-      const { error } = await supabase.from('question').delete().eq('id', questionId)
-      if (error) throw new Error(error.message)
-      return { success: true }
-    }
     return api.delete(`${BASE_PREFIX}/${questionId}/`)
   },
 

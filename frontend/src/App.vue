@@ -1,16 +1,12 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import LoginModal from './components/LoginModal.vue'
 import ThemeToggle from './components/common/ThemeToggle.vue'
 import authService from './services/authService'
-import { supabase } from './lib/supabase'
 
 const router = useRouter()
 const route = useRoute()
-
-// Check if using Supabase
-const USE_SUPABASE = import.meta.env.VITE_USE_SUPABASE === 'true'
 
 const tabs = [
   { name: '首頁', path: '/', key: 'landing' },
@@ -28,33 +24,15 @@ const showLoginModal = ref(false)
 // 使用 ref 來追蹤登入狀態變化
 const loginStateVersion = ref(0)
 
-// Store for Supabase user
-const supabaseUser = ref(null)
-
 // 檢查是否已登入
 const isAuthenticated = computed(() => {
   loginStateVersion.value // 依賴此值來觸發重新計算
-  if (USE_SUPABASE) {
-    return !!supabaseUser.value
-  }
   return authService.isAuthenticated()
 })
 
 // 取得當前使用者（computed 會自動響應變化）
 const currentUser = computed(() => {
   loginStateVersion.value // 依賴此值來觸發重新計算
-  
-  if (USE_SUPABASE && supabaseUser.value) {
-    const user = supabaseUser.value
-    return {
-      id: user.id,
-      username: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-      email: user.email,
-      isAdmin: user.user_metadata?.is_admin || false,
-      role: user.user_metadata?.is_admin ? 'admin' : 'user'
-    }
-  }
-  
   return authService.getCurrentUser()
 })
 
@@ -82,26 +60,27 @@ const handleLogin = () => {
 
 const handleLogout = async () => {
   if (confirm('確定要登出嗎？')) {
-    if (USE_SUPABASE) {
-      await supabase.auth.signOut()
-    } else {
-      authService.logout()
-    }
-    supabaseUser.value = null
+    authService.logout()
     loginStateVersion.value++ // 觸發響應式更新
     router.push('/')
   }
 }
 
-const handleLoginSuccess = () => {
+const handleLoginSuccess = async () => {
   console.log('處理登入成功事件')
 
   // 關閉登入彈窗
   showLoginModal.value = false
 
-  // 觸發響應式更新
+  // 等待下一個 tick 確保 localStorage 已更新
+  await nextTick()
+  
+  // 觸發響應式更新（多次觸發確保 UI 更新）
   loginStateVersion.value++
-  console.log('已更新登入狀態，currentUser:', currentUser.value)
+  await nextTick()
+  loginStateVersion.value++
+  
+  console.log('已更新登入狀態，isAuthenticated:', isAuthenticated.value, 'currentUser:', currentUser.value)
 
   // 如果之前要訪問管理頁面，登入後跳轉過去
   const intendedPath = sessionStorage.getItem('intended_path')
@@ -121,50 +100,29 @@ const handleModalClose = () => {
   showLoginModal.value = false
 }
 
-// Auth state subscription
-let authSubscription = null
-
-// 掛載時註冊全域事件監聽器
-onMounted(async () => {
+// 掛載時註冊全域事件監聽器並檢查登入狀態
+onMounted(() => {
   // 註冊全域事件監聽器
   window.addEventListener('show-login', showLogin)
   
-  // Subscribe to Supabase auth state changes
-  if (USE_SUPABASE) {
-    // Get initial session
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      supabaseUser.value = session.user
-      console.log('Initial Supabase user:', session.user.email, 'isAdmin:', session.user.user_metadata?.is_admin)
-    }
-    
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email)
-      supabaseUser.value = session?.user || null
-      loginStateVersion.value++
-      
-      // Update localStorage for compatibility
-      if (session?.user) {
-        localStorage.setItem('user_id', session.user.id)
-        localStorage.setItem('username', session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User')
-        localStorage.setItem('user_role', session.user.user_metadata?.is_admin ? 'admin' : 'user')
-      } else {
-        localStorage.removeItem('user_id')
-        localStorage.removeItem('username')
-        localStorage.removeItem('user_role')
-      }
-    })
-    authSubscription = subscription
+  // 檢查初始登入狀態（Django - 從 localStorage 讀取）
+  if (authService.isAuthenticated()) {
+    console.log('User already logged in:', authService.getCurrentUser())
+    loginStateVersion.value++ // 觸發響應式更新以顯示登入狀態
   }
+  
+  // 監聽 localStorage 變化（當其他標籤頁登入/登出時）
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'access_token' || e.key === 'user_id' || e.key === 'username' || e.key === 'user_role') {
+      loginStateVersion.value++ // 觸發響應式更新
+    }
+  })
 })
 
 // Cleanup on unmount
 onUnmounted(() => {
   window.removeEventListener('show-login', showLogin)
-  if (authSubscription) {
-    authSubscription.unsubscribe()
-  }
+  window.removeEventListener('storage', () => {})
 })
 </script>
 

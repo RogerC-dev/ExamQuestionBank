@@ -1,16 +1,12 @@
 import axios from 'axios'
 import router from '@/router'
 
-// Check if we should use Supabase
-const USE_SUPABASE = import.meta.env.VITE_USE_SUPABASE === 'true'
+// Force Django mode - Supabase is disabled for this branch
+// Only use Supabase if explicitly enabled via environment variable
+const USE_SUPABASE = false // Force to false - use Django only
 
-// Dynamic import for Supabase API
+// Do not load Supabase API - we're using Django
 let supabaseApi = null
-if (USE_SUPABASE) {
-  import('./apiSupabase.js').then(module => {
-    supabaseApi = module.default
-  })
-}
 
 // Django API (fallback)
 const djangoApi = axios.create({
@@ -82,54 +78,28 @@ djangoApi.interceptors.response.use(
   }
 )
 
-// Create a proxy that routes to appropriate backend
-const api = new Proxy({}, {
-  get(target, prop) {
-    return async (...args) => {
-      // Use Supabase if enabled and loaded
-      if (USE_SUPABASE && supabaseApi) {
-        return supabaseApi[prop](...args)
-      }
-      // Fallback to Django
-      return djangoApi[prop](...args)
-    }
-  }
-})
+// Force Django API - Supabase is completely disabled
+// Directly use Django API methods (no Supabase routing)
+const api = {
+  get: async (...args) => {
+    return djangoApi.get(...args)
+  },
 
-// For synchronous access (before dynamic import loads)
-api.get = async (...args) => {
-  if (USE_SUPABASE && supabaseApi) {
-    return supabaseApi.get(...args)
-  }
-  return djangoApi.get(...args)
-}
+  post: async (...args) => {
+    return djangoApi.post(...args)
+  },
 
-api.post = async (...args) => {
-  if (USE_SUPABASE && supabaseApi) {
-    return supabaseApi.post(...args)
-  }
-  return djangoApi.post(...args)
-}
+  patch: async (...args) => {
+    return djangoApi.patch(...args)
+  },
 
-api.patch = async (...args) => {
-  if (USE_SUPABASE && supabaseApi) {
-    return supabaseApi.patch(...args)
-  }
-  return djangoApi.patch(...args)
-}
+  put: async (...args) => {
+    return djangoApi.put(...args)
+  },
 
-api.put = async (...args) => {
-  if (USE_SUPABASE && supabaseApi) {
-    return supabaseApi.put(...args)
+  delete: async (...args) => {
+    return djangoApi.delete(...args)
   }
-  return djangoApi.put(...args)
-}
-
-api.delete = async (...args) => {
-  if (USE_SUPABASE && supabaseApi) {
-    return supabaseApi.delete(...args)
-  }
-  return djangoApi.delete(...args)
 }
 
 const fetchSubjects = () => api.get('/question_bank/subjects/')
