@@ -15,8 +15,9 @@ const USE_SUPABASE = import.meta.env.VITE_USE_SUPABASE === 'true'
 const tabs = [
   { name: '首頁', path: '/', key: 'landing', icon: 'bi-house-door' },
   { name: '練習模式', path: '/practice', key: 'practice', icon: 'bi-pencil-square' },
-  { name: '我的考卷', path: '/user-exam', key: 'user-exam', icon: 'bi-journal-text' },
+  { name: '討論區', path: '/discussions', key: 'discussions', icon: 'bi-chat-dots' },
   { name: '快閃卡', path: '/flashcard', key: 'flashcard', icon: 'bi-card-text' },
+  { name: '我的考卷', path: '/user-exam', key: 'user-exam', icon: 'bi-journal-text' },
   { name: 'AI 申論解析', path: '/essay-analysis', key: 'essay-analysis', icon: 'bi-robot' },
   { name: '學習追蹤', path: '/analytics', key: 'analytics', icon: 'bi-graph-up' },
   { name: '題庫管理', path: '/admin', key: 'admin', adminOnly: true, icon: 'bi-gear' }
@@ -24,6 +25,7 @@ const tabs = [
 
 // We don't need an `activeTab` ref – router-link provides active-class handling
 const showLoginModal = ref(false)
+const showMobileMenu = ref(false) // State for mobile drawer
 
 // 使用 ref 來追蹤登入狀態變化
 const loginStateVersion = ref(0)
@@ -173,27 +175,35 @@ onUnmounted(() => {
     <!-- Header -->
     <header>
       <div class="header-content">
-        <div class="header-text">
-          <h1>司律考題練習題庫系統</h1>
-          <p>整合歷屆司法官／律師考題，提供智慧複習、學習追蹤與快閃卡管理</p>
+        <div class="header-left">
+          <div class="header-text">
+            <h1>司律考題練習題庫系統</h1>
+            <p>整合歷屆司法官／律師考題，提供智慧複習、學習追蹤與快閃卡管理</p>
+          </div>
         </div>
-        <div class="user-section">
+
+        <!-- Desktop Actions -->
+        <div class="user-section hidden-tablet">
           <ThemeToggle />
           <div v-if="isAuthenticated" class="user-info">
-            <span class="username hidden-mobile">{{ currentUser?.username }}</span>
-            <span v-if="currentUser?.isAdmin" class="admin-badge hidden-mobile">管理員</span>
-            <button class="btn btn-logout icon-only-mobile" @click="handleLogout">
-              <span class="hidden-mobile">登出</span>
-              <i class="bi bi-box-arrow-right hidden-desktop"></i>
+            <span class="username">{{ currentUser?.username }}</span>
+            <span v-if="currentUser?.isAdmin" class="admin-badge">管理員</span>
+            <button class="btn btn-logout" @click="handleLogout">
+              登出
             </button>
           </div>
           <button v-else class="btn btn-login" @click="handleLogin">登入</button>
         </div>
+
+        <!-- Hamburger Button (Tablet/Mobile) -->
+        <button class="hamburger-btn hidden-desktop" @click="showMobileMenu = true">
+          <i class="bi bi-list"></i>
+        </button>
       </div>
     </header>
 
-    <!-- Desktop Navigation -->
-    <nav class="desktop-nav hidden-mobile">
+    <!-- Desktop Navigation (Hidden on Tablet/Mobile) -->
+    <nav class="desktop-nav hidden-tablet">
       <div class="nav-container">
         <router-link v-for="tab in visibleTabs" :key="tab.key" :to="tab.path" active-class="active"
           exact-active-class="active">
@@ -208,14 +218,57 @@ onUnmounted(() => {
       <router-view />
     </main>
 
-    <!-- Mobile Bottom Navigation -->
-    <nav class="mobile-nav hidden-desktop">
-      <router-link v-for="tab in visibleTabs" :key="tab.key" :to="tab.path" active-class="active"
-        exact-active-class="active" class="mobile-nav-item">
-        <i :class="['bi', tab.icon]"></i>
-        <span class="nav-label">{{ tab.name }}</span>
-      </router-link>
-    </nav>
+    <!-- Mobile/Tablet Side Drawer -->
+    <div class="drawer-overlay" :class="{ show: showMobileMenu }" @click="showMobileMenu = false">
+      <div class="drawer-content" :class="{ show: showMobileMenu }" @click.stop>
+        <div class="drawer-header">
+          <h3>選單</h3>
+          <button class="close-btn" @click="showMobileMenu = false">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        
+        <div class="drawer-body">
+          <!-- User Info (Mobile) -->
+          <div v-if="isAuthenticated" class="drawer-user-info">
+            <div class="user-avatar">
+              <i class="bi bi-person-circle"></i>
+            </div>
+            <div class="user-details">
+              <span class="username">{{ currentUser?.username }}</span>
+              <span v-if="currentUser?.isAdmin" class="admin-badge">管理員</span>
+            </div>
+          </div>
+          <div v-else class="drawer-user-action">
+             <button class="btn btn-login full-width" @click="handleLogin; showMobileMenu = false">登入</button>
+          </div>
+
+          <hr class="drawer-divider" />
+
+          <!-- Navigation Links -->
+          <nav class="drawer-nav">
+             <router-link v-for="tab in visibleTabs" :key="tab.key" :to="tab.path" active-class="active"
+              class="drawer-nav-item" @click="showMobileMenu = false">
+              <i :class="['bi', tab.icon]"></i>
+              {{ tab.name }}
+            </router-link>
+          </nav>
+
+          <hr class="drawer-divider" />
+
+           <!-- Settings / Logout -->
+          <div class="drawer-actions">
+            <div class="drawer-action-item">
+              <span>深色模式</span>
+              <ThemeToggle />
+            </div>
+            <button v-if="isAuthenticated" class="btn btn-logout full-width mt-4" @click="handleLogout; showMobileMenu = false">
+              <i class="bi bi-box-arrow-right me-2"></i> 登出
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Login Modal -->
     <LoginModal :visible="showLoginModal" @close="handleModalClose" @success="handleLoginSuccess" />
@@ -457,7 +510,7 @@ header p {
 }
 
 /* Navigation */
-nav {
+nav.desktop-nav {
   display: block; /* Ensure block-level for background */
   width: 100%;
   background-color: var(--nav-surface) !important; /* Force solid background */
@@ -475,17 +528,43 @@ nav {
   background-clip: padding-box;
 }
 
-/* Extra specificity for desktop nav to prevent accidental overrides */
-.desktop-nav {
-  background-color: var(--nav-surface) !important;
-  background: var(--nav-surface) !important;
-  border-top: 1px solid var(--nav-border) !important;
-  border-bottom: 1px solid var(--nav-border) !important;
-  box-shadow: none !important;
-  opacity: 1 !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+/* Helper Classes for Responsive Visibility */
+.hidden-tablet {
+  display: flex !important;
 }
+
+.hidden-desktop {
+  display: none !important;
+}
+
+@media (max-width: 1024px) {
+  .hidden-tablet {
+    display: none !important;
+  }
+  
+  .hidden-desktop {
+    display: flex !important;
+  }
+}
+
+/* Hamburger Button */
+.hamburger-btn {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex; /* Important for center alignment */
+  align-items: center;
+  justify-content: center;
+}
+
+.hamburger-btn:hover {
+  background: var(--surface-muted);
+}
+
 
 :global(.nav-container) {
   max-width: 1200px;
@@ -516,9 +595,12 @@ nav a {
   cursor: pointer;
   white-space: nowrap; /* Prevent text wrapping */
   flex-shrink: 0; /* Prevent items from shrinking */
+  display: flex;
+  align-items: center;
 }
 
-nav a:hover {
+nav a:hover,
+.nav-dropdown-trigger:hover {
   color: var(--primary);
   background: transparent;
 }
@@ -533,59 +615,158 @@ nav a.active {
 main.main-content {
   min-height: calc(100vh - 140px);
   background: var(--bg-page);
-  padding-bottom: 80px; /* Space for mobile nav */
+  /* No padding bottom needed anymore as we removed bottom nav */
 }
 
-@media (min-width: 768px) {
-  main.main-content {
-    padding-bottom: 0;
-  }
-}
-
-/* Mobile Navigation (Bottom) */
-.mobile-nav {
+/* Drawer / Sidebar Styles */
+.drawer-overlay {
   position: fixed;
-  top: auto; /* Prevent full screen overlay */
-  bottom: 0;
+  top: 0;
   left: 0;
   right: 0;
-  height: auto;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  display: flex;
-  justify-content: space-around;
-  padding: 8px 4px 20px 4px; /* Extra padding for iOS home bar */
-  z-index: 1000;
-  box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 3000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(2px);
 }
 
-.mobile-nav-item {
+.drawer-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer-content {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--surface);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  z-index: 3001;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
+}
+
+.drawer-content.show {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 0;
+}
+
+.drawer-user-info {
+  padding: 0 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-user-action {
+  padding: 0 20px 16px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.drawer-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 8px 0;
+}
+
+.drawer-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.drawer-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 10px;
-  padding: 4px 8px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  min-width: 60px;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
 }
 
-.mobile-nav-item i {
-  font-size: 20px;
-  margin-bottom: 2px;
-}
-
-.mobile-nav-item.active {
+.drawer-nav-item:hover {
+  background: var(--surface-muted);
   color: var(--primary);
-  background: var(--primary-soft);
 }
 
-.mobile-nav-item:active {
-  transform: scale(0.95);
+.drawer-nav-item.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-left-color: var(--primary);
 }
+
+.drawer-nav-item i {
+  font-size: 18px;
+}
+
+.drawer-actions {
+  padding: 16px 20px;
+}
+
+.drawer-action-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  color: var(--text-secondary);
+}
+
+
 
 /* Responsive Overrides */
 @media (max-width: 768px) {
@@ -681,13 +862,14 @@ main.main-content {
 @keyframes fadeUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 
 @keyframes fadeIn {
   from { opacity: 0; }

@@ -66,6 +66,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/discussions/:id',
+      name: 'DiscussionDetail',
+      component: () => import('@/views/DiscussionDetailView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/gamification',
       name: 'GamificationDashboard',
       component: () => import('@/views/GamificationDashboard.vue'),
