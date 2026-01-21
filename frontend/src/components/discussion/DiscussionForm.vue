@@ -2,6 +2,17 @@
   <div class="discussion-form-mvp">
     <h3 class="form-title">{{ isEditing ? '編輯討論' : '發起新討論' }}</h3>
     
+    <!-- Author Name Preview Hint -->
+    <div class="author-preview-hint">
+      <i class="bi bi-person-fill"></i>
+      <span>您的發文名稱將顯示為:</span>
+      <strong class="display-name">{{ displayName }}</strong>
+      <router-link to="/profile" class="change-name-link">
+        <i class="bi bi-pencil-fill"></i>
+        變更名稱
+      </router-link>
+    </div>
+    
     <form @submit.prevent="handleSubmit">
       <div class="form-group">
         <label for="title">標題</label>
@@ -57,7 +68,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import userProfileService from '@/services/userProfileService'
 
 const props = defineProps({
   initialTitle: {
@@ -83,6 +95,7 @@ const emit = defineEmits(['submit', 'cancel'])
 const title = ref(props.initialTitle)
 const body = ref(props.initialBody)
 const errors = ref({})
+const displayName = ref('載入中...')
 
 // Reset form when initial values change
 watch(() => props.initialTitle, (val) => { title.value = val })
@@ -90,6 +103,17 @@ watch(() => props.initialBody, (val) => { body.value = val })
 
 const isValid = computed(() => {
   return title.value.length >= 10 && body.value.length >= 20
+})
+
+// Fetch the user's display name on mount
+onMounted(async () => {
+  try {
+    const name = await userProfileService.getEffectiveDisplayName()
+    displayName.value = name || '匿名用戶'
+  } catch (e) {
+    console.error('Failed to fetch display name:', e)
+    displayName.value = '匿名用戶'
+  }
 })
 
 function validate() {
@@ -145,6 +169,55 @@ function handleCancel() {
 
 .dark .form-title {
   color: var(--text-primary-dark, #f9fafb);
+}
+
+.author-preview-hint {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--primary-soft, #eef2ff);
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+}
+
+.dark .author-preview-hint {
+  background: rgba(79, 70, 229, 0.1);
+  color: var(--text-secondary-dark, #9ca3af);
+}
+
+.author-preview-hint i {
+  color: var(--primary, #4f46e5);
+  font-size: 0.875rem;
+}
+
+.author-preview-hint .display-name {
+  color: var(--primary, #4f46e5);
+  font-weight: 600;
+}
+
+.change-name-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  color: var(--primary, #4f46e5);
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.change-name-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.change-name-link i {
+  font-size: 0.625rem;
 }
 
 .form-group {

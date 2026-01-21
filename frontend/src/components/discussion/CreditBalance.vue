@@ -17,7 +17,7 @@
     </button>
     
     <div v-if="reputation !== undefined" class="reputation-info">
-      <i class="bi bi-star-fill reputation-icon"></i>
+      <i class="bi bi-mortarboard-fill reputation-icon"></i>
       <span class="reputation-amount">{{ reputation }}</span>
     </div>
   </div>
@@ -75,12 +75,13 @@ function handleClaim() {
 
 .credit-icon {
   font-size: 1.25rem;
+  color: var(--icon-blue-fg);
 }
 
 .credit-amount {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--primary-color, #4f46e5);
+  color: var(--text-primary, #111827);
 }
 
 .credit-label {
@@ -121,14 +122,17 @@ function handleClaim() {
   padding: 0.25rem 0.75rem;
   background: var(--bg-primary, white);
   border-radius: 8px;
+  border: 1px solid var(--border, #e5e7eb);
 }
 
 .dark .reputation-info {
   background: var(--bg-secondary, #1f2937);
+  border-color: var(--border, #374151);
 }
 
 .reputation-icon {
   font-size: 1rem;
+  color: var(--icon-amber-fg);
 }
 
 .reputation-amount {

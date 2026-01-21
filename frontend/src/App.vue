@@ -186,7 +186,7 @@ onUnmounted(() => {
         <div class="user-section hidden-tablet">
           <ThemeToggle />
           <div v-if="isAuthenticated" class="user-info">
-            <span class="username">{{ currentUser?.username }}</span>
+            <router-link to="/profile" class="username-link">{{ currentUser?.username }}</router-link>
             <span v-if="currentUser?.isAdmin" class="admin-badge">管理員</span>
             <button class="btn btn-logout" @click="handleLogout">
               登出
@@ -231,11 +231,13 @@ onUnmounted(() => {
         <div class="drawer-body">
           <!-- User Info (Mobile) -->
           <div v-if="isAuthenticated" class="drawer-user-info">
-            <div class="user-avatar">
-              <i class="bi bi-person-circle"></i>
-            </div>
+            <router-link to="/profile" class="user-avatar-link" @click="showMobileMenu = false">
+              <div class="user-avatar">
+                <i class="bi bi-person-circle"></i>
+              </div>
+            </router-link>
             <div class="user-details">
-              <span class="username">{{ currentUser?.username }}</span>
+              <router-link to="/profile" class="username-link" @click="showMobileMenu = false">{{ currentUser?.username }}</router-link>
               <span v-if="currentUser?.isAdmin" class="admin-badge">管理員</span>
             </div>
           </div>
@@ -465,6 +467,23 @@ header p {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
+}
+
+.username-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.username-link:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.user-avatar-link {
+  text-decoration: none;
 }
 
 .admin-badge {

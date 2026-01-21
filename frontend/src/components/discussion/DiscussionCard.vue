@@ -44,9 +44,10 @@ const bodyPreview = computed(() => {
 })
 
 const authorName = computed(() => {
-  const email = props.discussion.user_email
-  if (!email) return '匿名用戶'
-  return email.split('@')[0]
+  // Priority: display_name → email prefix → anonymous
+  return props.discussion.display_name 
+    || (props.discussion.user_email?.split('@')[0]) 
+    || '匿名用戶'
 })
 
 const timeAgo = computed(() => {

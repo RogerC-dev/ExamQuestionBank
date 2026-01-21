@@ -63,9 +63,10 @@ const unlocking = ref(false)
 const voting = ref(false)
 
 const authorName = computed(() => {
-  const email = props.answer.user_email
-  if (!email) return '匿名用戶'
-  return email.split('@')[0]
+  // Priority: display_name → email prefix → anonymous
+  return props.answer.display_name 
+    || (props.answer.user_email?.split('@')[0]) 
+    || '匿名用戶'
 })
 
 const timeAgo = computed(() => {

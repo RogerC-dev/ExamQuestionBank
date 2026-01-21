@@ -126,6 +126,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/profile',
+      name: 'Profile',
+      component: () => import('@/views/UserProfileView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/auth/callback',
       name: 'AuthCallback',
       component: () => import('@/views/AuthCallbackView.vue')
