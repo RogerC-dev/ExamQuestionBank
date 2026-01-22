@@ -66,6 +66,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/discussions/:id',
+      name: 'DiscussionDetail',
+      component: () => import('@/views/DiscussionDetailView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/gamification',
       name: 'GamificationDashboard',
       component: () => import('@/views/GamificationDashboard.vue'),
@@ -117,6 +123,12 @@ const router = createRouter({
       path: '/practice/questions',
       name: 'QuestionPractice',
       component: () => import('@/views/QuestionPracticeView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/profile',
+      name: 'Profile',
+      component: () => import('@/views/UserProfileView.vue'),
       meta: { requiresAuth: true }
     },
     {
